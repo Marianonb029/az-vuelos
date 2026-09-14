@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { esVerificada } from "@az/core";
+import { esNoVerificada, esVerificada } from "@az/core";
 import type { TablaFx } from "@az/core";
 import { busquedaIda, lecturaEur, tramoIda } from "@az/core/fixtures";
 import { ErrorBloqueo } from "@az/scraper";
@@ -43,7 +43,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     cache: repoCache(db),
     bloqueos: repoBloqueos(db),
     obtenerTablaFx,
-    abrirNavegador: async () => navegadorDePrueba(),
+    abrirNavegador: vi.fn(async () => navegadorDePrueba()),
     adaptadorPorIata: (iata) => (iata === "IB" ? adaptador : undefined),
     directorioEvidencia,
     directorioPerfil: join(directorioEvidencia, "perfil"),
@@ -54,7 +54,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("User-agent: *\nDisallow: /x", { status: 200 }));
   const unaFecha = { desde: busquedaIda.rangoIda.desde, hasta: busquedaIda.rangoIda.desde };
   dep.busquedas.crear({ ...busquedaIda, rangoIda: unaFecha });
-  return { dep, directorioEvidencia, obtenerTablaFx };
+  return { dep, directorioEvidencia, obtenerTablaFx, abrirNavegador: dep.abrirNavegador };
 };
 
 const verificado = (rutaScreenshot: string): ResultadoAdaptador => ({
@@ -106,7 +106,7 @@ describe("ejecutarBusqueda", () => {
     expect(b?.estado).toBe("fallida");
     const [c] = dep.cotizaciones.listarPorBusqueda(busquedaIda.id);
     expect(c?.estado).toBe("error_lectura");
-    if (c && !esVerificada(c)) expect(c.motivo).toBe("selector no encontrado");
+    if (c && esNoVerificada(c)) expect(c.motivo).toBe("selector no encontrado");
     expect(dep.registros.intentosFallidosDe(busquedaIda.id)).toBe(1);
   });
 
@@ -201,10 +201,15 @@ describe("ejecutarBusqueda", () => {
     expect(presupuestoIntento({ tipo: "ida" }, { modo: "asistido" }, true)).toBe(90_000 + 3 * 60_000 + 5 * 60_000);
   });
 
-  it("sin adaptador → fallida", async () => {
-    const { dep } = armar(async (p) => verificado(p.rutaScreenshot));
+  it("sin adaptador → manual_pendiente con instrucción, sin abrir Chrome", async () => {
+    const { dep, abrirNavegador } = armar(async (p) => verificado(p.rutaScreenshot));
     dep.busquedas.crear({ ...busquedaIda, id: "9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f", aerolineaIata: "LA" });
     await ejecutarBusqueda(dep, "9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f");
-    expect(dep.busquedas.obtener("9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f")?.motivoFallo).toBe("No hay adaptador para LA");
+    const b = dep.busquedas.obtener("9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f");
+    expect(b?.estado).toBe("manual_pendiente");
+    expect(b?.motivoFallo).toBeNull();
+    expect(b?.aviso).toContain("LA no tiene adaptador");
+    expect(abrirNavegador).not.toHaveBeenCalled();
+    expect(dep.notificar).toHaveBeenCalledWith("9f1c2d3e-4a5b-4c6d-8e7f-0a1b2c3d4e5f");
   });
 });

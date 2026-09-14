@@ -141,7 +141,9 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
   if (!b) return;
   const adaptador = dep.adaptadorPorIata(b.aerolineaIata);
   if (!adaptador) {
-    dep.busquedas.cambiarEstado(b.id, "fallida", `No hay adaptador para ${b.aerolineaIata}`);
+    dep.busquedas.cambiarEstado(b.id, "manual_pendiente");
+    dep.busquedas.avisar(b.id, `${b.aerolineaIata} no tiene adaptador: buscá el precio en su sitio oficial y cargalo con la captura, la URL, el monto y la hora.`);
+    dep.notificar(b.id);
     return;
   }
   const enfriamiento = dep.bloqueos.vigente(adaptador.iata);

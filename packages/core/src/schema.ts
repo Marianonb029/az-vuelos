@@ -40,16 +40,18 @@ export const EstadoBusqueda = z.enum([
   "parcial",
   "fallida",
   "bloqueada",
+  "manual_pendiente", // sin adaptador: espera que una persona cargue el precio leído del sitio oficial
 ]);
 
 export const EstadoCotizacion = z.enum([
   "verificado",
+  "verificado_manual", // leído por una persona en el sitio oficial, con captura subida
   "sin_disponibilidad",
   "bloqueado",
   "error_lectura",
 ]);
 
-export const EstadoNoVerificado = EstadoCotizacion.exclude(["verificado"]);
+export const EstadoNoVerificado = EstadoCotizacion.exclude(["verificado", "verificado_manual"]);
 
 // ---------------------------------------------------------------------------
 // Búsqueda
@@ -222,6 +224,14 @@ export const EvidenciaParcial = z.object({
   screenshotPath: z.string().min(1).nullable(),
 });
 
+// Evidencia de una lectura manual: los cuatro datos son obligatorios (URL, captura, monto, hora).
+export const EvidenciaManual = z.object({
+  url: z.url(),
+  capturadoEn: FechaHoraIso, // hora en que la persona vio el precio
+  screenshotPath: z.string().min(1), // captura subida por la persona
+  cargadoEn: FechaHoraIso, // hora en que se registró en el sistema
+});
+
 export const AerolineaRef = z.object({
   iata: IataAerolinea,
   nombre: z.string().min(1),
@@ -296,10 +306,33 @@ export const CotizacionNoVerificada = z.object({
   evidencia: EvidenciaParcial,
 });
 
+// Precio cargado a mano desde el sitio oficial (aerolíneas sin adaptador o bloqueadas). Sin tramos:
+// la persona describe el itinerario en `nota`.
+export const CotizacionManual = z.object({
+  ...cotizacionBase,
+  estado: z.literal("verificado_manual"),
+  precio: Precio,
+  nota: z.string(),
+  evidencia: EvidenciaManual,
+});
+
 export const Cotizacion = z.discriminatedUnion("estado", [
   CotizacionVerificada,
+  CotizacionManual,
   CotizacionNoVerificada,
 ]);
+
+// Lo que la persona envía para registrar un precio leído a mano. La imagen viaja en base64 (PNG o JPEG).
+export const CargaManual = z.object({
+  fechaIda: FechaIso,
+  fechaVuelta: FechaIso.nullable(),
+  monto: z.number().positive("El monto debe ser mayor que cero"),
+  moneda: Moneda,
+  url: z.url("La URL del sitio oficial es obligatoria"),
+  capturadoEn: FechaHoraIso,
+  nota: z.string().max(500),
+  imagen: z.object({ tipo: z.enum(["image/png", "image/jpeg"]), base64: z.string().min(1, "La captura es obligatoria") }),
+});
 
 // ---------------------------------------------------------------------------
 // Tipos derivados
@@ -329,6 +362,11 @@ export type EstadoAdaptador = z.infer<typeof EstadoAdaptador>;
 export type Lectura = z.infer<typeof Lectura>;
 export type CotizacionVerificada = z.infer<typeof CotizacionVerificada>;
 export type CotizacionNoVerificada = z.infer<typeof CotizacionNoVerificada>;
+export type CotizacionManual = z.infer<typeof CotizacionManual>;
+export type EvidenciaManual = z.infer<typeof EvidenciaManual>;
+export type CargaManual = z.infer<typeof CargaManual>;
 export type Cotizacion = z.infer<typeof Cotizacion>;
 
 export const esVerificada = (c: Cotizacion): c is CotizacionVerificada => c.estado === "verificado";
+export const esManual = (c: Cotizacion): c is CotizacionManual => c.estado === "verificado_manual";
+export const esNoVerificada = (c: Cotizacion): c is CotizacionNoVerificada => !esVerificada(c) && !esManual(c);

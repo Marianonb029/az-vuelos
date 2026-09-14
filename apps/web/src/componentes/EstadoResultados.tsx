@@ -1,11 +1,16 @@
-import { combinaciones, esVerificada, fechaCorta, fechaHoraCorta } from "@az/core";
-import type { Busqueda, Cotizacion, CotizacionNoVerificada } from "@az/core";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { combinaciones, esManual, esNoVerificada, esVerificada, fechaCorta, fechaHoraCorta } from "@az/core";
+import type { Busqueda, Cotizacion, CotizacionManual, CotizacionNoVerificada } from "@az/core";
+import { CargaManual } from "./CargaManual";
+import { CotizacionesManuales } from "./CotizacionesManuales";
 import { TablaResultados } from "./TablaResultados";
 
 interface Props {
   busqueda: Busqueda;
   cotizaciones: Cotizacion[];
   onReintentar: () => void;
+  onCargaManual: (busqueda: Busqueda, cotizacion: CotizacionManual) => void;
 }
 
 const etiquetaCombinacion = (fechaIda: string, fechaVuelta: string | null) =>
@@ -43,36 +48,60 @@ const Progreso = ({ hechas, total, aviso }: { hechas: number; total: number; avi
   </div>
 );
 
-export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar }: Props) => {
+// Bloqueada o fallida: se puede reintentar la automatización o cargar el precio a mano.
+const SinAutomatizacion = ({ busqueda, ultimoIntento, onReintentar, children }: { busqueda: Busqueda; ultimoIntento: string; onReintentar: () => void; children: ReactNode }) => {
+  const [cargar, setCargar] = useState(false);
+  const bloqueada = busqueda.estado === "bloqueada";
+  return (
+    <div className="grid gap-4">
+      <section role="alert" className="rounded-md border border-red-200 bg-red-50 p-4">
+        <h3 className="text-sm font-semibold text-red-900">{bloqueada ? "La aerolínea bloqueó la automatización" : "La búsqueda falló"}</h3>
+        <p className="mt-1 text-sm text-red-900">
+          {bloqueada ? `Último intento: ${fechaHoraCorta(ultimoIntento)}. ` : ""}
+          {busqueda.motivoFallo ?? "sin detalle"}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {bloqueada && (
+            <button type="button" onClick={onReintentar} className="rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-900 hover:bg-red-100">
+              Reintentar
+            </button>
+          )}
+          <button type="button" onClick={() => setCargar((v) => !v)} className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-800 hover:bg-slate-100">
+            {cargar ? "Ocultar carga manual" : "Cargar el precio a mano"}
+          </button>
+        </div>
+      </section>
+      {cargar && children}
+    </div>
+  );
+};
+
+export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCargaManual }: Props) => {
   const combos = combinaciones(busqueda);
   const verificadas = cotizaciones.filter(esVerificada);
-  const noVerificadas = cotizaciones.filter((c): c is CotizacionNoVerificada => !esVerificada(c));
+  const manuales = cotizaciones.filter(esManual);
+  const noVerificadas = cotizaciones.filter(esNoVerificada);
   const corriendo = busqueda.estado === "pendiente" || busqueda.estado === "corriendo";
+  const formulario = <CargaManual busqueda={busqueda} onCargada={onCargaManual} />;
 
-  if (busqueda.estado === "bloqueada") {
+  if (busqueda.estado === "bloqueada" || busqueda.estado === "fallida") {
     const ultimoIntento = noVerificadas.at(-1)?.evidencia.capturadoEn ?? busqueda.creadaEn;
     return (
-      <section role="alert" className="rounded-md border border-red-200 bg-red-50 p-4">
-        <h3 className="text-sm font-semibold text-red-900">La aerolínea bloqueó la automatización</h3>
-        <p className="mt-1 text-sm text-red-900">
-          Último intento: {fechaHoraCorta(ultimoIntento)}. {busqueda.motivoFallo ?? ""}
-        </p>
-        <button
-          type="button"
-          onClick={onReintentar}
-          className="mt-3 rounded-md border border-red-300 bg-white px-3 py-1.5 text-sm text-red-900 hover:bg-red-100"
-        >
-          Reintentar
-        </button>
-      </section>
+      <SinAutomatizacion busqueda={busqueda} ultimoIntento={ultimoIntento} onReintentar={onReintentar}>
+        {formulario}
+      </SinAutomatizacion>
     );
   }
 
-  if (busqueda.estado === "fallida") {
+  if (busqueda.estado === "manual_pendiente") {
     return (
-      <section role="alert" className="rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-900">
-        La búsqueda falló: {busqueda.motivoFallo ?? "sin detalle"}.
-      </section>
+      <div className="grid gap-4">
+        <section role="status" className="rounded-md border border-violet-200 bg-violet-50 p-3 text-sm text-violet-900">
+          <p className="font-medium">Esta aerolínea no tiene adaptador: el precio se carga a mano desde su sitio oficial.</p>
+          {busqueda.aviso && <p className="mt-1">{busqueda.aviso}</p>}
+        </section>
+        {formulario}
+      </div>
     );
   }
 
@@ -80,7 +109,8 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar }: Props
     <div className="grid gap-4">
       {corriendo && <Progreso hechas={cotizaciones.length} total={combos.length} aviso={busqueda.aviso} />}
       {verificadas.length > 0 && <TablaResultados cotizaciones={verificadas} />}
-      {!corriendo && verificadas.length === 0 && (
+      {manuales.length > 0 && <CotizacionesManuales cotizaciones={manuales} />}
+      {!corriendo && verificadas.length === 0 && manuales.length === 0 && (
         <section className="rounded-md border border-slate-200 p-4 text-sm text-slate-700">
           <p className="font-medium">No se encontraron vuelos publicados para esta combinación.</p>
           <p className="mt-1 text-slate-500">
@@ -89,6 +119,12 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar }: Props
         </section>
       )}
       {noVerificadas.length > 0 && <NoVerificadas lista={noVerificadas} />}
+      {!corriendo && (busqueda.estado === "parcial" || noVerificadas.length > 0) && (
+        <details className="rounded-md border border-slate-200 p-3 text-sm">
+          <summary className="cursor-pointer text-slate-700">Cargar a mano una fecha sin precio</summary>
+          <div className="mt-3">{formulario}</div>
+        </details>
+      )}
     </div>
   );
 };

@@ -62,7 +62,8 @@ describe("Combinaciones", () => {
     expect(screen.getAllByTitle("ruta Nivel 1 +30 · presión media 60 +10 · aeropuertos pedidos +12 = 52").length).toBeGreaterThan(0);
 
     const botones = screen.getAllByRole("button", { name: "Verificar en el sitio oficial" });
-    expect(botones).toHaveLength(2); // sólo AR tiene adaptador
+    expect(botones).toHaveLength(2); // AR tiene adaptador
+    expect(screen.getAllByRole("button", { name: "Cargar precio a mano" })).toHaveLength(2); // TK y UX no
     fireEvent.click(botones[0] as HTMLElement);
     expect(onVerificar).toHaveBeenCalledWith({ aerolineaIata: "AR", origenIata: "EZE", destinoIata: "MAD", desde: "2027-01-25", hasta: "2027-01-28" });
   });

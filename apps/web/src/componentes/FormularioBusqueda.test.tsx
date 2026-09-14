@@ -56,13 +56,14 @@ describe("FormularioBusqueda", () => {
     expect(onEnviar).not.toHaveBeenCalled();
   });
 
-  it("marca las aerolíneas sin adaptador como deshabilitadas con tooltip", () => {
+  it("marca las aerolíneas sin adaptador como carga manual, pero se pueden elegir", () => {
     renderizar();
     fireEvent.change(screen.getByRole("combobox", { name: "Aerolínea" }), { target: { value: "a" } });
     const ar = screen.getByRole("option", { name: /Aerolíneas Argentinas/ });
-    expect(ar.getAttribute("aria-disabled")).toBe("true");
-    expect(ar.getAttribute("title")).toBe("adaptador no disponible");
-    expect(screen.getByRole("option", { name: /Iberia/ }).getAttribute("aria-disabled")).toBeNull();
+    expect(ar.getAttribute("aria-disabled")).toBeNull();
+    expect(ar.getAttribute("title")).toBe("sin adaptador: el precio se carga a mano");
+    expect(ar.textContent).toContain("carga manual");
+    expect(screen.getByRole("option", { name: /Iberia/ }).textContent).toContain("adaptador");
   });
 
   it("busca aeropuertos por ciudad y rechaza destino igual a origen", () => {

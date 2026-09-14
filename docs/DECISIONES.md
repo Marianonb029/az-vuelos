@@ -157,6 +157,17 @@ El monto original también se redondea hacia arriba.
 - Con el radio aprobado, EZE→MAD ida 15/01/2027 da **120 combinaciones** (EZE 60, SCL 18, MVD 15, POA 15, ASU 12) frente a las 250–330 del proceso manual con toda Europa: misma causa que en 6.2 (radio y dataset 2014).
 - **Verificar en el sitio oficial:** en la tabla de combinaciones, las aerolíneas con adaptador tienen un botón que salta a la pestaña Precios con el formulario prellenado (aerolínea, origen, destino, ida sola, carry on, la ventana recortada a 30 días). La persona confirma con "Buscar": el precio sólo sale de la lectura del sitio (regla 1).
 
+## Fase 6.7 (14/09/2026) — carga manual con evidencia obligatoria
+
+- Nuevos estados: `Busqueda.estado = "manual_pendiente"` (aerolínea sin adaptador: no abre Chrome, deja la instrucción en `aviso`) y `Cotizacion.estado = "verificado_manual"` (`CotizacionManual`: precio, nota libre y `EvidenciaManual` = URL + captura subida + hora en que la persona vio el precio + hora de registro). Sin tramos: el itinerario va en la nota.
+- **El formulario acepta cualquier aerolínea del catálogo.** Las que no tienen adaptador se marcan "carga manual" en vez de deshabilitarse. Desde las combinaciones del espacio de búsqueda, "Cargar precio a mano" prellena la búsqueda igual que "Verificar en el sitio oficial".
+- `POST /busquedas/:id/manual` recibe la captura en **base64 dentro del JSON** (tope 8 MB, `bodyLimit` 12 MB) para no sumar `@fastify/multipart`; valida los bytes iniciales (PNG/JPEG reales), que la fecha sea una de las de la búsqueda, que la hora no sea futura, y convierte a USD con **una llamada FX por carga**, fechada (regla 3). La captura se guarda en `evidencia/manual/<id>.png|jpg` y se sirve por `/evidencia/*` (que ahora admite JPG).
+- Se admite la carga sobre búsquedas `manual_pendiente`, `bloqueada`, `fallida`, `parcial` y `completa` (nunca en curso). Tras cargar, la búsqueda queda `completa` si todas sus fechas tienen precio (scraper o manual) y `parcial` si no.
+- `GET /busquedas/pendientes-manual`: búsquedas de los últimos 30 días en `manual_pendiente`, `bloqueada` o `fallida`; la web las lista debajo del estado de adaptadores con "Cargar precio".
+- La UI separa siempre lo manual de lo automático (`CotizacionesManuales`, etiqueta "leído a mano", enlaces a la URL y a la captura). Las cotizaciones manuales no alimentan la salud de adaptadores ni la caché de 6 h: son lecturas humanas, no del adaptador.
+- Migración `005_aviso.sql`: búsquedas anteriores a la Fase 5.0 no tenían `aviso` y rompían el listado.
+- Comprobado en vivo: TK EZE→MAD 28/09/2026, EUR 1.234,50 → USD 1.432 (tasa 1,1598 del 14/09/2026), captura servida en `/evidencia/manual/…png`.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

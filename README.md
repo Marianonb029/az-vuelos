@@ -27,6 +27,10 @@ Usalo con esta conciencia. Un bloqueo es una respuesta válida del producto, no 
 
 La pantalla principal muestra el **estado de cada adaptador**: modo, última lectura verificada y último bloqueo con su enfriamiento.
 
+## Carga manual (aerolíneas sin adaptador o bloqueadas)
+
+Cualquier aerolínea del catálogo se puede buscar. Si no tiene adaptador, la búsqueda queda en `manual_pendiente`; si el adaptador fue bloqueado o falló, también se ofrece la carga manual. Una persona busca el precio en el sitio oficial y lo registra con **URL, captura de pantalla (PNG/JPEG), monto con moneda y hora**: sin los cuatro datos no se guarda nada. El monto se convierte a USD con la tasa del momento y la cotización queda como `verificado_manual`, siempre separada de las leídas por el scraper y con su evidencia enlazada. La lista "Pendientes de carga manual" (últimos 30 días) está debajo del estado de adaptadores.
+
 ## Requisitos
 
 Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`).

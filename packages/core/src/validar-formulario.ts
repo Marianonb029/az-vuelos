@@ -49,9 +49,7 @@ export const validarFormulario = (
   if (v.compararTodas) {
     if (aerolineasConAdaptador.size === 0) errores.aerolineaIata = "No hay aerolíneas con adaptador para comparar";
   } else if (v.aerolineaIata === null) errores.aerolineaIata = "Elegí una aerolínea";
-  else if (!aerolineasConAdaptador.has(v.aerolineaIata)) {
-    errores.aerolineaIata = "Esta aerolínea no tiene adaptador disponible";
-  }
+  // Una aerolínea sin adaptador es válida: la búsqueda queda pendiente de carga manual.
 
   if (v.origenIata === null) errores.origenIata = "Elegí un aeropuerto de origen";
 

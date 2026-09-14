@@ -11,6 +11,9 @@ export const repoBusquedas = (db: Db) => {
   const porId = db.prepare("SELECT datos FROM busquedas WHERE id = ?");
   const actualizar = db.prepare("UPDATE busquedas SET estado = ?, datos = ? WHERE id = ?");
   const porEstados = db.prepare("SELECT datos FROM busquedas WHERE estado IN (?, ?) ORDER BY creada_en");
+  const pendientesManual = db.prepare(
+    "SELECT datos FROM busquedas WHERE estado IN ('manual_pendiente', 'bloqueada', 'fallida') AND creada_en >= ? ORDER BY creada_en DESC",
+  );
 
   return {
     crear(b: Busqueda) {
@@ -19,6 +22,10 @@ export const repoBusquedas = (db: Db) => {
     },
     enCurso(): Busqueda[] {
       return (porEstados.all("pendiente", "corriendo") as Fila[]).map((f) => Busqueda.parse(JSON.parse(f.datos)));
+    },
+    // Búsquedas que hoy no tienen precio y esperan una lectura manual: sin adaptador, bloqueadas o fallidas.
+    pendientesDeCargaManual(desdeIso: string): Busqueda[] {
+      return (pendientesManual.all(desdeIso) as Fila[]).map((f) => Busqueda.parse(JSON.parse(f.datos)));
     },
     obtener(id: string): Busqueda | null {
       const fila = porId.get(id) as Fila | undefined;

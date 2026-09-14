@@ -10,6 +10,7 @@ import { rutasEspacio } from "./rutas/espacio";
 import { rutasEvidencia } from "./rutas/evidencia";
 import { rutasExploraciones } from "./rutas/exploraciones";
 import { rutasProgreso } from "./rutas/progreso";
+import type { DependenciasCargaManual } from "./servicios/carga-manual";
 import type { ServicioEspacio } from "./servicios/espacio";
 import type { ServicioFeriados } from "./servicios/feriados";
 import type { Eventos } from "./servicios/eventos";
@@ -21,17 +22,19 @@ export interface OpcionesApp {
   ejecutar: (busquedaId: string) => void;
   espacio: ServicioEspacio;
   feriados: ServicioFeriados;
+  cargaManual: Pick<DependenciasCargaManual, "obtenerTablaFx" | "nombreAerolinea" | "notificar">;
 }
 
 export const crearApp = (op: OpcionesApp) => {
-  const app = Fastify({ logger: false });
+  // 12 MB: la carga manual trae la captura en base64 (tope real de 8 MB de imagen).
+  const app = Fastify({ logger: false, bodyLimit: 12 * 1024 * 1024 });
   const busquedas = repoBusquedas(op.db);
   const cotizaciones = repoCotizaciones(op.db);
   const bloqueos = repoBloqueos(op.db);
 
   app.get("/salud", async () => ({ ok: true }));
   rutasAdaptadores(app, { cotizaciones, bloqueos });
-  rutasBusquedas(app, { busquedas, cotizaciones, ejecutar: op.ejecutar });
+  rutasBusquedas(app, { busquedas, cotizaciones, ejecutar: op.ejecutar, cargaManual: { ...op.cargaManual, directorioEvidencia: op.directorioEvidencia } });
   rutasProgreso(app, { busquedas, cotizaciones, eventos: op.eventos });
   rutasExploraciones(app, { exploraciones: repoExploraciones(op.db), busquedas, cotizaciones, eventos: op.eventos, ejecutar: op.ejecutar });
   rutasEvidencia(app, op.directorioEvidencia);

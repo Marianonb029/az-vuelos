@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { MAX_DIAS_RANGO, sumarDias } from "@az/core";
-import type { Busqueda, Cotizacion, EnvioFormulario, EstadoAdaptador, Exploracion, ValoresFormulario } from "@az/core";
+import type { Busqueda, Cotizacion, CotizacionManual, EnvioFormulario, EstadoAdaptador, Exploracion, ValoresFormulario } from "@az/core";
 import type { VerificacionPedida } from "./componentes/Combinaciones";
 import { EspacioBusqueda } from "./componentes/EspacioBusqueda";
 import { EstadoAdaptadores } from "./componentes/EstadoAdaptadores";
 import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
+import { PendientesManual } from "./componentes/PendientesManual";
 import { ResultadosComparacion } from "./componentes/ResultadosComparacion";
-import { crearBusqueda, crearExploracion, obtenerAdaptadores } from "./lib/api";
+import { crearBusqueda, crearExploracion, obtenerAdaptadores, obtenerCotizaciones, obtenerPendientesManual } from "./lib/api";
 import { aerolineas, aeropuertos } from "./lib/catalogos";
 import { hoyIso } from "./lib/hoy";
 import { suscribirExploracion, suscribirProgreso } from "./lib/progreso";
@@ -30,6 +31,7 @@ const PESTANAS: { id: Pestana; titulo: string }[] = [
 
 export const App = () => {
   const [adaptadores, setAdaptadores] = useState<EstadoAdaptador[]>([]);
+  const [pendientes, setPendientes] = useState<Busqueda[]>([]);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<Vista | null>(null);
@@ -54,6 +56,9 @@ export const App = () => {
     obtenerAdaptadores()
       .then(setAdaptadores)
       .catch((e: unknown) => setErrorApi(`No se pudo consultar la API: ${describirError(e)}`));
+    obtenerPendientesManual()
+      .then(setPendientes)
+      .catch((e: unknown) => setErrorApi(`No se pudo consultar la API: ${describirError(e)}`));
   }, [todasTerminadas]);
   const iatasConAdaptador = new Set(adaptadores.map((a) => a.iata));
 
@@ -74,6 +79,22 @@ export const App = () => {
       setErrorApi(null);
     }, onError);
   }, [clave]);
+
+  // Abre una búsqueda pendiente para cargarle el precio a mano; el SSE no aplica (ya terminó), se leen las cotizaciones.
+  const abrirPendiente = async (b: Busqueda) => {
+    setPestana("precios");
+    try {
+      setVista({ tipo: "busqueda", busqueda: b, cotizaciones: await obtenerCotizaciones(b.id) });
+    } catch (e: unknown) {
+      setErrorApi(`No se pudo abrir la búsqueda: ${describirError(e)}`);
+    }
+  };
+
+  // Tras una carga manual la búsqueda ya no está en curso: se actualiza la vista con la respuesta y la lista de pendientes.
+  const registrarCargaManual = (busqueda: Busqueda, cotizacion: CotizacionManual) => {
+    setVista((v) => (v?.tipo === "busqueda" && v.busqueda.id === busqueda.id ? { tipo: "busqueda", busqueda, cotizaciones: [...v.cotizaciones, cotizacion] } : v));
+    setPendientes((lista) => lista.filter((p) => p.id !== busqueda.id));
+  };
 
   const enviar = async (envio: EnvioFormulario) => {
     setEnviando(true);
@@ -134,8 +155,9 @@ export const App = () => {
           <p className="mt-3 text-sm text-slate-500">No hay adaptadores de aerolínea registrados todavía.</p>
         )}
         {adaptadores.length > 0 && (
-          <div className="mt-4">
+          <div className="mt-4 grid gap-3">
             <EstadoAdaptadores adaptadores={adaptadores} />
+            <PendientesManual pendientes={pendientes} nombres={new Map(aerolineas.map((a) => [a.iata, a.nombre]))} onAbrir={(b) => void abrirPendiente(b)} />
           </div>
         )}
         {errorApi && (
@@ -151,6 +173,7 @@ export const App = () => {
             busqueda={vista.busqueda}
             cotizaciones={vista.cotizaciones}
             onReintentar={() => ultimoEnvio && void enviar(ultimoEnvio)}
+            onCargaManual={registrarCargaManual}
           />
         </section>
       )}

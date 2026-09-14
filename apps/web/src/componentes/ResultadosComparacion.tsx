@@ -1,5 +1,6 @@
-import { combinaciones, esVerificada, fechaCorta, fechaHoraCorta } from "@az/core";
-import type { Busqueda, Cotizacion, CotizacionNoVerificada } from "@az/core";
+import { combinaciones, esManual, esNoVerificada, esVerificada, fechaCorta, fechaHoraCorta } from "@az/core";
+import type { Busqueda, Cotizacion } from "@az/core";
+import { CotizacionesManuales } from "./CotizacionesManuales";
 import { TablaResultados } from "./TablaResultados";
 
 interface Props {
@@ -18,6 +19,7 @@ const ETIQUETA_ESTADO: Record<Busqueda["estado"], string> = {
   parcial: "parcial",
   fallida: "falló",
   bloqueada: "bloqueada",
+  manual_pendiente: "carga manual pendiente",
 };
 
 const COLOR_ESTADO: Record<Busqueda["estado"], string> = {
@@ -27,6 +29,7 @@ const COLOR_ESTADO: Record<Busqueda["estado"], string> = {
   parcial: "bg-amber-100 text-amber-900",
   fallida: "bg-red-100 text-red-900",
   bloqueada: "bg-red-100 text-red-900",
+  manual_pendiente: "bg-violet-100 text-violet-900",
 };
 
 const etiquetaCombinacion = (fechaIda: string, fechaVuelta: string | null) =>
@@ -49,7 +52,8 @@ const EstadoAerolinea = ({ b, hechas, nombre }: { b: Busqueda; hechas: number; n
 
 export const ResultadosComparacion = ({ busquedas, cotizaciones, nombres }: Props) => {
   const verificadas = cotizaciones.filter(esVerificada);
-  const noVerificadas = cotizaciones.filter((c): c is CotizacionNoVerificada => !esVerificada(c));
+  const manuales = cotizaciones.filter(esManual);
+  const noVerificadas = cotizaciones.filter(esNoVerificada);
   const total = busquedas.reduce((suma, b) => suma + combinaciones(b).length, 0);
   const corriendo = busquedas.some(enCurso);
   const nombreDe = (b: Busqueda) => nombres.get(b.aerolineaIata) ?? b.aerolineaIata;
@@ -68,8 +72,9 @@ export const ResultadosComparacion = ({ busquedas, cotizaciones, nombres }: Prop
       </section>
 
       {verificadas.length > 0 && <TablaResultados cotizaciones={verificadas} mostrarAerolinea />}
+      {manuales.length > 0 && <CotizacionesManuales cotizaciones={manuales} mostrarAerolinea />}
 
-      {!corriendo && verificadas.length === 0 && (
+      {!corriendo && verificadas.length === 0 && manuales.length === 0 && (
         <section className="rounded-md border border-slate-200 p-4 text-sm text-slate-700">
           <p className="font-medium">Ninguna aerolínea publicó vuelos verificables para esta combinación.</p>
         </section>

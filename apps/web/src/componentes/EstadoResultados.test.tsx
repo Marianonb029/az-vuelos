@@ -13,18 +13,18 @@ const con = (estado: Busqueda["estado"], motivoFallo: string | null = null, avis
 
 describe("EstadoResultados", () => {
   it("cargando: progreso real por combinación", () => {
-    render(<EstadoResultados busqueda={con("corriendo")} cotizaciones={[cotizacionVerificada]} onReintentar={() => {}} />);
+    render(<EstadoResultados busqueda={con("corriendo")} cotizaciones={[cotizacionVerificada]} onReintentar={() => {}} onCargaManual={() => {}} />);
     expect(screen.getByRole("status").textContent).toContain("Verificando 1 de 3 fechas");
     expect(screen.getAllByRole("row").length).toBeGreaterThan(1);
   });
 
   it("cargando con aviso de captcha: lo muestra para que la persona lo resuelva", () => {
-    render(<EstadoResultados busqueda={con("corriendo", null, "Captcha en jetsmart.com: resolvelo en la ventana de Chrome")} cotizaciones={[]} onReintentar={() => {}} />);
+    render(<EstadoResultados busqueda={con("corriendo", null, "Captcha en jetsmart.com: resolvelo en la ventana de Chrome")} cotizaciones={[]} onReintentar={() => {}} onCargaManual={() => {}} />);
     expect(screen.getByRole("status").textContent).toContain("Captcha en jetsmart.com");
   });
 
   it("vacío: mensaje con las fechas consultadas", () => {
-    render(<EstadoResultados busqueda={con("completa")} cotizaciones={[]} onReintentar={() => {}} />);
+    render(<EstadoResultados busqueda={con("completa")} cotizaciones={[]} onReintentar={() => {}} onCargaManual={() => {}} />);
     expect(screen.getByText("No se encontraron vuelos publicados para esta combinación.")).toBeTruthy();
     expect(screen.getByText(/Fechas consultadas/).textContent).toContain("01/01/2027 → 15/01/2027, 02/01/2027 → 15/01/2027");
   });
@@ -34,7 +34,7 @@ describe("EstadoResultados", () => {
       <EstadoResultados
         busqueda={con("parcial")}
         cotizaciones={[cotizacionVerificada, cotizacionErrorLectura]}
-        onReintentar={() => {}}
+        onReintentar={() => {}} onCargaManual={() => {}}
       />,
     );
     expect(screen.getAllByRole("row").length).toBe(2);
@@ -49,7 +49,7 @@ describe("EstadoResultados", () => {
       <EstadoResultados
         busqueda={con("bloqueada", "Challenge de Cloudflare")}
         cotizaciones={[{ ...cotizacionErrorLectura, estado: "bloqueado", motivo: "captcha" }]}
-        onReintentar={reintentar}
+        onReintentar={reintentar} onCargaManual={() => {}}
       />,
     );
     const alerta = screen.getByRole("alert");

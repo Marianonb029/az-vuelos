@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { z } from "zod";
+import { Aerolinea } from "@az/core";
 import { abrirNavegador, adaptadorPorIata } from "@az/scraper";
 import { crearApp } from "./app";
 import { config } from "./config";
@@ -49,7 +53,17 @@ for (const b of busquedas.enCurso()) {
 }
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
-const app = crearApp({ db, directorioEvidencia: config.directorioEvidencia, eventos, ejecutar: encolar, espacio, feriados: crearServicioFeriados() });
+// Nombres del catálogo para las cotizaciones manuales de aerolíneas sin adaptador.
+const aerolineas = new Map(z.array(Aerolinea).parse(JSON.parse(readFileSync(resolve(config.directorioDatos, "airlines.json"), "utf8"))).map((a) => [a.iata, a.nombre]));
+const app = crearApp({
+  db,
+  directorioEvidencia: config.directorioEvidencia,
+  eventos,
+  ejecutar: encolar,
+  espacio,
+  feriados: crearServicioFeriados(),
+  cargaManual: { obtenerTablaFx, nombreAerolinea: (iata) => aerolineas.get(iata) ?? null, notificar: eventos.notificar },
+});
 
 app.listen({ port: config.puerto, host: "127.0.0.1" }).then((direccion) => {
   console.log(`AZ Vuelos API escuchando en ${direccion}`);

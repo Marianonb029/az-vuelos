@@ -59,10 +59,8 @@ describe("validarFormulario", () => {
     expect(sinAdaptadores.ok).toBe(false);
   });
 
-  it("aerolínea sin adaptador", () => {
-    expect(errores({ ...completo, aerolineaIata: "LA" }).aerolineaIata).toBe(
-      "Esta aerolínea no tiene adaptador disponible",
-    );
+  it("aerolínea sin adaptador: válida, queda para carga manual", () => {
+    expect(errores({ ...completo, aerolineaIata: "LA" }).aerolineaIata).toBeUndefined();
   });
 
   it("destino igual a origen", () => {

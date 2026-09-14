@@ -50,15 +50,14 @@ const Fila = ({ c, nombres, adaptadores, onVerificar }: { c: Combinacion; nombre
       {c.notaTraslado ?? "sin traslado"}
     </td>
     <td className="py-1 pr-3">
-      {adaptadores.has(c.aerolinea) && (
-        <button
-          type="button"
-          onClick={() => onVerificar({ aerolineaIata: c.aerolinea, origenIata: c.origen, destinoIata: c.destino, desde: c.ventanaIda.desde, hasta: c.ventanaIda.hasta })}
-          className="whitespace-nowrap rounded-md border border-sky-600 px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50"
-        >
-          Verificar en el sitio oficial
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => onVerificar({ aerolineaIata: c.aerolinea, origenIata: c.origen, destinoIata: c.destino, desde: c.ventanaIda.desde, hasta: c.ventanaIda.hasta })}
+        title={adaptadores.has(c.aerolinea) ? "Abre la búsqueda de precios con esta combinación" : "Sin adaptador: la búsqueda queda pendiente de cargar el precio a mano"}
+        className={`whitespace-nowrap rounded-md border px-2 py-1 text-xs font-medium ${adaptadores.has(c.aerolinea) ? "border-sky-600 text-sky-700 hover:bg-sky-50" : "border-violet-500 text-violet-800 hover:bg-violet-50"}`}
+      >
+        {adaptadores.has(c.aerolinea) ? "Verificar en el sitio oficial" : "Cargar precio a mano"}
+      </button>
     </td>
   </tr>
 );

@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { Busqueda, EstadoAdaptador, Exploracion } from "@az/core";
-import type { NuevaBusqueda, NuevaExploracion } from "@az/core";
+import { Busqueda, Cotizacion, CotizacionManual, EstadoAdaptador, Exploracion } from "@az/core";
+import type { CargaManual, NuevaBusqueda, NuevaExploracion } from "@az/core";
 import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
 
 const BASE = "/api";
@@ -23,6 +23,17 @@ export const crearBusqueda = (nueva: NuevaBusqueda) =>
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(nueva),
+  });
+
+export const obtenerBusqueda = (id: string) => pedir(Busqueda, `/busquedas/${id}`);
+export const obtenerCotizaciones = (busquedaId: string) => pedir(z.array(Cotizacion), `/busquedas/${busquedaId}/cotizaciones`);
+export const obtenerPendientesManual = () => pedir(z.array(Busqueda), "/busquedas/pendientes-manual");
+
+export const cargarManual = (busquedaId: string, carga: CargaManual) =>
+  pedir(z.object({ busqueda: Busqueda, cotizacion: CotizacionManual }), `/busquedas/${busquedaId}/manual`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(carga),
   });
 
 export const crearExploracion = (nueva: NuevaExploracion) =>

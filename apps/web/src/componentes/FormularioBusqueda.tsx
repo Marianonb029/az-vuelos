@@ -60,8 +60,8 @@ export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, 
           clave: a.iata,
           valor: a,
           etiqueta: etiquetaAerolinea(a),
-          deshabilitada: !disponible,
-          ...(disponible ? { marca: "adaptador" } : { tooltip: "adaptador no disponible" }),
+          // Sin adaptador se puede elegir igual: el precio se carga a mano desde el sitio oficial.
+          ...(disponible ? { marca: "adaptador" } : { marca: "carga manual", tooltip: "sin adaptador: el precio se carga a mano" }),
         };
       }),
     [aerolineas, adaptadores],

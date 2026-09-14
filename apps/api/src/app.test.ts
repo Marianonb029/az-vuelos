@@ -11,6 +11,7 @@ import { crearEventos } from "./servicios/eventos";
 import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
 import { repoCotizaciones } from "./repos/cotizaciones";
+import { PNG_1X1 } from "./servicios/carga-manual.test";
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
 
@@ -19,11 +20,39 @@ const armar = () => {
   const directorioEvidencia = mkdtempSync(join(tmpdir(), "az-evidencia-"));
   const ejecutar = vi.fn();
   const eventos = crearEventos();
-  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) } });
+  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) }, cargaManual: { obtenerTablaFx: vi.fn(async () => ({ fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z", usdA: { EUR: 0.926441 } })), nombreAerolinea: () => "LATAM", notificar: eventos.notificar } });
   return { app, ejecutar, eventos, directorioEvidencia, db };
 };
 
 const { id: _id, creadaEn: _c, estado: _e, motivoFallo: _m, aviso: _a, ...nueva } = busquedaIda;
+
+describe("carga manual", () => {
+  it("lista las pendientes, registra el precio con evidencia y sirve la captura subida", async () => {
+    const { app, db } = armar();
+    repoBusquedas(db).crear({ ...busquedaIda, aerolineaIata: "LA", estado: "manual_pendiente", creadaEn: new Date().toISOString() });
+    repoBusquedas(db).crear({ ...busquedaIdaYVuelta, estado: "completa", creadaEn: new Date().toISOString() });
+    const pendientes = (await app.inject({ method: "GET", url: "/busquedas/pendientes-manual" })).json() as { id: string }[];
+    expect(pendientes.map((b) => b.id)).toEqual([busquedaIda.id]);
+
+    const carga = { fechaIda: "2027-01-01", fechaVuelta: null, monto: 780, moneda: "EUR", url: "https://www.latamairlines.com/x", capturadoEn: "2026-09-14T12:00:00.000Z", nota: "", imagen: { tipo: "image/png", base64: PNG_1X1 } };
+    const res = await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/manual`, payload: carga });
+    expect(res.statusCode).toBe(201);
+    const { busqueda, cotizacion } = res.json() as { busqueda: { estado: string }; cotizacion: { estado: string; evidencia: { screenshotPath: string }; precio: { montoUsd: number } } };
+    expect(busqueda.estado).toBe("parcial");
+    expect(cotizacion.estado).toBe("verificado_manual");
+    expect(cotizacion.precio.montoUsd).toBeCloseTo(841.93, 1);
+    const imagen = await app.inject({ method: "GET", url: `/evidencia/${cotizacion.evidencia.screenshotPath}` });
+    expect(imagen.statusCode).toBe(200);
+    expect(imagen.headers["content-type"]).toContain("image/png");
+    expect((await app.inject({ method: "GET", url: `/busquedas/${busquedaIda.id}/cotizaciones` })).json()).toHaveLength(1);
+
+    const invalida = await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/manual`, payload: { ...carga, url: "no-es-url", monto: 0 } });
+    expect(invalida.statusCode).toBe(400);
+    expect((invalida.json() as { error: string }).error).toContain("monto");
+    expect((await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/manual`, payload: { ...carga, fechaIda: "2027-06-01" } })).statusCode).toBe(400);
+    await app.close();
+  });
+});
 
 describe("API", () => {
   it("responde en /salud y lista adaptadores", async () => {
