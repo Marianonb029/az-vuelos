@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AerolineaRef, Busqueda, Cotizacion } from "@az/core";
+import { AerolineaRef, Busqueda } from "@az/core";
 import type { NuevaBusqueda } from "@az/core";
 
 const BASE = "/api";
@@ -18,9 +18,5 @@ export const crearBusqueda = (nueva: NuevaBusqueda) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify(nueva),
   });
-
-export const obtenerBusqueda = (id: string) => pedir(Busqueda, `/busquedas/${id}`);
-
-export const obtenerCotizaciones = (id: string) => pedir(z.array(Cotizacion), `/busquedas/${id}/cotizaciones`);
 
 export const urlEvidencia = (screenshotPath: string) => `${BASE}/evidencia/${screenshotPath}`;

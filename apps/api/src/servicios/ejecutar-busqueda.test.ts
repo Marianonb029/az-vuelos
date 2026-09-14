@@ -42,6 +42,8 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     adaptadorPorIata: (iata) => (iata === "IB" ? adaptador : undefined),
     directorioEvidencia,
     directorioPerfil: join(directorioEvidencia, "perfil"),
+    pausa: vi.fn(async () => {}),
+    notificar: vi.fn(),
   };
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("User-agent: *\nDisallow: /x", { status: 200 }));
   const unaFecha = { desde: busquedaIda.rangoIda.desde, hasta: busquedaIda.rangoIda.desde };
@@ -108,6 +110,35 @@ describe("ejecutarBusqueda", () => {
     expect(b?.motivoFallo).toBe("HTTP 403");
     expect(buscar).toHaveBeenCalledTimes(1);
     expect(dep.cotizaciones.listarPorBusqueda(busquedaIda.id)[0]?.estado).toBe("bloqueado");
+  });
+
+  it("rango de fechas: una consulta por combinación, pausa entre consultas y aviso por cada cambio", async () => {
+    const fechas: string[] = [];
+    const { dep } = armar(async (p) => {
+      fechas.push(p.fechaIda);
+      return verificado(p.rutaScreenshot);
+    });
+    const id = "7e6d5c4b-3a29-4f18-9e07-6d5c4b3a2918";
+    dep.busquedas.crear({ ...busquedaIda, id, rangoIda: { desde: "2027-01-01", hasta: "2027-01-03" } });
+    await ejecutarBusqueda(dep, id);
+    expect(fechas).toEqual(["2027-01-01", "2027-01-02", "2027-01-03"]);
+    expect(dep.pausa).toHaveBeenCalledTimes(2);
+    expect(dep.cotizaciones.listarPorBusqueda(id)).toHaveLength(3);
+    expect(dep.busquedas.obtener(id)?.estado).toBe("completa");
+    // corriendo + 3 cotizaciones + cierre
+    expect(dep.notificar).toHaveBeenCalledTimes(5);
+  });
+
+  it("rango con una fecha fallida → parcial", async () => {
+    const { dep } = armar(async (p) => {
+      if (p.fechaIda === "2027-01-02") throw new Error("sin selector");
+      return verificado(p.rutaScreenshot);
+    });
+    const id = "8f7e6d5c-4b3a-4029-8f1e-7d6c5b4a3928";
+    dep.busquedas.crear({ ...busquedaIda, id, rangoIda: { desde: "2027-01-01", hasta: "2027-01-03" } });
+    await ejecutarBusqueda(dep, id);
+    expect(dep.busquedas.obtener(id)?.estado).toBe("parcial");
+    expect(dep.cotizaciones.listarPorBusqueda(id).map((c) => c.estado)).toEqual(["verificado", "error_lectura", "verificado"]);
   });
 
   it("sin adaptador → fallida", async () => {

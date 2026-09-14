@@ -2,13 +2,10 @@ import { useEffect, useState } from "react";
 import type { Busqueda, Cotizacion, NuevaBusqueda } from "@az/core";
 import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
-import { crearBusqueda, obtenerAdaptadores, obtenerBusqueda, obtenerCotizaciones } from "./lib/api";
+import { crearBusqueda, obtenerAdaptadores } from "./lib/api";
 import { aerolineas, aeropuertos } from "./lib/catalogos";
 import { hoyIso } from "./lib/hoy";
-
-const INTERVALO_SONDEO_MS = 2500;
-
-const enCurso = (b: Busqueda) => b.estado === "pendiente" || b.estado === "corriendo";
+import { suscribirProgreso } from "./lib/progreso";
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -26,26 +23,20 @@ export const App = () => {
       .catch((e: unknown) => setErrorApi(`No se pudo consultar la API: ${describirError(e)}`));
   }, []);
 
-  // Mientras la búsqueda corre, se sondea el estado y las cotizaciones leídas hasta ahora.
+  // Progreso en vivo: la API envía la búsqueda y sus cotizaciones en cada cambio.
+  const busquedaId = busqueda?.id ?? null;
   useEffect(() => {
-    if (!busqueda || !enCurso(busqueda)) return;
-    let activo = true;
-    const sondear = async () => {
-      try {
-        const [b, c] = await Promise.all([obtenerBusqueda(busqueda.id), obtenerCotizaciones(busqueda.id)]);
-        if (!activo) return;
-        setCotizaciones(c);
-        setBusqueda(b);
-      } catch (e: unknown) {
-        if (activo) setErrorApi(`Se perdió el contacto con la API: ${describirError(e)}`);
-      }
-    };
-    const temporizador = setInterval(() => void sondear(), INTERVALO_SONDEO_MS);
-    return () => {
-      activo = false;
-      clearInterval(temporizador);
-    };
-  }, [busqueda]);
+    if (busquedaId === null) return;
+    return suscribirProgreso(
+      busquedaId,
+      (e) => {
+        setBusqueda(e.busqueda);
+        setCotizaciones(e.cotizaciones);
+        setErrorApi(null);
+      },
+      setErrorApi,
+    );
+  }, [busquedaId]);
 
   const enviar = async (nueva: NuevaBusqueda) => {
     setEnviando(true);

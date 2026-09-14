@@ -17,7 +17,16 @@ export interface Dependencias {
   adaptadorPorIata: (iata: string) => AdaptadorAerolinea | undefined;
   directorioEvidencia: string;
   directorioPerfil: string;
+  // Espera entre consultas al mismo dominio (3–8 s aleatorios en producción).
+  pausa: () => Promise<void>;
+  notificar: (busquedaId: string) => void;
 }
+
+export const PAUSA_MIN_MS = 3_000;
+export const PAUSA_MAX_MS = 8_000;
+
+export const pausaAleatoria = () =>
+  new Promise<void>((r) => setTimeout(r, PAUSA_MIN_MS + Math.random() * (PAUSA_MAX_MS - PAUSA_MIN_MS)));
 
 const aRelativa = (base: string, ruta: string | null) => (ruta === null ? null : relative(base, ruta).split("\\").join("/"));
 
@@ -105,17 +114,19 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
     return;
   }
   dep.busquedas.cambiarEstado(b.id, "corriendo");
+  dep.notificar(b.id);
 
   let tabla: TablaFx | null = null;
   const tablaFx = async () => (tabla ??= await dep.obtenerTablaFx());
 
   let contexto: ContextoNavegador | null = null;
   try {
-    contexto = await dep.abrirNavegador(dep.directorioPerfil);
+    contexto = await dep.abrirNavegador(join(dep.directorioPerfil, adaptador.dominios[0] ?? adaptador.iata));
     const page = contexto.pages()[0] ?? (await contexto.newPage());
     const combos = combinaciones(b);
     let fallos = 0;
     for (const [i, combo] of combos.entries()) {
+      if (i > 0) await dep.pausa();
       let resultado: ResultadoAdaptador;
       try {
         resultado = await consultarCombinacion(b, adaptador, combo, i + 1, page, dep);
@@ -125,10 +136,12 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
         const bloqueada = await aCotizacion(b, adaptador, combo, { estado: "bloqueado", motivo: e.message, evidencia }, tablaFx, dep);
         dep.cotizaciones.crear(bloqueada);
         dep.busquedas.cambiarEstado(b.id, "bloqueada", e.message);
+        dep.notificar(b.id);
         return;
       }
       const cotizacion = await aCotizacion(b, adaptador, combo, resultado, tablaFx, dep);
       dep.cotizaciones.crear(cotizacion);
+      dep.notificar(b.id);
       if (cotizacion.estado === "error_lectura") fallos++;
     }
     if (fallos === combos.length) dep.busquedas.cambiarEstado(b.id, "fallida", "Ninguna fecha pudo leerse");
@@ -137,5 +150,6 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
     dep.busquedas.cambiarEstado(b.id, "fallida", mensaje(e));
   } finally {
     await contexto?.close().catch(() => undefined);
+    dep.notificar(b.id);
   }
 };

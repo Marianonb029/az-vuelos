@@ -6,13 +6,16 @@ import { busquedaIda } from "@az/core/fixtures";
 import { crearApp } from "./app";
 import { abrirDb } from "./db/conexion";
 import { config } from "./config";
+import { crearEventos } from "./servicios/eventos";
+import { repoBusquedas } from "./repos/busquedas";
 
 const armar = () => {
   const db = abrirDb(":memory:", config.directorioMigraciones);
   const directorioEvidencia = mkdtempSync(join(tmpdir(), "az-evidencia-"));
   const ejecutar = vi.fn();
-  const app = crearApp({ db, directorioEvidencia, ejecutar });
-  return { app, ejecutar, directorioEvidencia };
+  const eventos = crearEventos();
+  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar });
+  return { app, ejecutar, eventos, directorioEvidencia, db };
 };
 
 const { id: _id, creadaEn: _c, estado: _e, motivoFallo: _m, ...nueva } = busquedaIda;
@@ -48,6 +51,34 @@ describe("API", () => {
     expect(res.statusCode).toBe(400);
     expect(ejecutar).not.toHaveBeenCalled();
     expect((await app.inject({ method: "GET", url: "/busquedas/no-existe" })).statusCode).toBe(404);
+    await app.close();
+  });
+
+  it("emite el progreso por SSE hasta que la búsqueda termina", async () => {
+    const { app, eventos, db } = armar();
+    const creada = (await app.inject({ method: "POST", url: "/busquedas", payload: nueva })).json() as { id: string };
+    const direccion = await app.listen({ port: 0, host: "127.0.0.1" });
+
+    const res = await fetch(`${direccion}/busquedas/${creada.id}/eventos`);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    const lector = res.body?.getReader();
+    const decodificador = new TextDecoder();
+    const leerEvento = async () => {
+      const { value } = (await lector?.read()) ?? {};
+      const datos = /data: (.*)\n\n/.exec(decodificador.decode(value));
+      return JSON.parse(datos?.[1] ?? "{}") as { busqueda: { estado: string }; cotizaciones: unknown[] };
+    };
+
+    expect((await leerEvento()).busqueda.estado).toBe("pendiente");
+
+    repoBusquedas(db).cambiarEstado(creada.id, "corriendo");
+    eventos.notificar(creada.id);
+    expect((await leerEvento()).busqueda.estado).toBe("corriendo");
+
+    repoBusquedas(db).cambiarEstado(creada.id, "completa");
+    eventos.notificar(creada.id);
+    expect((await leerEvento()).busqueda.estado).toBe("completa");
+    expect((await lector?.read())?.done).toBe(true);
     await app.close();
   });
 

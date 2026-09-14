@@ -72,6 +72,13 @@ El monto original también se redondea hacia arriba.
 - La UI sondea `GET /busquedas/:id` cada 2,5 s mientras la búsqueda corre; el progreso en vivo (SSE) llega en Fase 3.
 - Las búsquedas se ejecutan de a una (cola en `servidor.ts`) porque comparten el perfil de Chrome; la concurrencia por dominio llega en Fase 3.
 
+## Fase 3 (14/09/2026)
+
+- **Ida y vuelta en AR:** el deep link `ROUND_TRIP` muestra las secciones Ida y Vuelta juntas. Se elige la ida más barata que incluye el equipaje, se hace clic, se relee la sección de vuelta (algunas celdas pasan a "no combinable"), se elige la vuelta más barata y se hace clic. El precio verificado es el **Total** que el sitio muestra al pie con ambas seleccionadas (selector `[class*="styled__TotalAmount-"]`), no la suma de celdas. Equipaje = lo más restrictivo de los dos tramos.
+- **Cola en proceso** (`api/servicios/cola.ts`): hasta 2 búsquedas a la vez, nunca dos sobre el mismo dominio; un perfil de Chrome por dominio. Entre consultas de una misma búsqueda, pausa aleatoria de 3–8 s.
+- **Progreso en vivo por SSE** (`GET /busquedas/:id/eventos`): cada cambio envía la búsqueda con todas sus cotizaciones; el stream se cierra al terminar. Reemplaza al sondeo de Fase 2.
+- Estado final: `completa` si ninguna fecha dio `error_lectura`, `parcial` si alguna, `fallida` si todas; `sin_disponibilidad` no cuenta como fallo.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

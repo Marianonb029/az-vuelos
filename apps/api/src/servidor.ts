@@ -5,13 +5,17 @@ import { abrirDb } from "./db/conexion";
 import { repoBusquedas } from "./repos/busquedas";
 import { repoCotizaciones } from "./repos/cotizaciones";
 import { repoRegistros } from "./repos/registros";
-import { ejecutarBusqueda } from "./servicios/ejecutar-busqueda";
+import { crearCola } from "./servicios/cola";
+import { ejecutarBusqueda, pausaAleatoria } from "./servicios/ejecutar-busqueda";
+import { crearEventos } from "./servicios/eventos";
 import { obtenerTablaFx } from "./servicios/fx";
 
 const db = abrirDb(config.rutaDb, config.directorioMigraciones);
+const eventos = crearEventos();
+const busquedas = repoBusquedas(db);
 
 const dependencias = {
-  busquedas: repoBusquedas(db),
+  busquedas,
   cotizaciones: repoCotizaciones(db),
   registros: repoRegistros(db),
   obtenerTablaFx,
@@ -19,15 +23,19 @@ const dependencias = {
   adaptadorPorIata,
   directorioEvidencia: config.directorioEvidencia,
   directorioPerfil: config.directorioPerfilNavegador,
+  pausa: pausaAleatoria,
+  notificar: eventos.notificar,
 };
 
-// Un solo perfil de Chrome: las búsquedas corren de a una, en orden de llegada.
-let cola: Promise<void> = Promise.resolve();
+const cola = crearCola((busquedaId) => ejecutarBusqueda(dependencias, busquedaId));
+
 const encolar = (busquedaId: string) => {
-  cola = cola.then(() => ejecutarBusqueda(dependencias, busquedaId)).catch((e: unknown) => console.error(e));
+  const b = busquedas.obtener(busquedaId);
+  const dominio = adaptadorPorIata(b?.aerolineaIata ?? "")?.dominios[0] ?? b?.aerolineaIata ?? busquedaId;
+  cola.encolar({ busquedaId, dominio });
 };
 
-const app = crearApp({ db, directorioEvidencia: config.directorioEvidencia, ejecutar: encolar });
+const app = crearApp({ db, directorioEvidencia: config.directorioEvidencia, eventos, ejecutar: encolar });
 
 app.listen({ port: config.puerto, host: "127.0.0.1" }).then((direccion) => {
   console.log(`AZ Vuelos API escuchando en ${direccion}`);

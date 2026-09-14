@@ -26,10 +26,18 @@ export interface FilaOferta {
   monedas: (string | null)[];
 }
 
-export interface SnapshotResultados {
+// Una sección de resultados: "Ida" o "Vuelta", con su matriz de familias y sus filas.
+export interface SeccionResultados {
+  tipo: string;
+  fecha: string;
   familias: string[];
   condiciones: CondicionesFamilia[];
   filas: FilaOferta[];
+}
+
+export interface SnapshotResultados {
+  secciones: SeccionResultados[];
+  total: string | null;
   mensaje: string | null;
 }
 
@@ -51,49 +59,61 @@ export const leerResultados = (): SnapshotResultados => {
     return { texto: texto(e.querySelector('[class*="CellLabel"]')), icono };
   };
 
-  const familias = Array.from(document.querySelectorAll('[class*="FareFamilyLabelItem"]')).map(texto);
+  const leerSeccion = (seccion: Element): SeccionResultados => {
+    const familias = Array.from(seccion.querySelectorAll('[class*="FareFamilyLabelItem"]')).map(texto);
 
-  const columnas = Array.from(document.querySelectorAll('[class*="FlightConditionsTableColumn"]')).filter(
-    (c) => !c.querySelector('[class*="FlightConditionsTableColumn"]'),
-  );
-  const columnaTitulos = columnas.find((c) => c.querySelector('[class*="HeaderTitle"]'));
-  const titulos = columnaTitulos
-    ? Array.from(columnaTitulos.querySelectorAll('[class*="HeaderTitle"]')).map((t) => texto(t).toLowerCase())
-    : [];
-  const fila = (nombre: string) => titulos.findIndex((t) => t.startsWith(nombre));
-  const iPersonal = fila("artículo personal");
-  const iMano = fila("equipaje de mano");
-  const iBodega = fila("equipaje en bodega");
-  const condiciones: CondicionesFamilia[] = columnas
-    .filter((c) => c !== columnaTitulos)
-    .map((c) => {
-      const celdas = Array.from(c.querySelectorAll('[role="cell"]'));
-      const vacia: Celda = { texto: "", icono: null };
-      const en = (i: number) => (i >= 0 && celdas[i] ? celda(celdas[i]) : vacia);
-      return { itemPersonal: en(iPersonal), mano: en(iMano), bodega: en(iBodega) };
+    const columnas = Array.from(seccion.querySelectorAll('[class*="FlightConditionsTableColumn"]')).filter(
+      (c) => !c.querySelector('[class*="FlightConditionsTableColumn"]'),
+    );
+    const columnaTitulos = columnas.find((c) => c.querySelector('[class*="HeaderTitle"]'));
+    const titulos = columnaTitulos
+      ? Array.from(columnaTitulos.querySelectorAll('[class*="HeaderTitle"]')).map((t) => texto(t).toLowerCase())
+      : [];
+    const fila = (nombre: string) => titulos.findIndex((t) => t.startsWith(nombre));
+    const iPersonal = fila("artículo personal");
+    const iMano = fila("equipaje de mano");
+    const iBodega = fila("equipaje en bodega");
+    const condiciones: CondicionesFamilia[] = columnas
+      .filter((c) => c !== columnaTitulos)
+      .map((c) => {
+        const celdas = Array.from(c.querySelectorAll('[role="cell"]'));
+        const vacia: Celda = { texto: "", icono: null };
+        const en = (i: number) => (i >= 0 && celdas[i] ? celda(celdas[i]) : vacia);
+        return { itemPersonal: en(iPersonal), mano: en(iMano), bodega: en(iBodega) };
+      });
+
+    const filas: FilaOferta[] = Array.from(seccion.querySelectorAll('[class*="FlightOfferCard__CardWrapper"]')).map((card) => {
+      const desde = card.querySelector('[class*="FlightFrom"]');
+      const hasta = card.querySelector('[class*="FlightTo"]');
+      const tarifas = Array.from(card.querySelectorAll('[class*="styled__FareContainer-"]'));
+      return {
+        salidaDia: texto(desde?.querySelector(".label-day")),
+        salidaHora: texto(desde?.querySelector(".label-hour")),
+        origen: texto(desde?.querySelector(".label-airport")),
+        llegadaDia: texto(hasta?.querySelector(".label-day")),
+        llegadaHora: texto(hasta?.querySelector(".label-hour")),
+        destino: texto(hasta?.querySelector(".label-airport")),
+        duracion: texto(card.querySelector(".total-duration-label")),
+        escalas: texto(card.querySelector(".stop-label")),
+        tarifas: tarifas.map((t) => (t.querySelector(".label-fare") ? texto(t.querySelector(".label-fare")) : null)),
+        monedas: tarifas.map((t) => (t.querySelector(".label-currency") ? texto(t.querySelector(".label-currency")) : null)),
+      };
     });
 
-  const filas: FilaOferta[] = Array.from(document.querySelectorAll('[class*="FlightOfferCard__CardWrapper"]')).map((card) => {
-    const desde = card.querySelector('[class*="FlightFrom"]');
-    const hasta = card.querySelector('[class*="FlightTo"]');
-    const tarifas = Array.from(card.querySelectorAll('[class*="styled__FareContainer-"]'));
     return {
-      salidaDia: texto(desde?.querySelector(".label-day")),
-      salidaHora: texto(desde?.querySelector(".label-hour")),
-      origen: texto(desde?.querySelector(".label-airport")),
-      llegadaDia: texto(hasta?.querySelector(".label-day")),
-      llegadaHora: texto(hasta?.querySelector(".label-hour")),
-      destino: texto(hasta?.querySelector(".label-airport")),
-      duracion: texto(card.querySelector(".total-duration-label")),
-      escalas: texto(card.querySelector(".stop-label")),
-      tarifas: tarifas.map((t) => (t.querySelector(".label-fare") ? texto(t.querySelector(".label-fare")) : null)),
-      monedas: tarifas.map((t) => (t.querySelector(".label-currency") ? texto(t.querySelector(".label-currency")) : null)),
+      tipo: texto(seccion.querySelector('[class*="styled__FlightType-"]')),
+      fecha: texto(seccion.querySelector('[class*="styled__FlightDate-"]')),
+      familias,
+      condiciones,
+      filas,
     };
-  });
+  };
 
+  const secciones = Array.from(document.querySelectorAll('[class*="styled__FlightsOffersWrapper-"]')).map(leerSeccion);
+  const total = document.querySelector('[class*="styled__TotalAmount-"]');
   const cuerpo = document.body.innerText;
   const sinVuelos = /No tenemos vuelos disponibles|No hay vuelos disponibles|No hay disponibilidad de vuelos/i.exec(cuerpo);
-  return { familias, condiciones, filas, mensaje: sinVuelos ? sinVuelos[0] : null };
+  return { secciones, total: total ? texto(total) : null, mensaje: sinVuelos ? sinVuelos[0] : null };
 };
 
 export const leerItinerario = (): SegmentoItinerario[] => {
