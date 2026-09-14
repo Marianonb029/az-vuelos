@@ -1,0 +1,13 @@
+{
+  "descargadoEn": "2026-09-14T02:51:34.573Z",
+  "aerolineas": {
+    "fuente": "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv",
+    "filtro": "IATA de 2 caracteres, sin fecha de fin de validez, una por código (mayor frecuencia de vuelos)",
+    "registros": 1089
+  },
+  "aeropuertos": {
+    "fuente": "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat",
+    "filtro": "IATA de 3 letras, tipo 'airport', uno por código",
+    "registros": 6071
+  }
+}

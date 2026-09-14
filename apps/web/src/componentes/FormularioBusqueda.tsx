@@ -1,0 +1,177 @@
+import { useCallback, useState } from "react";
+import type { FormEvent } from "react";
+import {
+  MAX_DIAS_RANGO,
+  buscarAerolineas,
+  buscarAeropuertos,
+  etiquetaAerolinea,
+  etiquetaAeropuerto,
+  validarFormulario,
+  valoresIniciales,
+} from "@az/core";
+import type { Aerolinea, Aeropuerto, ErroresFormulario, NuevaBusqueda, ValoresFormulario } from "@az/core";
+import { CalendarioRango } from "./CalendarioRango";
+import { Campo } from "./Campo";
+import { Combobox } from "./Combobox";
+import type { Opcion } from "./Combobox";
+import { Toggle } from "./Toggle";
+
+interface Props {
+  aerolineas: readonly Aerolinea[];
+  aeropuertos: readonly Aeropuerto[];
+  adaptadores: ReadonlySet<string>;
+  hoy: string;
+  enviando: boolean;
+  onEnviar: (busqueda: NuevaBusqueda) => void;
+}
+
+export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, enviando, onEnviar }: Props) => {
+  const [valores, setValores] = useState<ValoresFormulario>(valoresIniciales);
+  const [errores, setErrores] = useState<ErroresFormulario>({});
+  const [intentado, setIntentado] = useState(false);
+
+  const actualizar = (cambio: Partial<ValoresFormulario>) => {
+    const nuevos = { ...valores, ...cambio };
+    setValores(nuevos);
+    if (intentado) {
+      const r = validarFormulario(nuevos, hoy, adaptadores);
+      setErrores(r.ok ? {} : r.errores);
+    }
+  };
+
+  const enviar = (e: FormEvent) => {
+    e.preventDefault();
+    setIntentado(true);
+    const r = validarFormulario(valores, hoy, adaptadores);
+    if (r.ok) {
+      setErrores({});
+      onEnviar(r.busqueda);
+    } else {
+      setErrores(r.errores);
+    }
+  };
+
+  const opcionesAerolinea = useCallback(
+    (texto: string): Opcion<Aerolinea>[] =>
+      buscarAerolineas(aerolineas, texto).map((a) => {
+        const disponible = adaptadores.has(a.iata);
+        return {
+          clave: a.iata,
+          valor: a,
+          etiqueta: etiquetaAerolinea(a),
+          deshabilitada: !disponible,
+          ...(disponible ? { marca: "adaptador" } : { tooltip: "adaptador no disponible" }),
+        };
+      }),
+    [aerolineas, adaptadores],
+  );
+
+  const opcionesAeropuerto = useCallback(
+    (texto: string): Opcion<Aeropuerto>[] =>
+      buscarAeropuertos(aeropuertos, texto).map((a) => ({ clave: a.iata, valor: a, etiqueta: etiquetaAeropuerto(a) })),
+    [aeropuertos],
+  );
+
+  const aerolinea = aerolineas.find((a) => a.iata === valores.aerolineaIata) ?? null;
+  const origen = aeropuertos.find((a) => a.iata === valores.origenIata) ?? null;
+  const destino = aeropuertos.find((a) => a.iata === valores.destinoIata) ?? null;
+  const idaYVuelta = valores.tipo === "ida_y_vuelta";
+
+  return (
+    <form onSubmit={enviar} noValidate className="grid gap-5">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Campo id="aerolinea" etiqueta="Aerolínea" error={errores.aerolineaIata}>
+          <Combobox
+            id="aerolinea"
+            placeholder="Código o nombre"
+            valor={aerolinea}
+            etiquetaValor={etiquetaAerolinea}
+            buscar={opcionesAerolinea}
+            onCambio={(a) => actualizar({ aerolineaIata: a?.iata ?? null })}
+            invalido={errores.aerolineaIata !== undefined}
+          />
+        </Campo>
+        <Campo id="origen" etiqueta="Origen" error={errores.origenIata}>
+          <Combobox
+            id="origen"
+            placeholder="Código, aeropuerto o ciudad"
+            valor={origen}
+            etiquetaValor={etiquetaAeropuerto}
+            buscar={opcionesAeropuerto}
+            onCambio={(a) => actualizar({ origenIata: a?.iata ?? null })}
+            invalido={errores.origenIata !== undefined}
+          />
+        </Campo>
+        <Campo id="destino" etiqueta="Destino" error={errores.destinoIata}>
+          <Combobox
+            id="destino"
+            placeholder="Código, aeropuerto o ciudad"
+            valor={destino}
+            etiquetaValor={etiquetaAeropuerto}
+            buscar={opcionesAeropuerto}
+            onCambio={(a) => actualizar({ destinoIata: a?.iata ?? null })}
+            invalido={errores.destinoIata !== undefined}
+          />
+        </Campo>
+      </div>
+
+      <div className="flex flex-wrap gap-6">
+        <Campo id="tipo" etiqueta="Tipo de viaje">
+          <Toggle
+            id="tipo"
+            valor={valores.tipo}
+            opciones={[
+              { valor: "ida_y_vuelta", etiqueta: "Ida y vuelta" },
+              { valor: "ida", etiqueta: "Ida" },
+            ]}
+            onCambio={(tipo) => actualizar({ tipo })}
+          />
+        </Campo>
+        <Campo id="equipaje" etiqueta="Equipaje">
+          <Toggle
+            id="equipaje"
+            valor={valores.equipaje}
+            opciones={[
+              { valor: "carry_on", etiqueta: "Carry on" },
+              { valor: "bodega", etiqueta: "Bodega" },
+            ]}
+            onCambio={(equipaje) => actualizar({ equipaje })}
+          />
+        </Campo>
+      </div>
+
+      <div className="flex flex-wrap gap-6">
+        <Campo id="fecha-ida" etiqueta={`Fecha de ida (fecha única o rango de hasta ${MAX_DIAS_RANGO} días)`} error={errores.rangoIda}>
+          <CalendarioRango
+            id="fecha-ida"
+            valor={valores.rangoIda}
+            onCambio={(rangoIda) => actualizar({ rangoIda })}
+            minimo={hoy}
+            maxDias={MAX_DIAS_RANGO}
+          />
+        </Campo>
+        {idaYVuelta && (
+          <Campo id="fecha-vuelta" etiqueta="Fecha de vuelta" error={errores.rangoVuelta}>
+            <CalendarioRango
+              id="fecha-vuelta"
+              valor={valores.rangoVuelta}
+              onCambio={(rangoVuelta) => actualizar({ rangoVuelta })}
+              minimo={valores.rangoIda?.desde ?? hoy}
+              maxDias={MAX_DIAS_RANGO}
+            />
+          </Campo>
+        )}
+      </div>
+
+      <div>
+        <button
+          type="submit"
+          disabled={enviando}
+          className="rounded-md bg-sky-600 px-5 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50"
+        >
+          {enviando ? "Iniciando búsqueda…" : "Buscar"}
+        </button>
+      </div>
+    </form>
+  );
+};

@@ -65,51 +65,62 @@ export const RangoFechas = z
     path: ["hasta"],
   });
 
+const camposBusqueda = {
+  tipo: TipoViaje,
+  aerolineaIata: IataAerolinea,
+  origenIata: IataAeropuerto,
+  destinoIata: IataAeropuerto,
+  equipaje: EquipajeSolicitado,
+  rangoIda: RangoFechas,
+  rangoVuelta: RangoFechas.nullable(),
+};
+
+type CamposBusqueda = z.infer<z.ZodObject<typeof camposBusqueda>>;
+
+const reglasBusqueda = (b: CamposBusqueda, ctx: z.RefinementCtx) => {
+  if (b.origenIata === b.destinoIata) {
+    ctx.addIssue({
+      code: "custom",
+      message: "El destino debe ser distinto del origen",
+      path: ["destinoIata"],
+    });
+  }
+  if (b.tipo === "ida" && b.rangoVuelta !== null) {
+    ctx.addIssue({
+      code: "custom",
+      message: "Una búsqueda de ida sola no lleva rango de vuelta",
+      path: ["rangoVuelta"],
+    });
+  }
+  if (b.tipo === "ida_y_vuelta") {
+    if (b.rangoVuelta === null) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Una búsqueda de ida y vuelta necesita rango de vuelta",
+        path: ["rangoVuelta"],
+      });
+    } else if (b.rangoVuelta.hasta < b.rangoIda.desde) {
+      ctx.addIssue({
+        code: "custom",
+        message: "El rango de vuelta termina antes de la primera fecha de ida",
+        path: ["rangoVuelta", "hasta"],
+      });
+    }
+  }
+};
+
+// Lo que el formulario envía; la API le asigna id, creadaEn y estado.
+export const NuevaBusqueda = z.object(camposBusqueda).superRefine(reglasBusqueda);
+
 export const Busqueda = z
   .object({
+    ...camposBusqueda,
     id: z.uuid(),
-    tipo: TipoViaje,
-    aerolineaIata: IataAerolinea,
-    origenIata: IataAeropuerto,
-    destinoIata: IataAeropuerto,
-    equipaje: EquipajeSolicitado,
-    rangoIda: RangoFechas,
-    rangoVuelta: RangoFechas.nullable(),
     creadaEn: FechaHoraIso,
     estado: EstadoBusqueda,
     motivoFallo: z.string().nullable(),
   })
-  .superRefine((b, ctx) => {
-    if (b.origenIata === b.destinoIata) {
-      ctx.addIssue({
-        code: "custom",
-        message: "El destino debe ser distinto del origen",
-        path: ["destinoIata"],
-      });
-    }
-    if (b.tipo === "ida" && b.rangoVuelta !== null) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Una búsqueda de ida sola no lleva rango de vuelta",
-        path: ["rangoVuelta"],
-      });
-    }
-    if (b.tipo === "ida_y_vuelta") {
-      if (b.rangoVuelta === null) {
-        ctx.addIssue({
-          code: "custom",
-          message: "Una búsqueda de ida y vuelta necesita rango de vuelta",
-          path: ["rangoVuelta"],
-        });
-      } else if (b.rangoVuelta.hasta < b.rangoIda.desde) {
-        ctx.addIssue({
-          code: "custom",
-          message: "El rango de vuelta termina antes de la primera fecha de ida",
-          path: ["rangoVuelta", "hasta"],
-        });
-      }
-    }
-  });
+  .superRefine(reglasBusqueda);
 
 // ---------------------------------------------------------------------------
 // Componentes de una cotización
@@ -264,6 +275,7 @@ export type EstadoBusqueda = z.infer<typeof EstadoBusqueda>;
 export type EstadoCotizacion = z.infer<typeof EstadoCotizacion>;
 export type EstadoNoVerificado = z.infer<typeof EstadoNoVerificado>;
 export type RangoFechas = z.infer<typeof RangoFechas>;
+export type NuevaBusqueda = z.infer<typeof NuevaBusqueda>;
 export type Busqueda = z.infer<typeof Busqueda>;
 export type Tramo = z.infer<typeof Tramo>;
 export type Fx = z.infer<typeof Fx>;

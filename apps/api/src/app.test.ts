@@ -9,4 +9,12 @@ describe("API", () => {
     expect(res.json()).toEqual({ ok: true });
     await app.close();
   });
+
+  it("lista los adaptadores registrados", async () => {
+    const app = crearApp();
+    const res = await app.inject({ method: "GET", url: "/adaptadores" });
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.json())).toBe(true);
+    await app.close();
+  });
 });
