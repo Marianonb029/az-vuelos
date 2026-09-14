@@ -62,6 +62,8 @@ export const ConfigEspacio = z.object({
     minSalidasSemanalesHub: z.number().int().min(0),
     // Frecuencia proxy: OpenFlights no trae frecuencias; cada registro (aerolínea, ruta) cuenta como N vuelos/semana.
     vuelosSemanalesPorRegistro: z.number().positive(),
+    // Calibración (ver DECISIONES, Fase 6.2): fracción de la frecuencia del tramo débil que rinde una conexión.
+    factorEscala: z.number().positive().max(1),
   }),
   hubs: z.array(ReglaHub),
   regiones: z.record(z.string(), z.array(z.string().length(2))),

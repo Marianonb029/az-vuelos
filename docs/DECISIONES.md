@@ -117,6 +117,13 @@ El monto original también se redondea hacia arriba.
 - `efectoDiaSemana` de los corredores es un registro parcial: los días que el SPEC no lista pesan 0.
 - `pnpm catalogos` genera además `data/aeropuertos-geo.json` y `data/rutas.json`; `data/meta.json` registra la advertencia de 2014.
 
+## Fase 6.2 (14/09/2026) — rutas y niveles
+
+- `generarRutas` produce una `Ruta` por (origen, destino, vía): directas y con 1 escala. La escala debe ser un hub de `config.hubs` o un aeropuerto con ≥ `minSalidasSemanalesHub` salidas semanales proxy. **Un solo boleto:** la misma aerolínea vende el primer tramo (operado o codeshare) y opera el segundo; sin aerolínea común no hay ruta.
+- **Frecuencia proxy** (OpenFlights no trae frecuencias): directa = registros operados × 7 (los codeshares no suman: el avión ya lo contó la operadora); conexión = aerolíneas comunes × 7 × `factorEscala`. `factorEscala = 0.5` es la calibración: una conexión con una sola aerolínea queda en Nivel 3 (se persiste en `descartadas`, rescatable por el gap analysis), con dos o más sube a Nivel 2. Con ese valor se cumplen los tres criterios del SPEC: EZE→MAD N1 (AR, IB, UX = 21), EZE→MXP N2 (vía MAD con IB/UX; no hay directa en el dataset), EZE→AJA excluida.
+- **Calibración contra el proceso manual:** los números del SPEC (230 destinos, 71 rutas N1–2) corresponden a **toda Europa** como destino, no al radio de 800 km alrededor de MAD: con destinos europeos grandes el motor da 239 destinos y 49 rutas N1–2 (40 pares O-D); con el radio aprobado, 40 destinos y 19 rutas (15 pares). No se forzaron los umbrales para llegar a 65–80: lo que falta son rutas posteriores a 2014 (Level, ITA, ampliaciones de Air Europa) que sólo aparecerán por gap analysis (6.3) o verificación en vivo (6.4). Pendiente de decisión del dueño: destino por radio (aprobado) o por región.
+- Umbrales de nivel (21/7/2/1) sin cambios respecto del SPEC.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

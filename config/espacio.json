@@ -17,7 +17,8 @@
     "nivelesConservados": [1, 2],
     "maxEscalas": 1,
     "minSalidasSemanalesHub": 100,
-    "vuelosSemanalesPorRegistro": 7
+    "vuelosSemanalesPorRegistro": 7,
+    "factorEscala": 0.5
   },
   "hubs": [
     { "aerolineas": ["TK"], "hubs": ["IST"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "Vía IST alcanza prácticamente cualquier aeropuerto europeo, incluidos Nivel 3-4", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
