@@ -11,6 +11,7 @@ const params: ParamsBusqueda = {
   fechaVuelta: null,
   equipaje: "carry_on",
   rutaScreenshot: "x.png",
+  asistido: null,
 };
 
 const check = { texto: "", icono: "check" as const };

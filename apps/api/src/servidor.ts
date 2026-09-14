@@ -3,6 +3,7 @@ import { crearApp } from "./app";
 import { config } from "./config";
 import { abrirDb } from "./db/conexion";
 import { repoBusquedas } from "./repos/busquedas";
+import { repoCache } from "./repos/cache";
 import { repoCotizaciones } from "./repos/cotizaciones";
 import { repoRegistros } from "./repos/registros";
 import { crearCola } from "./servicios/cola";
@@ -18,6 +19,7 @@ const dependencias = {
   busquedas,
   cotizaciones: repoCotizaciones(db),
   registros: repoRegistros(db),
+  cache: repoCache(db),
   obtenerTablaFx,
   abrirNavegador,
   adaptadorPorIata,
@@ -25,6 +27,7 @@ const dependencias = {
   directorioPerfil: config.directorioPerfilNavegador,
   pausa: pausaAleatoria,
   notificar: eventos.notificar,
+  asistido: true,
 };
 
 const cola = crearCola((busquedaId) => ejecutarBusqueda(dependencias, busquedaId));
@@ -34,6 +37,12 @@ const encolar = (busquedaId: string) => {
   const dominio = adaptadorPorIata(b?.aerolineaIata ?? "")?.dominios[0] ?? b?.aerolineaIata ?? busquedaId;
   cola.encolar({ busquedaId, dominio });
 };
+
+// Lo que quedó a medias por un reinicio: las pendientes se vuelven a encolar, las que corrían se cierran.
+for (const b of busquedas.enCurso()) {
+  if (b.estado === "pendiente") encolar(b.id);
+  else busquedas.cambiarEstado(b.id, "fallida", "Interrumpida por un reinicio del servidor");
+}
 
 const app = crearApp({ db, directorioEvidencia: config.directorioEvidencia, eventos, ejecutar: encolar });
 

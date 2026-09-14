@@ -119,6 +119,8 @@ export const Busqueda = z
     creadaEn: FechaHoraIso,
     estado: EstadoBusqueda,
     motivoFallo: z.string().nullable(),
+    // Mensaje transitorio para la persona (ej. captcha a resolver); null cuando no hay nada que hacer.
+    aviso: z.string().nullable(),
   })
   .superRefine(reglasBusqueda);
 

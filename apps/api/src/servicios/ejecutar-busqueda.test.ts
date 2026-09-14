@@ -10,6 +10,7 @@ import type { AdaptadorAerolinea, ContextoNavegador, ResultadoAdaptador } from "
 import { config } from "../config";
 import { abrirDb } from "../db/conexion";
 import { repoBusquedas } from "../repos/busquedas";
+import { repoCache } from "../repos/cache";
 import { repoCotizaciones } from "../repos/cotizaciones";
 import { repoRegistros } from "../repos/registros";
 import { ejecutarBusqueda } from "./ejecutar-busqueda";
@@ -37,6 +38,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     busquedas: repoBusquedas(db),
     cotizaciones: repoCotizaciones(db),
     registros: repoRegistros(db),
+    cache: repoCache(db),
     obtenerTablaFx,
     abrirNavegador: async () => navegadorDePrueba(),
     adaptadorPorIata: (iata) => (iata === "IB" ? adaptador : undefined),
@@ -44,6 +46,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     directorioPerfil: join(directorioEvidencia, "perfil"),
     pausa: vi.fn(async () => {}),
     notificar: vi.fn(),
+    asistido: false,
   };
   vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("User-agent: *\nDisallow: /x", { status: 200 }));
   const unaFecha = { desde: busquedaIda.rangoIda.desde, hasta: busquedaIda.rangoIda.desde };
@@ -139,6 +142,37 @@ describe("ejecutarBusqueda", () => {
     await ejecutarBusqueda(dep, id);
     expect(dep.busquedas.obtener(id)?.estado).toBe("parcial");
     expect(dep.cotizaciones.listarPorBusqueda(id).map((c) => c.estado)).toEqual(["verificado", "error_lectura", "verificado"]);
+  });
+
+  it("caché de 6 h: la segunda búsqueda de la misma combinación no vuelve al sitio y aplica su propia tasa", async () => {
+    const buscar = vi.fn(async (p: { rutaScreenshot: string }) => verificado(p.rutaScreenshot));
+    const tablaNueva = { ...tabla, capturadaEn: "2026-09-15T00:02:31.000Z", usdA: { EUR: 0.9 } };
+    const obtenerTablaFx = vi.fn(async () => tabla);
+    const { dep } = armar(buscar, obtenerTablaFx);
+    await ejecutarBusqueda(dep, busquedaIda.id);
+    expect(buscar).toHaveBeenCalledTimes(1);
+
+    obtenerTablaFx.mockResolvedValue(tablaNueva);
+    const id2 = "6d5c4b3a-2918-4f07-8e6d-5c4b3a291807";
+    dep.busquedas.crear({ ...busquedaIda, id: id2, rangoIda: { desde: busquedaIda.rangoIda.desde, hasta: busquedaIda.rangoIda.desde } });
+    await ejecutarBusqueda(dep, id2);
+    expect(buscar).toHaveBeenCalledTimes(1);
+    const [c] = dep.cotizaciones.listarPorBusqueda(id2);
+    expect(c && esVerificada(c) && c.precio.fx?.capturadaEn).toBe("2026-09-15T00:02:31.000Z");
+    expect(dep.busquedas.obtener(id2)?.estado).toBe("completa");
+  });
+
+  it("modo asistido: el aviso del adaptador llega a la búsqueda y se limpia al terminar", async () => {
+    const { dep } = armar(async (p) => {
+      p.asistido?.avisar("Captcha en x.com: resolvelo en Chrome");
+      expect(dep.busquedas.obtener(busquedaIda.id)?.aviso).toBe("Captcha en x.com: resolvelo en Chrome");
+      p.asistido?.avisar("");
+      return verificado(p.rutaScreenshot);
+    });
+    dep.asistido = true;
+    await ejecutarBusqueda(dep, busquedaIda.id);
+    expect(dep.busquedas.obtener(busquedaIda.id)?.aviso).toBeNull();
+    expect(dep.busquedas.obtener(busquedaIda.id)?.estado).toBe("completa");
   });
 
   it("sin adaptador → fallida", async () => {

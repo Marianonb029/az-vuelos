@@ -42,6 +42,7 @@ export const busquedaIdaYVuelta: Busqueda = {
   creadaEn: "2026-09-14T10:00:00.000Z",
   estado: "pendiente",
   motivoFallo: null,
+  aviso: null,
 };
 
 export const busquedaIda: Busqueda = {

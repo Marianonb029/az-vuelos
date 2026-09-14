@@ -1,5 +1,6 @@
 import type { EquipajeSolicitado, EstadoNoVerificado, EvidenciaParcial, Lectura, TipoViaje } from "@az/core";
 import type { Page } from "playwright";
+import type { ModoAsistido } from "./bloqueo";
 
 // Una consulta concreta: un par de fechas, no un rango.
 export interface ParamsBusqueda {
@@ -10,6 +11,8 @@ export interface ParamsBusqueda {
   fechaVuelta: string | null;
   equipaje: EquipajeSolicitado;
   rutaScreenshot: string;
+  // Si está presente, un captcha pausa la consulta hasta que una persona lo resuelva en Chrome.
+  asistido: ModoAsistido | null;
 }
 
 export type ResultadoAdaptador =

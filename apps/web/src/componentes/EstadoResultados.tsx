@@ -31,11 +31,12 @@ const NoVerificadas = ({ lista }: { lista: CotizacionNoVerificada[] }) => (
   </section>
 );
 
-const Progreso = ({ hechas, total }: { hechas: number; total: number }) => (
+const Progreso = ({ hechas, total, aviso }: { hechas: number; total: number; aviso: string | null }) => (
   <div role="status" className="rounded-md border border-sky-200 bg-sky-50 p-3">
     <p className="text-sm font-medium text-sky-900">
       Verificando {hechas} de {total} {total === 1 ? "fecha" : "fechas"}…
     </p>
+    {aviso && <p className="mt-1 rounded bg-amber-100 px-2 py-1 text-sm font-medium text-amber-900">{aviso}</p>}
     <div className="mt-2 h-2 w-full rounded bg-sky-100">
       <div className="h-2 rounded bg-sky-600" style={{ width: `${total === 0 ? 0 : (hechas / total) * 100}%` }} />
     </div>
@@ -77,7 +78,7 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar }: Props
 
   return (
     <div className="grid gap-4">
-      {corriendo && <Progreso hechas={cotizaciones.length} total={combos.length} />}
+      {corriendo && <Progreso hechas={cotizaciones.length} total={combos.length} aviso={busqueda.aviso} />}
       {verificadas.length > 0 && <TablaResultados cotizaciones={verificadas} />}
       {!corriendo && verificadas.length === 0 && (
         <section className="rounded-md border border-slate-200 p-4 text-sm text-slate-700">

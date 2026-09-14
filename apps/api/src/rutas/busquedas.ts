@@ -23,6 +23,7 @@ export const rutasBusquedas = (app: FastifyInstance, dep: Dependencias) => {
       creadaEn: new Date().toISOString(),
       estado: "pendiente",
       motivoFallo: null,
+      aviso: null,
     };
     dep.busquedas.crear(busqueda);
     dep.ejecutar(busqueda.id);

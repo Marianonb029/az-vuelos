@@ -79,6 +79,17 @@ El monto original también se redondea hacia arriba.
 - **Progreso en vivo por SSE** (`GET /busquedas/:id/eventos`): cada cambio envía la búsqueda con todas sus cotizaciones; el stream se cierra al terminar. Reemplaza al sondeo de Fase 2.
 - Estado final: `completa` si ninguna fecha dio `error_lectura`, `parcial` si alguna, `fallida` si todas; `sin_disponibilidad` no cuenta como fallo.
 
+## Fase 4 (14/09/2026)
+
+- **JetSMART (JA):** no tiene deep link; el adaptador maneja el formulario de `jetsmart.com/ar/es/` (estación, fechas, "Buscar SMART") y termina en `booking.jetsmart.com`, que etiqueta todo con `data-test-id`. Activa "Ver precios con tasas e impuestos", elige el vuelo más barato, abre los packs (`basic` sólo bolso, `essential` con equipaje de mano, `smart` con bodega, `fullflex`) y elige el más barato que incluye el equipaje pedido. El precio es el **Total** del resumen de la reserva (`sidebar-total-amount-value-with-currency-sign`). Buenos Aires se busca como estación `BUE`; el aeropuerto real (AEP/EZE) se valida con el código del resumen y se rechaza si no coincide con el pedido. Los números de vuelo salen del tooltip "Itinerario de vuelo".
+- **Iberia (IB):** el deep link real se dedujo del `ibe_searcher-complete.js` del sitio (`/flights/?market=AR&...&BEGIN_CITY_01=...`). El motor carga pero su API `ibisauth.iberia.com` responde **HTTP 403** a la sesión automatizada y la página termina en `#!/ibbkerror`, también entrando desde la home con cookies. Es un bloqueo real: el adaptador lo detecta y devuelve `bloqueado` con captura y el 403 como motivo. **No hay lector de resultados** porque no se pudo observar ninguna página de resultados; si el sitio algún día responde, el adaptador devuelve `error_lectura` (nunca un precio).
+- **Detección de bloqueo** (`scraper/bloqueo.ts`): HTTP 403/429 de la navegación, iframes/contenedores de captcha (reCAPTCHA, hCaptcha, Turnstile, PerimeterX), desafíos ("Just a moment", "Checking your browser", "Pardon Our Interruption") y páginas cortas de "Access Denied / Acceso denegado". Todo bloqueo corta la aerolínea para toda la búsqueda con `ErrorBloqueo`, que `conReintentos` nunca reintenta.
+- **Modo asistido:** sólo para captcha o desafío. El adaptador avisa (`Busqueda.aviso`, visible en la UI vía SSE) y espera hasta 3 minutos, sondeando cada 3 s, a que la persona lo resuelva en la ventana de Chrome. Si no se resuelve, bloqueo. Un 403 nunca entra en modo asistido: no hay nada que una persona pueda hacer.
+- **Caché de 6 h** (`cache_lecturas`): clave = aerolínea + origen + destino + fecha ida + fecha vuelta + equipaje. Guarda la `Lectura` cruda (con su evidencia original); una búsqueda nueva que la reutiliza le aplica **su propia** tasa FX. Una lectura cacheada no pasa por robots.txt ni por la pausa.
+- **Reinicio del servidor:** al arrancar, las búsquedas `pendiente` se vuelven a encolar y las `corriendo` se cierran como `fallida` ("Interrumpida por un reinicio del servidor").
+- `Busqueda.aviso: string | null` se agrega al contrato para el modo asistido.
+- **Timeout por intento:** 90 s para ida; **180 s para ida y vuelta**, porque JetSMART encadena dos selecciones en la misma página (formulario, dos tramos, packs) y no entra en 90 s. Sigue siendo un solo intento con 2 reintentos.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

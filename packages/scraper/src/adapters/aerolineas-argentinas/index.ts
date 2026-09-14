@@ -5,7 +5,8 @@ import type { Direccion, Tramo } from "@az/core";
 import type { AdaptadorAerolinea, ParamsBusqueda, ResultadoAdaptador } from "../../adaptador";
 import { capturarPagina, evidenciaParcial } from "../../evidencia";
 import { evaluar } from "../../evaluar";
-import { ErrorBloqueo, ErrorLectura } from "../../intento";
+import { ErrorLectura } from "../../intento";
+import { verificarBloqueo } from "../../bloqueo";
 import { leerItinerario, leerResultados } from "./dom";
 import type { FilaOferta, SeccionResultados } from "./dom";
 import { armarTramo, combinarEquipaje, construirUrl, elegirOferta, leerTotal } from "./logica";
@@ -156,10 +157,10 @@ const buscarIdaYVuelta = async (page: Page, params: ParamsBusqueda, ida: Seccion
 const buscar = async (params: ParamsBusqueda, page: Page): Promise<ResultadoAdaptador> => {
   const url = construirUrl(params);
   const respuesta = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 });
-  const estado = respuesta?.status() ?? 0;
-  if (estado === 403 || estado === 429) throw new ErrorBloqueo(`HTTP ${estado} al abrir ${url}`, url);
+  await verificarBloqueo(page, respuesta, params.asistido);
 
   await esperarResultados(page);
+  await verificarBloqueo(page, null, params.asistido);
   if (page.url().includes("flights-offers-error")) return noVerificado(page, params, "error_lectura", "El sitio redirigió a su página de error");
   await mostrarTodos(page);
 

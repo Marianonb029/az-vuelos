@@ -18,7 +18,7 @@ const armar = () => {
   return { app, ejecutar, eventos, directorioEvidencia, db };
 };
 
-const { id: _id, creadaEn: _c, estado: _e, motivoFallo: _m, ...nueva } = busquedaIda;
+const { id: _id, creadaEn: _c, estado: _e, motivoFallo: _m, aviso: _a, ...nueva } = busquedaIda;
 
 describe("API", () => {
   it("responde en /salud y lista adaptadores", async () => {

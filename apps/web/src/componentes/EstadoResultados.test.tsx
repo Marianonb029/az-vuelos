@@ -4,10 +4,11 @@ import type { Busqueda } from "@az/core";
 import { busquedaIdaYVuelta, cotizacionErrorLectura, cotizacionVerificada } from "@az/core/fixtures";
 import { EstadoResultados } from "./EstadoResultados";
 
-const con = (estado: Busqueda["estado"], motivoFallo: string | null = null): Busqueda => ({
+const con = (estado: Busqueda["estado"], motivoFallo: string | null = null, aviso: string | null = null): Busqueda => ({
   ...busquedaIdaYVuelta,
   estado,
   motivoFallo,
+  aviso,
 });
 
 describe("EstadoResultados", () => {
@@ -15,6 +16,11 @@ describe("EstadoResultados", () => {
     render(<EstadoResultados busqueda={con("corriendo")} cotizaciones={[cotizacionVerificada]} onReintentar={() => {}} />);
     expect(screen.getByRole("status").textContent).toContain("Verificando 1 de 3 fechas");
     expect(screen.getAllByRole("row").length).toBeGreaterThan(1);
+  });
+
+  it("cargando con aviso de captcha: lo muestra para que la persona lo resuelva", () => {
+    render(<EstadoResultados busqueda={con("corriendo", null, "Captcha en jetsmart.com: resolvelo en la ventana de Chrome")} cotizaciones={[]} onReintentar={() => {}} />);
+    expect(screen.getByRole("status").textContent).toContain("Captcha en jetsmart.com");
   });
 
   it("vacío: mensaje con las fechas consultadas", () => {

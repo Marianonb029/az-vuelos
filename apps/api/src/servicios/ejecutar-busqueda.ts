@@ -2,9 +2,10 @@ import { randomUUID } from "node:crypto";
 import { join, relative } from "node:path";
 import { combinaciones, convertirAUsd } from "@az/core";
 import type { Busqueda, Combinacion, Cotizacion, TablaFx } from "@az/core";
-import { ErrorBloqueo, conReintentos, consultarRobots, evidenciaParcial } from "@az/scraper";
+import { ErrorBloqueo, ESPERAS_REINTENTO_MS, TIMEOUT_INTENTO_MS, conReintentos, consultarRobots, evidenciaParcial } from "@az/scraper";
 import type { AdaptadorAerolinea, ContextoNavegador, Pagina, ParamsBusqueda, ResultadoAdaptador } from "@az/scraper";
 import type { RepoBusquedas } from "../repos/busquedas";
+import type { RepoCache } from "../repos/cache";
 import type { RepoCotizaciones } from "../repos/cotizaciones";
 import type { RepoRegistros } from "../repos/registros";
 
@@ -12,6 +13,7 @@ export interface Dependencias {
   busquedas: RepoBusquedas;
   cotizaciones: RepoCotizaciones;
   registros: RepoRegistros;
+  cache: RepoCache;
   obtenerTablaFx: () => Promise<TablaFx>;
   abrirNavegador: (directorioPerfil: string) => Promise<ContextoNavegador>;
   adaptadorPorIata: (iata: string) => AdaptadorAerolinea | undefined;
@@ -20,6 +22,8 @@ export interface Dependencias {
   // Espera entre consultas al mismo dominio (3–8 s aleatorios en producción).
   pausa: () => Promise<void>;
   notificar: (busquedaId: string) => void;
+  // Modo asistido: false desactiva la espera de captchas (los tests, por ejemplo).
+  asistido: boolean;
 }
 
 export const PAUSA_MIN_MS = 3_000;
@@ -73,6 +77,10 @@ const consultarCombinacion = async (
   dep: Dependencias,
 ): Promise<ResultadoAdaptador> => {
   const carpeta = join(dep.directorioEvidencia, b.id);
+  const claveCache = { aerolineaIata: adaptador.iata, origenIata: b.origenIata, destinoIata: b.destinoIata, fechaIda: combo.fechaIda, fechaVuelta: combo.fechaVuelta, equipaje: b.equipaje };
+  const cacheada = dep.cache.obtener(claveCache);
+  if (cacheada) return { estado: "verificado", lectura: cacheada.lectura };
+
   const params: ParamsBusqueda = {
     tipo: b.tipo,
     origenIata: b.origenIata,
@@ -81,12 +89,20 @@ const consultarCombinacion = async (
     fechaVuelta: combo.fechaVuelta,
     equipaje: b.equipaje,
     rutaScreenshot: join(carpeta, `${indice}.png`),
+    asistido: dep.asistido
+      ? {
+          avisar: (mensaje) => {
+            dep.busquedas.avisar(b.id, mensaje);
+            dep.notificar(b.id);
+          },
+        }
+      : null,
   };
   const url = adaptador.urlBusqueda(params);
   dep.registros.robots(b.id, await consultarRobots(url));
 
   try {
-    return await conReintentos(
+    const resultado = await conReintentos(
       () => adaptador.buscar(params, page),
       async ({ intento, error }) => {
         const parcial = await evidenciaParcial(page, join(carpeta, `${indice}-intento${intento}.png`));
@@ -98,7 +114,12 @@ const consultarCombinacion = async (
           screenshotPath: aRelativa(dep.directorioEvidencia, parcial.screenshotPath),
         });
       },
+      ESPERAS_REINTENTO_MS,
+      // Ida y vuelta son dos lecturas encadenadas en la misma página: el doble de presupuesto.
+      b.tipo === "ida_y_vuelta" ? TIMEOUT_INTENTO_MS * 2 : TIMEOUT_INTENTO_MS,
     );
+    if (resultado.estado === "verificado") dep.cache.guardar(claveCache, resultado.lectura);
+    return resultado;
   } catch (e: unknown) {
     if (e instanceof ErrorBloqueo) throw e;
     return { estado: "error_lectura", motivo: mensaje(e), evidencia: await evidenciaParcial(page, params.rutaScreenshot) };
