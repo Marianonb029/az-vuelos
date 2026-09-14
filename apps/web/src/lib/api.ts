@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Busqueda, EstadoAdaptador, Exploracion } from "@az/core";
 import type { NuevaBusqueda, NuevaExploracion } from "@az/core";
-import { ResultadoEspacio } from "@az/espacio";
+import { ResultadoCalendario, ResultadoEspacio } from "@az/espacio";
 
 const BASE = "/api";
 
@@ -33,5 +33,8 @@ export const crearExploracion = (nueva: NuevaExploracion) =>
   });
 
 export const obtenerEspacio = (origen: string, destino: string) => pedir(ResultadoEspacio, `/espacio?origen=${origen}&destino=${destino}`);
+
+export const obtenerCalendario = (origen: string, destino: string, desde: string, hasta: string) =>
+  pedir(ResultadoCalendario, `/espacio/calendario?origen=${origen}&destino=${destino}&desde=${desde}&hasta=${hasta}`);
 
 export const urlEvidencia = (screenshotPath: string) => `${BASE}/evidencia/${screenshotPath}`;

@@ -127,8 +127,20 @@ export const ResultadoEspacio = z.object({
   nombres: z.array(NombreAerolinea), // aerolíneas mencionadas en rutas y gaps
 });
 
+export const ResultadoCalendario = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  desde: FechaIso,
+  hasta: FechaIso,
+  calculadoEn: z.iso.datetime(),
+  puntajes: z.array(PuntajeDia),
+  ventanasVerdes: z.array(Ventana),
+  avisos: z.array(z.string()), // p. ej. país sin feriados en Nager.Date
+});
+
 export type AeropuertoGeo = z.infer<typeof AeropuertoGeo>;
 export type ResultadoEspacio = z.infer<typeof ResultadoEspacio>;
+export type ResultadoCalendario = z.infer<typeof ResultadoCalendario>;
 export type RutaCompacta = z.infer<typeof RutaCompacta>;
 export type Rol = z.infer<typeof Rol>;
 export type CandidatoAeropuerto = z.infer<typeof CandidatoAeropuerto>;

@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { ResultadoEspacio } from "@az/espacio";
+import { ResultadoCalendario, ResultadoEspacio } from "@az/espacio";
 import { crearApp } from "../app";
 import { config } from "../config";
 import { abrirDb } from "../db/conexion";
@@ -10,7 +10,32 @@ import { crearServicioEspacio } from "../servicios/espacio";
 import { crearEventos } from "../servicios/eventos";
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
-const app = crearApp({ db: abrirDb(":memory:", config.directorioMigraciones), directorioEvidencia: mkdtempSync(join(tmpdir(), "az-")), eventos: crearEventos(), ejecutar: vi.fn(), espacio });
+const feriados = {
+  obtener: vi.fn().mockResolvedValue({
+    feriados: [{ fecha: "2027-01-01", pais: "AR", nombre: "Año Nuevo" }],
+    avisos: ["Sin feriados de ES 2027: Nager.Date respondió HTTP 503 para ES 2027"],
+  }),
+};
+const app = crearApp({ db: abrirDb(":memory:", config.directorioMigraciones), directorioEvidencia: mkdtempSync(join(tmpdir(), "az-")), eventos: crearEventos(), ejecutar: vi.fn(), espacio, feriados });
+
+describe("GET /espacio/calendario", () => {
+  it("pide feriados de ambos países y devuelve el calendario con ventanas verdes y avisos", async () => {
+    const res = await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=MAD&desde=2027-01-01&hasta=2027-02-28" });
+    expect(res.statusCode).toBe(200);
+    const r = ResultadoCalendario.parse(res.json());
+    expect(feriados.obtener).toHaveBeenCalledWith(["AR", "ES"], [2027]);
+    expect(r.puntajes).toHaveLength(59);
+    expect(r.puntajes[0]?.etiquetas).toContain("feriado en origen: Año Nuevo");
+    expect(r.ventanasVerdes.some((v) => v.desde <= "2027-02-15" && v.hasta >= "2027-02-25")).toBe(true);
+    expect(r.avisos).toEqual(["Sin feriados de ES 2027: Nager.Date respondió HTTP 503 para ES 2027"]);
+  });
+
+  it("valida el rango", async () => {
+    expect((await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=MAD&desde=2027-02-01&hasta=2027-01-01" })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=MAD&desde=2027-01-01&hasta=2027-12-31" })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=ZZZ&desde=2027-01-01&hasta=2027-01-10" })).statusCode).toBe(404);
+  });
+});
 
 describe("GET /espacio", () => {
   it("devuelve el espacio de búsqueda EZE→MAD con las tres fases", async () => {

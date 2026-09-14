@@ -101,7 +101,7 @@ export const App = () => {
 
       {pestana === "espacio" && (
         <section aria-label="Espacio de búsqueda">
-          <EspacioBusqueda aeropuertos={aeropuertos} adaptadores={iatasConAdaptador} />
+          <EspacioBusqueda aeropuertos={aeropuertos} adaptadores={iatasConAdaptador} hoy={hoyIso()} />
         </section>
       )}
 

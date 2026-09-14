@@ -9,3 +9,5 @@ export { generarRutas } from "./fase2-rutas";
 export type { ResultadoFase2 } from "./fase2-rutas";
 export { analizarGaps } from "./fase3-gaps";
 export type { EntradaFase3 } from "./fase3-gaps";
+export { calcularCalendario, ventanasVerdes } from "./fase5-calendario";
+export type { EntradaCalendario, Feriado } from "./fase5-calendario";

@@ -51,7 +51,7 @@ describe("EspacioBusqueda", () => {
   it("valida origen y destino antes de consultar", () => {
     const fetchMock = responder(resultado);
     vi.stubGlobal("fetch", fetchMock);
-    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set(["AR"])} />);
+    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set(["AR"])} hoy="2026-09-14" />);
     fireEvent.click(screen.getByRole("button", { name: "Explorar espacio" }));
     expect(screen.getAllByRole("alert").map((e) => e.textContent)).toEqual(["Elegí un aeropuerto de origen", "Elegí un aeropuerto de destino"]);
     expect(fetchMock).not.toHaveBeenCalled();
@@ -59,7 +59,7 @@ describe("EspacioBusqueda", () => {
 
   it("consulta la API y muestra aeropuertos, rutas por nivel y gaps", async () => {
     vi.stubGlobal("fetch", responder(resultado));
-    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set(["AR"])} />);
+    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set(["AR"])} hoy="2026-09-14" />);
     elegir("Origen", "eze", /EZE — Ministro/);
     elegir("Destino", "mad", /MAD — Adolfo/);
     fireEvent.click(screen.getByRole("button", { name: "Explorar espacio" }));
@@ -83,7 +83,7 @@ describe("EspacioBusqueda", () => {
 
   it("muestra el error de la API sin inventar resultados", async () => {
     vi.stubGlobal("fetch", responder({ error: "El aeropuerto MVD no está en el dataset" }, false, 404));
-    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set()} />);
+    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set()} hoy="2026-09-14" />);
     elegir("Origen", "eze", /EZE — Ministro/);
     elegir("Destino", "mvd", /MVD — Carrasco/);
     fireEvent.click(screen.getByRole("button", { name: "Explorar espacio" }));
@@ -93,7 +93,7 @@ describe("EspacioBusqueda", () => {
 
   it("permite volver a teclear sobre un aeropuerto ya elegido sin que se borre el texto", () => {
     vi.stubGlobal("fetch", responder(resultado));
-    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set()} />);
+    render(<EspacioBusqueda aeropuertos={aeropuertos} adaptadores={new Set()} hoy="2026-09-14" />);
     elegir("Origen", "eze", /EZE — Ministro/);
     const input = screen.getByRole("combobox", { name: "Origen" });
     fireEvent.change(input, { target: { value: "mvd" } });

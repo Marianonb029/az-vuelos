@@ -19,7 +19,7 @@ const armar = () => {
   const directorioEvidencia = mkdtempSync(join(tmpdir(), "az-evidencia-"));
   const ejecutar = vi.fn();
   const eventos = crearEventos();
-  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio });
+  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) } });
   return { app, ejecutar, eventos, directorioEvidencia, db };
 };
 

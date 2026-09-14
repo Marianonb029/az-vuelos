@@ -9,6 +9,7 @@ import { repoCotizaciones } from "./repos/cotizaciones";
 import { repoRegistros } from "./repos/registros";
 import { crearCola } from "./servicios/cola";
 import { crearServicioEspacio } from "./servicios/espacio";
+import { crearServicioFeriados } from "./servicios/feriados";
 import { ejecutarBusqueda, pausaAleatoria } from "./servicios/ejecutar-busqueda";
 import { crearEventos } from "./servicios/eventos";
 import { obtenerTablaFx } from "./servicios/fx";
@@ -48,7 +49,7 @@ for (const b of busquedas.enCurso()) {
 }
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
-const app = crearApp({ db, directorioEvidencia: config.directorioEvidencia, eventos, ejecutar: encolar, espacio });
+const app = crearApp({ db, directorioEvidencia: config.directorioEvidencia, eventos, ejecutar: encolar, espacio, feriados: crearServicioFeriados() });
 
 app.listen({ port: config.puerto, host: "127.0.0.1" }).then((direccion) => {
   console.log(`AZ Vuelos API escuchando en ${direccion}`);

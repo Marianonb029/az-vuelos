@@ -140,6 +140,14 @@ El monto original también se redondea hacia arriba.
 - Corrección en `Combobox`: al teclear sobre una elección previa, el efecto que sincroniza el texto con el valor borraba lo escrito. Ahora sólo sincroniza cuando el padre fija un valor.
 - Visto en la pantalla con datos reales: `US` (US Airways, absorbida por AA en 2015) cuenta como aerolínea distinta en las conexiones vía MIA/DFW y sube rutas a Nivel 2. Es un artefacto del dataset de 2014; se documenta, no se corrige a mano.
 
+## Fase 6.4 (14/09/2026) — calendario de presión de demanda
+
+- `calcularCalendario` (motor, puro) suma factores de `config/espacio.json` por día de salida desde el origen y recorta a 0–100; cada punto queda escrito en `fundamento` ("receso en origen +20 · día vie +15 · temporada pico +25 = 60"). Bandas verde 0–33 / amarillo 34–66 / rojo 67–100. `ventanasVerdes` = rachas de ≥ 3 días verdes.
+- **Feriados:** Nager.Date (`date.nager.at`, sin clave), sólo nacionales (`global`), cacheados por (año, país) en memoria del proceso; un país sin datos deja un `aviso` visible y el calendario sigue sin inventar feriados. El cliente vive en `apps/api` (`servicios/feriados.ts`); el motor recibe los feriados como datos.
+- Decisiones donde el SPEC era ambiguo: (1) cuando aplica un corredor, su `efectoDiaSemana` **reemplaza** los pesos genéricos de fin de semana / entre semana (no se suman ambos); (2) si dos ventanas estacionales se solapan gana la más angosta (02-15..02-25 "mínima" sobre 02-12..02-28 "baja"); (3) eventos de impacto `medio` pesan la mitad de `eventoMayorDestino`; (4) eventos `tentativo` sin fecha sólo etiquetan el mes, no suman puntos (si no, todo febrero en Barcelona sería amarillo por el MWC); (5) los eventos de ciudad sólo aplican si la ciudad del aeropuerto coincide (FITUR pesa en MAD, no en BCN); (6) "adyacente a feriado" es ±2 días de un feriado de cualquiera de los dos países y no se aplica sobre el propio feriado.
+- Criterio del SPEC cumplido con feriados reales de Nager.Date: 15/01/2027 = 60 (amarillo); 15–25/02/2027 en verde; ventanas verdes 25–28/01 y 31/01–28/02.
+- `GET /espacio/calendario?origen&destino&desde&hasta` (máx. 180 días). La pestaña Espacio de búsqueda muestra la grilla mensual coloreada por banda, con el fundamento al hacer clic en un día.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
