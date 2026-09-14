@@ -59,6 +59,19 @@ El monto original también se redondea hacia arriba.
 - Screenshot de evidencia: página completa.
 - Timeout 90 s y 2 reintentos con backoff (5 s → 15 s) desde la Fase 2, sólo ante timeout o error de red. Ante 403/429 no se reintenta.
 
+## Fase 2 (14/09/2026)
+
+- **Navegador:** el Chromium que descarga Playwright no arranca en esta máquina (error de configuración en paralelo de Windows), así que se usa el **Google Chrome instalado** (`channel: "chrome"`), visible, con perfil persistente en `apps/api/datos/perfil-chrome`. Los tests de adaptadores también usan Chrome (headless).
+- **Aerolínea 1: Aerolíneas Argentinas.** El spike mostró que los tres sitios cargan sin challenge. AR acepta un deep link a `/flights-offers` con la matriz de familias tarifarias, las condiciones de equipaje por familia y un modal "Detalle de itinerario" con números de vuelo. `robots.txt` lo prohíbe (`Disallow: /flights-offers`); queda registrado en la tabla `registro_robots`, no bloquea.
+- **Un directorio por aerolínea** en `packages/scraper/src/adapters/<aerolinea>/` (`index.ts` navegación y evidencia, `dom.ts` lectura del DOM, `logica.ts` selección pura y testeable). El registro sigue siendo una línea.
+- La interfaz `AdaptadorAerolinea` suma `urlBusqueda(params)` (para consultar robots.txt antes de navegar) y `ParamsBusqueda.rutaScreenshot` (dónde guardar la captura).
+- **Aeropuerto exacto:** AR trata EZE y AEP como "Buenos Aires" y puede devolver filas del otro aeropuerto. Sólo se consideran filas cuyo origen y destino coinciden con lo pedido; si no hay, `sin_disponibilidad` con la lista de rutas que el sitio ofreció.
+- **Elección de tarifa:** entre familias económicas (se excluyen Business / Premium / Economy+) que incluyan el equipaje pedido, la celda más barata de todas las filas.
+- **Conversión a USD ya en Fase 2** (`core/conversion.ts` + `api/servicios/fx.ts`): AR publica en ARS, sin tasa no existe cotización verificada. Una llamada por búsqueda, tabla congelada.
+- **Formato:** enteros con punto de miles ("USD 1.049", "ARS 162.296"); tasas < 1 con 4 cifras significativas ("0,0006894").
+- La UI sondea `GET /busquedas/:id` cada 2,5 s mientras la búsqueda corre; el progreso en vivo (SSE) llega en Fase 3.
+- Las búsquedas se ejecutan de a una (cola en `servidor.ts`) porque comparten el perfil de Chrome; la concurrencia por dominio llega en Fase 3.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

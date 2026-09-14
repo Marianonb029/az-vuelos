@@ -24,6 +24,10 @@ pnpm typecheck
 pnpm lint
 ```
 
+Requisitos de máquina: Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`; ver `docs/DECISIONES.md`).
+
+Datos en tiempo de ejecución (ignorados por git): `apps/api/datos/` (SQLite, perfil de Chrome) y `apps/api/evidencia/` (screenshots).
+
 ## Reglas innegociables
 
 1. Cero precios estimados: si no se leyó del DOM, `estado: "error_lectura"`, nunca un número.

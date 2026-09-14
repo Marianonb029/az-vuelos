@@ -2,4 +2,6 @@ export * from "./schema";
 export * from "./catalogos";
 export * from "./fechas";
 export * from "./formato";
+export * from "./parseo";
+export * from "./conversion";
 export * from "./validar-formulario";

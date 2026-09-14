@@ -33,6 +33,18 @@ describe("formato", () => {
     expect(formatearLineaFx(cotizacionUsdIda.precio)).toBeNull();
   });
 
+  it("montos grandes con punto de miles y tasas chicas con cifras significativas", () => {
+    const ars = {
+      montoOriginal: 162296,
+      monedaOriginal: "ARS",
+      montoUsd: 107.6,
+      fx: { par: "ARS/USD", tasa: 0.00068942, fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z" },
+    };
+    expect(formatearPrecioUsd(ars)).toBe("USD 108");
+    expect(formatearPrecioUsd({ ...ars, montoUsd: 1048.17 })).toBe("USD 1.049");
+    expect(formatearLineaFx(ars)).toBe("ARS 162.296 · tasa 0,0006894 al 14/09/2026");
+  });
+
   it("equipaje derivado del objeto", () => {
     const base = { itemPersonal: true, carryOn: true, piezasBodega: 0, textoOriginal: "" };
     expect(formatearEquipaje(base)).toBe("solo carry on");

@@ -9,6 +9,7 @@ export interface ParamsBusqueda {
   fechaIda: string;
   fechaVuelta: string | null;
   equipaje: EquipajeSolicitado;
+  rutaScreenshot: string;
 }
 
 export type ResultadoAdaptador =
@@ -19,5 +20,7 @@ export interface AdaptadorAerolinea {
   iata: string;
   nombre: string;
   dominios: string[];
+  // URL que `buscar` va a abrir; se usa para consultar robots.txt antes de navegar.
+  urlBusqueda(params: ParamsBusqueda): string;
   buscar(params: ParamsBusqueda, page: Page): Promise<ResultadoAdaptador>;
 }

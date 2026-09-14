@@ -10,14 +10,19 @@ export const formatearDuracion = (minutos: number): string => {
 export const formatearLlegada = (t: Tramo): string =>
   t.desfaseDias > 0 ? `${t.llegadaLocal}+${t.desfaseDias}` : t.llegadaLocal;
 
-export const formatearPrecioUsd = (p: Precio): string => `USD ${Math.ceil(p.montoUsd)}`;
+// Entero redondeado hacia arriba, con punto de miles como se escribe en español: 162296 → "162.296".
+export const formatearEntero = (valor: number): string =>
+  String(Math.ceil(valor)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-const formatearTasa = (tasa: number): string => tasa.toFixed(4).replace(".", ",");
+export const formatearPrecioUsd = (p: Precio): string => `USD ${formatearEntero(p.montoUsd)}`;
+
+// 4 decimales para tasas ≥ 1 ("1,0794"); 4 cifras significativas para las chicas ("0,0006894").
+const formatearTasa = (tasa: number): string => (tasa >= 1 ? tasa.toFixed(4) : tasa.toPrecision(4)).replace(".", ",");
 
 // "EUR 780 · tasa 1,0794 al 14/09/2026"; null cuando el precio ya estaba en USD.
 export const formatearLineaFx = (p: Precio): string | null => {
   if (p.fx === null) return null;
-  const original = `${p.monedaOriginal} ${Math.ceil(p.montoOriginal)}`;
+  const original = `${p.monedaOriginal} ${formatearEntero(p.montoOriginal)}`;
   return `${original} · tasa ${formatearTasa(p.fx.tasa)} al ${fechaCorta(p.fx.capturadaEn.slice(0, 10))}`;
 };
 
