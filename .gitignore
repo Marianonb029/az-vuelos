@@ -1,0 +1,14 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+
+# Archivos de la carpeta AZ que no son parte del código
+Diseños/
+*.xlsx
+~$*
+.Rhistory
+
+# Datos generados en tiempo de ejecución (Fase 2+)
+apps/api/datos/
+apps/api/evidencia/
