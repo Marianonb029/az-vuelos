@@ -197,6 +197,9 @@ importers:
       '@az/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@az/espacio':
+        specifier: workspace:*
+        version: link:../../packages/espacio
       '@az/scraper':
         specifier: workspace:*
         version: link:../../packages/scraper
@@ -225,6 +228,9 @@ importers:
       '@az/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@az/espacio':
+        specifier: workspace:*
+        version: link:../../packages/espacio
       react:
         specifier: ^18.3.1
         version: 18.3.1

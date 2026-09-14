@@ -89,7 +89,8 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
       expect(g?.operaEn).toContain("MAD");
       expect(g?.necesitaVerificacion).toBe(false);
     }
-    expect(porIata.get("AB")?.nombre).toBe("Air Berlin"); // nombre de 2014, no el código reasignado
+    expect(porIata.get("VY")?.nombre).toBe("Vueling");
+    expect(porIata.get("U2")?.nombre).toBe("easyJet");
   });
 
   it("ordena: gaps de origen antes que feeders, por prioridad y luego por código", () => {

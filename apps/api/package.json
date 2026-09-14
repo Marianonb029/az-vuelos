@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@az/core": "workspace:*",
+    "@az/espacio": "workspace:*",
     "@az/scraper": "workspace:*",
     "better-sqlite3": "^12.4.1",
     "fastify": "^5.6.0",

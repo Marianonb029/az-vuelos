@@ -8,4 +8,6 @@ export const config = {
   directorioEvidencia: resolve(RAIZ, "evidencia"),
   directorioPerfilNavegador: resolve(RAIZ, "datos", "perfil-chrome"),
   directorioMigraciones: resolve(import.meta.dirname, "db", "migraciones"),
+  directorioDatos: resolve(RAIZ, "..", "..", "data"),
+  rutaConfigEspacio: resolve(RAIZ, "..", "..", "config", "espacio.json"),
 };

@@ -110,7 +110,25 @@ export const Combinacion = z.object({
   confianza: z.enum(["alta", "baja"]),
 });
 
+// ---------------------------------------------------------------------------
+// Resultado de correr las fases sobre un par (origen, destino): contrato API ↔ web
+// ---------------------------------------------------------------------------
+
+export const NombreAerolinea = z.object({ iata: IataAerolinea, nombre: z.string().min(1) });
+
+export const ResultadoEspacio = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  calculadoEn: z.iso.datetime(),
+  origenes: z.array(CandidatoAeropuerto),
+  destinos: z.array(CandidatoAeropuerto),
+  rutas: z.object({ conservadas: z.array(Ruta), descartadas: z.array(Ruta) }),
+  gaps: z.array(GapAerolinea),
+  nombres: z.array(NombreAerolinea), // aerolíneas mencionadas en rutas y gaps
+});
+
 export type AeropuertoGeo = z.infer<typeof AeropuertoGeo>;
+export type ResultadoEspacio = z.infer<typeof ResultadoEspacio>;
 export type RutaCompacta = z.infer<typeof RutaCompacta>;
 export type Rol = z.infer<typeof Rol>;
 export type CandidatoAeropuerto = z.infer<typeof CandidatoAeropuerto>;

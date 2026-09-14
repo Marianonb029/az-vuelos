@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Busqueda, Cotizacion, EnvioFormulario, EstadoAdaptador, Exploracion } from "@az/core";
+import { EspacioBusqueda } from "./componentes/EspacioBusqueda";
 import { EstadoAdaptadores } from "./componentes/EstadoAdaptadores";
 import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
@@ -18,12 +19,20 @@ type Vista =
 
 const terminada = (b: Busqueda) => b.estado !== "pendiente" && b.estado !== "corriendo";
 
+type Pestana = "precios" | "espacio";
+
+const PESTANAS: { id: Pestana; titulo: string }[] = [
+  { id: "precios", titulo: "Precios" },
+  { id: "espacio", titulo: "Espacio de búsqueda" },
+];
+
 export const App = () => {
   const [adaptadores, setAdaptadores] = useState<EstadoAdaptador[]>([]);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<Vista | null>(null);
   const [ultimoEnvio, setUltimoEnvio] = useState<EnvioFormulario | null>(null);
+  const [pestana, setPestana] = useState<Pestana>("precios");
 
   // La salud de los adaptadores cambia con cada búsqueda (última verificación, bloqueos): se recarga al terminar.
   const todasTerminadas = vista === null || (vista.tipo === "busqueda" ? terminada(vista.busqueda) : vista.busquedas.every(terminada));
@@ -75,9 +84,28 @@ export const App = () => {
       <header className="mb-6 border-b border-slate-200 pb-4">
         <h1 className="text-2xl font-semibold text-slate-900">AZ Vuelos</h1>
         <p className="text-sm text-slate-600">Precios reales leídos del sitio oficial de cada aerolínea.</p>
+        <nav aria-label="Secciones" className="mt-4 flex gap-1">
+          {PESTANAS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              aria-current={pestana === p.id ? "page" : undefined}
+              onClick={() => setPestana(p.id)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${pestana === p.id ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+            >
+              {p.titulo}
+            </button>
+          ))}
+        </nav>
       </header>
 
-      <section aria-label="Búsqueda" className="mb-8">
+      {pestana === "espacio" && (
+        <section aria-label="Espacio de búsqueda">
+          <EspacioBusqueda aeropuertos={aeropuertos} adaptadores={iatasConAdaptador} />
+        </section>
+      )}
+
+      <section aria-label="Búsqueda" className="mb-8" hidden={pestana !== "precios"}>
         <FormularioBusqueda
           aerolineas={aerolineas}
           aeropuertos={aeropuertos}
@@ -101,7 +129,7 @@ export const App = () => {
         )}
       </section>
 
-      {vista?.tipo === "busqueda" && (
+      {pestana === "precios" && vista?.tipo === "busqueda" && (
         <section aria-label="Resultados">
           <EstadoResultados
             busqueda={vista.busqueda}
@@ -110,7 +138,7 @@ export const App = () => {
           />
         </section>
       )}
-      {vista?.tipo === "exploracion" && (
+      {pestana === "precios" && vista?.tipo === "exploracion" && (
         <section aria-label="Comparación">
           <ResultadosComparacion
             busquedas={vista.busquedas}

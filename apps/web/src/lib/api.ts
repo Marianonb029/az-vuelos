@@ -1,12 +1,18 @@
 import { z } from "zod";
 import { Busqueda, EstadoAdaptador, Exploracion } from "@az/core";
 import type { NuevaBusqueda, NuevaExploracion } from "@az/core";
+import { ResultadoEspacio } from "@az/espacio";
 
 const BASE = "/api";
 
+const ErrorApi = z.object({ error: z.string() });
+
 const pedir = async <T>(esquema: z.ZodType<T>, ruta: string, init?: RequestInit): Promise<T> => {
   const res = await fetch(`${BASE}${ruta}`, init);
-  if (!res.ok) throw new Error(`HTTP ${res.status} en ${ruta}`);
+  if (!res.ok) {
+    const cuerpo = ErrorApi.safeParse(await res.json().catch(() => null));
+    throw new Error(cuerpo.success ? cuerpo.data.error : `HTTP ${res.status} en ${ruta}`);
+  }
   return esquema.parse(await res.json());
 };
 
@@ -25,5 +31,7 @@ export const crearExploracion = (nueva: NuevaExploracion) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify(nueva),
   });
+
+export const obtenerEspacio = (origen: string, destino: string) => pedir(ResultadoEspacio, `/espacio?origen=${origen}&destino=${destino}`);
 
 export const urlEvidencia = (screenshotPath: string) => `${BASE}/evidencia/${screenshotPath}`;

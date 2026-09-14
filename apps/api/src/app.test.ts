@@ -6,17 +6,20 @@ import { busquedaIda, busquedaIdaYVuelta, cotizacionVerificada } from "@az/core/
 import { crearApp } from "./app";
 import { abrirDb } from "./db/conexion";
 import { config } from "./config";
+import { crearServicioEspacio } from "./servicios/espacio";
 import { crearEventos } from "./servicios/eventos";
 import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
 import { repoCotizaciones } from "./repos/cotizaciones";
+
+const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
 
 const armar = () => {
   const db = abrirDb(":memory:", config.directorioMigraciones);
   const directorioEvidencia = mkdtempSync(join(tmpdir(), "az-evidencia-"));
   const ejecutar = vi.fn();
   const eventos = crearEventos();
-  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar });
+  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio });
   return { app, ejecutar, eventos, directorioEvidencia, db };
 };
 

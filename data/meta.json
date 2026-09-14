@@ -1,5 +1,5 @@
 {
-  "descargadoEn": "2026-09-14T19:11:44.565Z",
+  "descargadoEn": "2026-09-14T19:29:58.695Z",
   "aerolineas": {
     "fuente": "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv",
     "filtro": "IATA de 2 caracteres, sin fecha de fin de validez, una por código (mayor frecuencia de vuelos)",
@@ -23,7 +23,7 @@
   },
   "aerolineasRutas": {
     "fuente": "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat",
-    "aviso": "Nombres de las aerolíneas del grafo según OpenFlights (id de aerolínea), no según el catálogo vigente: los códigos IATA se reasignan",
-    "registros": 526
+    "aviso": "Nombres de las aerolíneas del grafo: catálogo vigente (OpenTravelData) y, para códigos ya no asignados, OpenFlights airlines.dat. Un código reasignado desde 2014 muestra a su titular actual",
+    "registros": 545
   }
 }

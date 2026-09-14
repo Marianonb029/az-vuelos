@@ -13,7 +13,8 @@ pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquem
 - `packages/core` — esquema Zod + lógica de dominio, sin I/O
 - `packages/scraper` — Playwright + un adaptador por aerolínea en `src/adapters/`
 - `packages/espacio` — motor del espacio de búsqueda (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas, gaps, calendario, combinaciones. Sin I/O; la configuración vive en `config/espacio.json`
-- `data` — catálogos IATA (JSON generado, no editar a mano)
+- `config/espacio.json` — todos los números del SPEC del espacio de búsqueda
+- `data` — catálogos IATA y datasets del espacio de búsqueda (JSON generado por `pnpm catalogos`, no editar a mano)
 
 ## Comandos
 

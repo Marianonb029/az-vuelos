@@ -6,9 +6,11 @@ import { repoCotizaciones } from "./repos/cotizaciones";
 import { repoExploraciones } from "./repos/exploraciones";
 import { rutasAdaptadores } from "./rutas/adaptadores";
 import { rutasBusquedas } from "./rutas/busquedas";
+import { rutasEspacio } from "./rutas/espacio";
 import { rutasEvidencia } from "./rutas/evidencia";
 import { rutasExploraciones } from "./rutas/exploraciones";
 import { rutasProgreso } from "./rutas/progreso";
+import type { ServicioEspacio } from "./servicios/espacio";
 import type { Eventos } from "./servicios/eventos";
 
 export interface OpcionesApp {
@@ -16,6 +18,7 @@ export interface OpcionesApp {
   directorioEvidencia: string;
   eventos: Eventos;
   ejecutar: (busquedaId: string) => void;
+  espacio: ServicioEspacio;
 }
 
 export const crearApp = (op: OpcionesApp) => {
@@ -30,6 +33,7 @@ export const crearApp = (op: OpcionesApp) => {
   rutasProgreso(app, { busquedas, cotizaciones, eventos: op.eventos });
   rutasExploraciones(app, { exploraciones: repoExploraciones(op.db), busquedas, cotizaciones, eventos: op.eventos, ejecutar: op.ejecutar });
   rutasEvidencia(app, op.directorioEvidencia);
+  rutasEspacio(app, op.espacio);
 
   return app;
 };

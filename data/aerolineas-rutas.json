@@ -1,15 +1,15 @@
 [
   {
     "iata": "2B",
-    "nombre": "Aerocondor"
+    "nombre": "Albawings"
   },
   {
     "iata": "2G",
-    "nombre": "Cargoitalia"
+    "nombre": "Angara Airlines"
   },
   {
     "iata": "2I",
-    "nombre": "Star Peru (2I)"
+    "nombre": "Star Perú"
   },
   {
     "iata": "2J",
@@ -17,7 +17,7 @@
   },
   {
     "iata": "2K",
-    "nombre": "Aerolineas Galapagos (Aerogal)"
+    "nombre": "Aerolineas Galapagos"
   },
   {
     "iata": "2L",
@@ -25,27 +25,31 @@
   },
   {
     "iata": "2N",
-    "nombre": "NextJet"
+    "nombre": "Nextjet"
   },
   {
     "iata": "2P",
-    "nombre": "Air Philippines"
+    "nombre": "PAL Express"
   },
   {
     "iata": "2Z",
-    "nombre": "Changan Airlines"
+    "nombre": "Passaredo Transportes"
   },
   {
     "iata": "3E",
-    "nombre": "Air Choice One"
+    "nombre": "Multi Aero"
   },
   {
     "iata": "3G",
-    "nombre": "Atlant-Soyuz Airlines"
+    "nombre": "AsiaCargo Express"
+  },
+  {
+    "iata": "3H",
+    "nombre": "Air Inuit"
   },
   {
     "iata": "3J",
-    "nombre": "Zip"
+    "nombre": "Jubba Airways Kenya"
   },
   {
     "iata": "3K",
@@ -53,11 +57,11 @@
   },
   {
     "iata": "3L",
-    "nombre": "Intersky"
+    "nombre": "Air Arabia Abu Dhabi"
   },
   {
     "iata": "3M",
-    "nombre": "Silver Airways (3M)"
+    "nombre": "Silver Airways"
   },
   {
     "iata": "3O",
@@ -65,11 +69,11 @@
   },
   {
     "iata": "3P",
-    "nombre": "Tiara Air"
+    "nombre": "World 2 Fly Portugal"
   },
   {
     "iata": "3R",
-    "nombre": "Moskovia Airlines"
+    "nombre": "Divi Divi Air"
   },
   {
     "iata": "3S",
@@ -81,11 +85,15 @@
   },
   {
     "iata": "4B",
-    "nombre": "Boutique Air (Priv)"
+    "nombre": "Boutique Air"
   },
   {
     "iata": "4D",
     "nombre": "Air Sinai"
+  },
+  {
+    "iata": "4E",
+    "nombre": "Tanana Air Service"
   },
   {
     "iata": "4G",
@@ -93,23 +101,23 @@
   },
   {
     "iata": "4H",
-    "nombre": "United Airways"
+    "nombre": "United Airways Bangladesh"
   },
   {
     "iata": "4M",
-    "nombre": "LAN Argentina"
+    "nombre": "LATAM Argentina"
   },
   {
     "iata": "4N",
-    "nombre": "Air North Charter - Canada"
+    "nombre": "Air North"
   },
   {
     "iata": "4O",
-    "nombre": "Interjet (ABC Aerolineas)"
+    "nombre": "Air Montenegro"
   },
   {
     "iata": "4Q",
-    "nombre": "Safi Airlines"
+    "nombre": "Safi Airways"
   },
   {
     "iata": "4T",
@@ -120,20 +128,24 @@
     "nombre": "Germanwings"
   },
   {
+    "iata": "4W",
+    "nombre": "Warbelows Air Ventures"
+  },
+  {
     "iata": "4Y",
-    "nombre": "Airbus France"
+    "nombre": "Discover Airlines"
   },
   {
     "iata": "5C",
-    "nombre": "CAL Cargo Air Lines"
+    "nombre": "Challenge Aero"
   },
   {
     "iata": "5G",
-    "nombre": "Skyservice Airlines"
+    "nombre": "Shirak Savia"
   },
   {
     "iata": "5H",
-    "nombre": "Fly540"
+    "nombre": "Five Fourty Aviation"
   },
   {
     "iata": "5J",
@@ -141,15 +153,15 @@
   },
   {
     "iata": "5M",
-    "nombre": "Sibaviatrans"
+    "nombre": "Montserrat Airways"
   },
   {
     "iata": "5N",
-    "nombre": "Aeroflot-Nord"
+    "nombre": "Jsc Nordavia"
   },
   {
     "iata": "5P",
-    "nombre": "Pal airlines"
+    "nombre": "PAL Airlines"
   },
   {
     "iata": "5Q",
@@ -160,24 +172,28 @@
     "nombre": "Canadian North"
   },
   {
+    "iata": "5U",
+    "nombre": "Transportes Aéreos Guatemaltecos"
+  },
+  {
     "iata": "5Z",
-    "nombre": "VivaColombia"
+    "nombre": "CemAir"
   },
   {
     "iata": "6E",
-    "nombre": "IndiGo Airlines"
+    "nombre": "IndiGo"
   },
   {
     "iata": "6H",
-    "nombre": "Israir"
+    "nombre": "Israir Airlines"
   },
   {
     "iata": "6I",
-    "nombre": "Fly 6ix"
+    "nombre": "Air Alsie"
   },
   {
     "iata": "6R",
-    "nombre": "Alrosa Mirny Air Enterprise"
+    "nombre": "ALROSA"
   },
   {
     "iata": "6T",
@@ -193,7 +209,7 @@
   },
   {
     "iata": "7E",
-    "nombre": "Aeroline GmbH"
+    "nombre": "Sylt Air"
   },
   {
     "iata": "7F",
@@ -201,15 +217,15 @@
   },
   {
     "iata": "7G",
-    "nombre": "Star Flyer"
+    "nombre": "StarFlyer"
   },
   {
     "iata": "7H",
-    "nombre": "Era Alaska"
+    "nombre": "Ravn Alaska"
   },
   {
     "iata": "7I",
-    "nombre": "Insel Air (7I/INC) (Priv)"
+    "nombre": "Insel Air International"
   },
   {
     "iata": "7J",
@@ -217,19 +233,23 @@
   },
   {
     "iata": "7M",
-    "nombre": "Mongolian International Air Lines"
+    "nombre": "Mayair"
   },
   {
     "iata": "7P",
-    "nombre": "Metro Batavia"
+    "nombre": "Air Panama"
   },
   {
     "iata": "7R",
-    "nombre": "BRA-Transportes Aereos"
+    "nombre": "RusLine"
+  },
+  {
+    "iata": "7S",
+    "nombre": "Ryan Air Services"
   },
   {
     "iata": "8B",
-    "nombre": "BusinessAir"
+    "nombre": "TransNusa Air Services"
   },
   {
     "iata": "8E",
@@ -237,19 +257,19 @@
   },
   {
     "iata": "8I",
-    "nombre": "Myway Airlines"
+    "nombre": "Insel Air Aruba"
   },
   {
     "iata": "8L",
-    "nombre": "Cargo Plus Aviation"
+    "nombre": "Lucky Air"
   },
   {
     "iata": "8M",
-    "nombre": "Maxair"
+    "nombre": "Myanmar Airways International"
   },
   {
     "iata": "8P",
-    "nombre": "Pacific Coastal Airline"
+    "nombre": "Pacific Coastal Airlines"
   },
   {
     "iata": "8Q",
@@ -257,7 +277,7 @@
   },
   {
     "iata": "8R",
-    "nombre": "TRIP Linhas A"
+    "nombre": "Amelia"
   },
   {
     "iata": "8T",
@@ -273,23 +293,31 @@
   },
   {
     "iata": "9C",
-    "nombre": "China SSS"
+    "nombre": "Spring Airlines"
+  },
+  {
+    "iata": "9D",
+    "nombre": "Genghis Khan Airlines"
   },
   {
     "iata": "9E",
-    "nombre": "Pinnacle Airlines"
+    "nombre": "Endeavor Air"
   },
   {
     "iata": "9K",
     "nombre": "Cape Air"
   },
   {
+    "iata": "9M",
+    "nombre": "Central Mountain Air"
+  },
+  {
     "iata": "9N",
-    "nombre": "Regional Air Iceland"
+    "nombre": "Tropic Air"
   },
   {
     "iata": "9Q",
-    "nombre": "PB Air"
+    "nombre": "Caicos Express Airways"
   },
   {
     "iata": "9R",
@@ -297,7 +325,7 @@
   },
   {
     "iata": "9V",
-    "nombre": "Volotea Costa Rica"
+    "nombre": "Avior Airlines"
   },
   {
     "iata": "9W",
@@ -305,7 +333,7 @@
   },
   {
     "iata": "A2",
-    "nombre": "All America"
+    "nombre": "Animawings"
   },
   {
     "iata": "A3",
@@ -313,11 +341,11 @@
   },
   {
     "iata": "A4",
-    "nombre": "Southern Winds Airlines"
+    "nombre": "Azimuth"
   },
   {
     "iata": "A5",
-    "nombre": "Airlinair"
+    "nombre": "Air France HOP"
   },
   {
     "iata": "A9",
@@ -329,7 +357,7 @@
   },
   {
     "iata": "AB",
-    "nombre": "Air Berlin"
+    "nombre": "Bonza"
   },
   {
     "iata": "AC",
@@ -337,7 +365,7 @@
   },
   {
     "iata": "AD",
-    "nombre": "Azul"
+    "nombre": "Azul Brazilian Airlines"
   },
   {
     "iata": "AE",
@@ -353,7 +381,7 @@
   },
   {
     "iata": "AI",
-    "nombre": "Air India Limited"
+    "nombre": "Air India"
   },
   {
     "iata": "AK",
@@ -361,15 +389,15 @@
   },
   {
     "iata": "AM",
-    "nombre": "AeroMéxico"
+    "nombre": "AeroMexico"
   },
   {
     "iata": "AP",
-    "nombre": "Air One"
+    "nombre": "AlbaStar"
   },
   {
     "iata": "AR",
-    "nombre": "Aerolineas Argentinas"
+    "nombre": "Aerolíneas Argentinas"
   },
   {
     "iata": "AS",
@@ -381,11 +409,11 @@
   },
   {
     "iata": "AV",
-    "nombre": "Avianca - Aerovias Nacionales de Colombia"
+    "nombre": "Avianca"
   },
   {
     "iata": "AW",
-    "nombre": "Asian Wings Airways"
+    "nombre": "Africa World Airlines"
   },
   {
     "iata": "AY",
@@ -393,27 +421,27 @@
   },
   {
     "iata": "AZ",
-    "nombre": "Alitalia"
+    "nombre": "ITA Airways"
   },
   {
     "iata": "B2",
-    "nombre": "Belavia Belarusian Airlines"
+    "nombre": "Belavia"
   },
   {
     "iata": "B5",
-    "nombre": "Flightline"
+    "nombre": "Fly-SAX"
   },
   {
     "iata": "B6",
-    "nombre": "JetBlue Airways"
+    "nombre": "JetBlue"
   },
   {
     "iata": "B7",
-    "nombre": "Uni Air"
+    "nombre": "Uni Airways"
   },
   {
     "iata": "B9",
-    "nombre": "Air Bangladesh"
+    "nombre": "Iran Air Tours"
   },
   {
     "iata": "BA",
@@ -433,11 +461,11 @@
   },
   {
     "iata": "BF",
-    "nombre": "Aero-Service"
+    "nombre": "French Bee"
   },
   {
     "iata": "BG",
-    "nombre": "Biman Bangladesh Airlines"
+    "nombre": "Biman Bangladesh Airline"
   },
   {
     "iata": "BH",
@@ -445,23 +473,23 @@
   },
   {
     "iata": "BI",
-    "nombre": "Royal Brunei Airlines"
+    "nombre": "Royal Brunei"
   },
   {
     "iata": "BJ",
-    "nombre": "Nouvel Air Tunisie"
+    "nombre": "Nouvelair"
   },
   {
     "iata": "BK",
-    "nombre": "Potomac Air"
+    "nombre": "Okay Airways"
   },
   {
     "iata": "BL",
-    "nombre": "Jetstar Pacific"
+    "nombre": "Jetstar Pacific Airlines"
   },
   {
     "iata": "BM",
-    "nombre": "Air Sicilia"
+    "nombre": "bmi regional"
   },
   {
     "iata": "BP",
@@ -473,11 +501,11 @@
   },
   {
     "iata": "BT",
-    "nombre": "Air Baltic"
+    "nombre": "airBaltic"
   },
   {
     "iata": "BU",
-    "nombre": "Baikotovitchestrian Airlines"
+    "nombre": "Compagnie Africaine d'Aviation"
   },
   {
     "iata": "BV",
@@ -493,7 +521,7 @@
   },
   {
     "iata": "C8",
-    "nombre": "Chicago Express"
+    "nombre": "Cronos Airlines"
   },
   {
     "iata": "CA",
@@ -505,11 +533,11 @@
   },
   {
     "iata": "CE",
-    "nombre": "Nationwide Airlines"
+    "nombre": "Chalair Aviation"
   },
   {
     "iata": "CG",
-    "nombre": "Airlines PNG"
+    "nombre": "PNG Air"
   },
   {
     "iata": "CI",
@@ -521,11 +549,11 @@
   },
   {
     "iata": "CN",
-    "nombre": "Canadian National Airways"
+    "nombre": "Grand China Air"
   },
   {
     "iata": "CU",
-    "nombre": "Cubana de Aviación"
+    "nombre": "Cubana De Aviacion"
   },
   {
     "iata": "CX",
@@ -533,7 +561,7 @@
   },
   {
     "iata": "CY",
-    "nombre": "Cyprus Airways"
+    "nombre": "Charlie Airlines"
   },
   {
     "iata": "CZ",
@@ -549,7 +577,7 @@
   },
   {
     "iata": "D6",
-    "nombre": "Interair South Africa"
+    "nombre": "Interair"
   },
   {
     "iata": "D7",
@@ -557,7 +585,7 @@
   },
   {
     "iata": "DC",
-    "nombre": "Golden Air"
+    "nombre": "Braathens Regional Airways"
   },
   {
     "iata": "DD",
@@ -565,15 +593,15 @@
   },
   {
     "iata": "DE",
-    "nombre": "Condor Flugdienst"
+    "nombre": "Condor"
   },
   {
     "iata": "DG",
-    "nombre": "South East Asian Airlines"
+    "nombre": "Cebgo"
   },
   {
     "iata": "DH",
-    "nombre": "Dennis Sky"
+    "nombre": "Douniah Airlines"
   },
   {
     "iata": "DL",
@@ -581,27 +609,27 @@
   },
   {
     "iata": "DN",
-    "nombre": "Senegal Airlines"
+    "nombre": "Norwegian Air Argentina"
   },
   {
     "iata": "DT",
-    "nombre": "TAAG Angola Airlines"
+    "nombre": "Taag"
   },
   {
     "iata": "DV",
-    "nombre": "Scat Air"
+    "nombre": "SCAT Airlines"
   },
   {
     "iata": "DX",
-    "nombre": "DAT Danish Air Transport"
+    "nombre": "Danish Air Transport"
   },
   {
     "iata": "DY",
-    "nombre": "Norwegian Air Shuttle"
+    "nombre": "Norwegian Air Shuttle AOC"
   },
   {
     "iata": "DZ",
-    "nombre": "Starline.kz"
+    "nombre": "Donghai Airlines"
   },
   {
     "iata": "E2",
@@ -613,23 +641,27 @@
   },
   {
     "iata": "E7",
-    "nombre": "Estafeta Carga Aerea"
+    "nombre": "Equaflight Service"
   },
   {
     "iata": "E8",
-    "nombre": "City Airways"
+    "nombre": "Bees Airlines"
   },
   {
     "iata": "E9",
-    "nombre": "Compagnie Africaine d\\\\'Aviation"
+    "nombre": "Evelop Airlines"
+  },
+  {
+    "iata": "EB",
+    "nombre": "Wamos Air"
   },
   {
     "iata": "EF",
-    "nombre": "Far Eastern Air Transport"
+    "nombre": "Fly CamInter"
   },
   {
     "iata": "EG",
-    "nombre": "Japan Asia Airways"
+    "nombre": "East Air"
   },
   {
     "iata": "EI",
@@ -641,7 +673,7 @@
   },
   {
     "iata": "EL",
-    "nombre": "Air Nippon"
+    "nombre": "Ellinair"
   },
   {
     "iata": "EN",
@@ -649,7 +681,7 @@
   },
   {
     "iata": "EO",
-    "nombre": "Express One International"
+    "nombre": "Air Go Egypt"
   },
   {
     "iata": "EP",
@@ -665,7 +697,7 @@
   },
   {
     "iata": "EU",
-    "nombre": "Empresa Ecuatoriana De Aviacion"
+    "nombre": "Chengdu Airlines"
   },
   {
     "iata": "EW",
@@ -677,7 +709,7 @@
   },
   {
     "iata": "F2",
-    "nombre": "Fly Air"
+    "nombre": "Safarilink Aviation"
   },
   {
     "iata": "F5",
@@ -701,7 +733,7 @@
   },
   {
     "iata": "FE",
-    "nombre": "Primaris Airlines"
+    "nombre": "Far Eastern Air Transport"
   },
   {
     "iata": "FG",
@@ -713,11 +745,11 @@
   },
   {
     "iata": "FJ",
-    "nombre": "Air Pacific"
+    "nombre": "Fiji Airways"
   },
   {
     "iata": "FL",
-    "nombre": "AirTran Airways"
+    "nombre": "Airtran Airways"
   },
   {
     "iata": "FM",
@@ -725,7 +757,7 @@
   },
   {
     "iata": "FO",
-    "nombre": "Airlines Of Tasmania"
+    "nombre": "Felix Airways"
   },
   {
     "iata": "FR",
@@ -733,11 +765,11 @@
   },
   {
     "iata": "FS",
-    "nombre": "Servicios de Transportes A"
+    "nombre": "FlyArystan"
   },
   {
     "iata": "FV",
-    "nombre": "Rossiya-Russian Airlines"
+    "nombre": "Rossiya"
   },
   {
     "iata": "FW",
@@ -745,15 +777,15 @@
   },
   {
     "iata": "FY",
-    "nombre": "Firefly"
+    "nombre": "Flyfirefly"
   },
   {
     "iata": "FZ",
-    "nombre": "Fly Dubai"
+    "nombre": "flydubai"
   },
   {
     "iata": "G3",
-    "nombre": "City Connexion Airlines"
+    "nombre": "Gol Transportes Aéreos"
   },
   {
     "iata": "G4",
@@ -761,11 +793,11 @@
   },
   {
     "iata": "G5",
-    "nombre": "Huaxia"
+    "nombre": "China Express Airlines"
   },
   {
     "iata": "G8",
-    "nombre": "Go Air"
+    "nombre": "Go First"
   },
   {
     "iata": "G9",
@@ -777,15 +809,15 @@
   },
   {
     "iata": "GE",
-    "nombre": "TransAsia Airways"
+    "nombre": "Lift Airline"
   },
   {
     "iata": "GF",
-    "nombre": "Gulf Air Bahrain"
+    "nombre": "Gulf Air"
   },
   {
     "iata": "GK",
-    "nombre": "Genesis"
+    "nombre": "Jetstar Japan"
   },
   {
     "iata": "GL",
@@ -793,7 +825,7 @@
   },
   {
     "iata": "GQ",
-    "nombre": "Big Sky Airlines"
+    "nombre": "Sky Express"
   },
   {
     "iata": "GR",
@@ -801,11 +833,11 @@
   },
   {
     "iata": "GS",
-    "nombre": "Air Foyle"
+    "nombre": "Tianjin Airlines"
   },
   {
     "iata": "GV",
-    "nombre": "Aero Flight"
+    "nombre": "Grant Aviation"
   },
   {
     "iata": "GZ",
@@ -825,11 +857,11 @@
   },
   {
     "iata": "HD",
-    "nombre": "Hokkaido International Airlines"
+    "nombre": "Air Do"
   },
   {
     "iata": "HF",
-    "nombre": "Hapagfly"
+    "nombre": "Air Cote D Ivoire"
   },
   {
     "iata": "HG",
@@ -837,7 +869,7 @@
   },
   {
     "iata": "HK",
-    "nombre": "Yangon Airways"
+    "nombre": "Skippers Aviation"
   },
   {
     "iata": "HM",
@@ -845,7 +877,7 @@
   },
   {
     "iata": "HN",
-    "nombre": "Hankook Airline"
+    "nombre": "Afghan Jet International"
   },
   {
     "iata": "HO",
@@ -853,11 +885,15 @@
   },
   {
     "iata": "HQ",
-    "nombre": "Harmony Airways"
+    "nombre": "HQ"
   },
   {
     "iata": "HR",
-    "nombre": "China United Airlines"
+    "nombre": "Hahn Air"
+  },
+  {
+    "iata": "HS",
+    "nombre": "Heli Sécurité"
   },
   {
     "iata": "HU",
@@ -865,7 +901,7 @@
   },
   {
     "iata": "HV",
-    "nombre": "Transavia Holland"
+    "nombre": "Transavia Airlines"
   },
   {
     "iata": "HX",
@@ -877,31 +913,31 @@
   },
   {
     "iata": "HZ",
-    "nombre": "Sat Airlines"
+    "nombre": "Aurora Airlines"
   },
   {
     "iata": "I4",
-    "nombre": "International AirLink"
+    "nombre": "Scott Air"
   },
   {
     "iata": "I6",
-    "nombre": "MexicanaLink"
+    "nombre": "Air Indus"
   },
   {
     "iata": "I8",
-    "nombre": "IzAvia"
+    "nombre": "Izhavia"
   },
   {
     "iata": "I9",
-    "nombre": "Air Italy"
+    "nombre": "Indigo"
   },
   {
     "iata": "IB",
-    "nombre": "Iberia Airlines"
+    "nombre": "Iberia"
   },
   {
     "iata": "ID",
-    "nombre": "Interlink Airlines"
+    "nombre": "Batik Air"
   },
   {
     "iata": "IE",
@@ -909,11 +945,11 @@
   },
   {
     "iata": "IG",
-    "nombre": "Meridiana"
+    "nombre": "Air Italy"
   },
   {
     "iata": "IL",
-    "nombre": "Illinois Airways"
+    "nombre": "Trigana Air Service"
   },
   {
     "iata": "IR",
@@ -925,11 +961,11 @@
   },
   {
     "iata": "IY",
-    "nombre": "Yemenia"
+    "nombre": "Yemen Airways"
   },
   {
     "iata": "IZ",
-    "nombre": "Arkia Israel Airlines"
+    "nombre": "Arkia"
   },
   {
     "iata": "J2",
@@ -937,11 +973,11 @@
   },
   {
     "iata": "J3",
-    "nombre": "Northwestern Air"
+    "nombre": "Northwestern Air Lease"
   },
   {
     "iata": "J4",
-    "nombre": "ALAK"
+    "nombre": "Badr Airlines"
   },
   {
     "iata": "J5",
@@ -953,11 +989,11 @@
   },
   {
     "iata": "JA",
-    "nombre": "Air Bosna"
+    "nombre": "Jetsmart Chile"
   },
   {
     "iata": "JD",
-    "nombre": "Japan Air System"
+    "nombre": "Beijing Capital Airlines"
   },
   {
     "iata": "JE",
@@ -969,7 +1005,7 @@
   },
   {
     "iata": "JJ",
-    "nombre": "TAM Brazilian Airlines"
+    "nombre": "LATAM Brasil"
   },
   {
     "iata": "JL",
@@ -977,7 +1013,7 @@
   },
   {
     "iata": "JN",
-    "nombre": "Excel Airways"
+    "nombre": "Alaska Air Transit"
   },
   {
     "iata": "JP",
@@ -985,7 +1021,7 @@
   },
   {
     "iata": "JQ",
-    "nombre": "Jetstar Airways"
+    "nombre": "Jetstar"
   },
   {
     "iata": "JS",
@@ -993,7 +1029,7 @@
   },
   {
     "iata": "JT",
-    "nombre": "Lion Mentari Airlines"
+    "nombre": "Lion Air"
   },
   {
     "iata": "JU",
@@ -1001,15 +1037,15 @@
   },
   {
     "iata": "JV",
-    "nombre": "Bearskin Lake Air Service"
+    "nombre": "Bearskin Airlines"
   },
   {
     "iata": "JW",
-    "nombre": "Arrow Air"
+    "nombre": "Vanilla Air"
   },
   {
     "iata": "JY",
-    "nombre": "Aereonautica militare"
+    "nombre": "InterCaribbean Airways"
   },
   {
     "iata": "K2",
@@ -1017,23 +1053,23 @@
   },
   {
     "iata": "K3",
-    "nombre": "Atlantic Air Cargo"
+    "nombre": "Taquan Air Services"
   },
   {
     "iata": "K5",
-    "nombre": "SeaPort Airlines"
+    "nombre": "SeaPort"
   },
   {
     "iata": "K6",
-    "nombre": "Cambodia Angkor Air (K6)"
+    "nombre": "Cambodia Angkor Air"
   },
   {
     "iata": "K8",
-    "nombre": "Zambia Skyways"
+    "nombre": "Kan Air"
   },
   {
     "iata": "KA",
-    "nombre": "Dragonair"
+    "nombre": "Cathay Dragon"
   },
   {
     "iata": "KB",
@@ -1049,23 +1085,23 @@
   },
   {
     "iata": "KK",
-    "nombre": "Atlasjet"
+    "nombre": "AtlasGlobal"
   },
   {
     "iata": "KL",
-    "nombre": "KLM Royal Dutch Airlines"
+    "nombre": "KLM"
   },
   {
     "iata": "KM",
-    "nombre": "Air Malta"
+    "nombre": "KM Malta Airlines"
   },
   {
     "iata": "KN",
-    "nombre": "China United"
+    "nombre": "China United Airlines"
   },
   {
     "iata": "KO",
-    "nombre": "Alaska Central Express"
+    "nombre": "Komiaviatrans"
   },
   {
     "iata": "KQ",
@@ -1073,11 +1109,11 @@
   },
   {
     "iata": "KR",
-    "nombre": "Comores Airlines"
+    "nombre": "Cambodia Airways"
   },
   {
     "iata": "KS",
-    "nombre": "Peninsula Airways"
+    "nombre": "Penair"
   },
   {
     "iata": "KU",
@@ -1089,23 +1125,23 @@
   },
   {
     "iata": "KY",
-    "nombre": "KSY"
+    "nombre": "Kunming Airlines"
   },
   {
     "iata": "L6",
-    "nombre": "Mauritania Airlines International"
+    "nombre": "Mauritanian Airlines Int"
   },
   {
     "iata": "LA",
-    "nombre": "LAN Airlines"
+    "nombre": "LATAM Chile"
   },
   {
     "iata": "LC",
-    "nombre": "Varig Log"
+    "nombre": "ECAir"
   },
   {
     "iata": "LF",
-    "nombre": "FlyNordic"
+    "nombre": "Contour Airlines"
   },
   {
     "iata": "LG",
@@ -1117,7 +1153,7 @@
   },
   {
     "iata": "LI",
-    "nombre": "Leeward Islands Air Transport"
+    "nombre": "LIAT"
   },
   {
     "iata": "LJ",
@@ -1125,11 +1161,11 @@
   },
   {
     "iata": "LM",
-    "nombre": "Linhas A"
+    "nombre": "Loganair"
   },
   {
     "iata": "LN",
-    "nombre": "Libyan Arab Airlines"
+    "nombre": "Libyan Airlines"
   },
   {
     "iata": "LO",
@@ -1137,7 +1173,7 @@
   },
   {
     "iata": "LR",
-    "nombre": "LACSA"
+    "nombre": "Avianca Costa Rica"
   },
   {
     "iata": "LS",
@@ -1145,11 +1181,11 @@
   },
   {
     "iata": "LT",
-    "nombre": "Air Lituanica"
+    "nombre": "Longjiang Airlines"
   },
   {
     "iata": "LV",
-    "nombre": "Albanian Airlines"
+    "nombre": "Level"
   },
   {
     "iata": "LW",
@@ -1161,15 +1197,15 @@
   },
   {
     "iata": "LY",
-    "nombre": "El Al Israel Airlines"
+    "nombre": "El Al"
   },
   {
     "iata": "M3",
-    "nombre": "ABSA - Aerolinhas Brasileiras"
+    "nombre": "LATAM Cargo Brasil"
   },
   {
     "iata": "M4",
-    "nombre": "Marysya Airlines"
+    "nombre": "Mistral Air"
   },
   {
     "iata": "M5",
@@ -1181,7 +1217,7 @@
   },
   {
     "iata": "M9",
-    "nombre": "Motor Sich"
+    "nombre": "Motor Sich Jsc"
   },
   {
     "iata": "MD",
@@ -1193,7 +1229,7 @@
   },
   {
     "iata": "MF",
-    "nombre": "Xiamen Airlines"
+    "nombre": "XiamenAir"
   },
   {
     "iata": "MH",
@@ -1205,7 +1241,7 @@
   },
   {
     "iata": "MJ",
-    "nombre": "L"
+    "nombre": "Mihin Lanka"
   },
   {
     "iata": "MK",
@@ -1221,15 +1257,15 @@
   },
   {
     "iata": "MO",
-    "nombre": "Abu Dhabi Amiri Flight"
+    "nombre": "Calm Air International"
   },
   {
     "iata": "MR",
-    "nombre": "Homer Air"
+    "nombre": "Hunnu Air"
   },
   {
     "iata": "MS",
-    "nombre": "Egyptair"
+    "nombre": "EgyptAir"
   },
   {
     "iata": "MU",
@@ -1237,15 +1273,15 @@
   },
   {
     "iata": "MW",
-    "nombre": "Maya Island Air"
+    "nombre": "Malta Air"
   },
   {
     "iata": "MY",
-    "nombre": "Midwest Airlines (Egypt)"
+    "nombre": "MASwings"
   },
   {
     "iata": "N3",
-    "nombre": "Omskavia Airline"
+    "nombre": "Aerolineas Mas"
   },
   {
     "iata": "NF",
@@ -1261,7 +1297,7 @@
   },
   {
     "iata": "NL",
-    "nombre": "Shaheen Air International"
+    "nombre": "Amelia International"
   },
   {
     "iata": "NP",
@@ -1269,7 +1305,7 @@
   },
   {
     "iata": "NS",
-    "nombre": "Caucasus Airlines"
+    "nombre": "Hebei Airlines"
   },
   {
     "iata": "NT",
@@ -1292,28 +1328,32 @@
     "nombre": "Air New Zealand"
   },
   {
+    "iata": "O4",
+    "nombre": "Andes Líneas Aéreas"
+  },
+  {
     "iata": "O6",
     "nombre": "Oceanair"
   },
   {
     "iata": "OA",
-    "nombre": "Olympic Airlines"
+    "nombre": "Olympic Air"
   },
   {
     "iata": "OB",
-    "nombre": "Astrakhan Airlines"
+    "nombre": "Boliviana de Aviación (BoA)"
   },
   {
     "iata": "OC",
-    "nombre": "Catovair"
+    "nombre": "Oriental Air Bridge"
   },
   {
     "iata": "OD",
-    "nombre": "Malindo Air"
+    "nombre": "Batik Air Malaysia"
   },
   {
     "iata": "OJ",
-    "nombre": "Overland Airways"
+    "nombre": "Fly Jamaica Airways"
   },
   {
     "iata": "OK",
@@ -1321,15 +1361,15 @@
   },
   {
     "iata": "OM",
-    "nombre": "MIAT Mongolian Airlines"
+    "nombre": "Miat Mongolian Airlines"
   },
   {
     "iata": "ON",
-    "nombre": "Nauru Air Corporation"
+    "nombre": "Nauru Airlines"
   },
   {
     "iata": "OR",
-    "nombre": "Arkefly"
+    "nombre": "TUI Airlines Netherlands"
   },
   {
     "iata": "OS",
@@ -1341,7 +1381,7 @@
   },
   {
     "iata": "OV",
-    "nombre": "Estonian Air"
+    "nombre": "SalamAir"
   },
   {
     "iata": "OX",
@@ -1357,15 +1397,31 @@
   },
   {
     "iata": "P0",
-    "nombre": "Proflight Commuter Services"
+    "nombre": "Proflight Commuter"
+  },
+  {
+    "iata": "P1",
+    "nombre": "Publiccharters Com"
+  },
+  {
+    "iata": "P2",
+    "nombre": "Airkenya Express"
   },
   {
     "iata": "P4",
-    "nombre": "Patriot Airways"
+    "nombre": "Air Peace"
+  },
+  {
+    "iata": "P6",
+    "nombre": "Pascan Aviation"
   },
   {
     "iata": "P9",
     "nombre": "Peruvian Airlines"
+  },
+  {
+    "iata": "PB",
+    "nombre": "Provincial Airlines"
   },
   {
     "iata": "PC",
@@ -1377,7 +1433,7 @@
   },
   {
     "iata": "PE",
-    "nombre": "Air Europe"
+    "nombre": "Peoples Viennaline"
   },
   {
     "iata": "PG",
@@ -1385,7 +1441,7 @@
   },
   {
     "iata": "PI",
-    "nombre": "Piedmont Airlines (1948-1989)"
+    "nombre": "Polar Airlines"
   },
   {
     "iata": "PJ",
@@ -1393,23 +1449,23 @@
   },
   {
     "iata": "PK",
-    "nombre": "Pakistan International Airlines"
+    "nombre": "Pakistan International Airlines (PIA)"
   },
   {
     "iata": "PL",
-    "nombre": "Aeroper"
+    "nombre": "Southern Air Charter"
   },
   {
     "iata": "PM",
-    "nombre": "Tropic Air"
+    "nombre": "Canaryfly"
   },
   {
     "iata": "PN",
-    "nombre": "West Air China"
+    "nombre": "China West Air"
   },
   {
     "iata": "PQ",
-    "nombre": "LSM Airlines"
+    "nombre": "SkyUp Airlines"
   },
   {
     "iata": "PR",
@@ -1421,7 +1477,7 @@
   },
   {
     "iata": "PV",
-    "nombre": "PAN Air"
+    "nombre": "Saint Barth Commuter"
   },
   {
     "iata": "PW",
@@ -1437,7 +1493,7 @@
   },
   {
     "iata": "PZ",
-    "nombre": "TAM Mercosur"
+    "nombre": "LATAM Paraguay"
   },
   {
     "iata": "Q2",
@@ -1445,31 +1501,31 @@
   },
   {
     "iata": "Q3",
-    "nombre": "SOCHI AIR CHATER"
+    "nombre": "Anguilla Air Services"
   },
   {
     "iata": "Q6",
-    "nombre": "Aero Condor Peru"
+    "nombre": "Volaris CostaRica"
   },
   {
     "iata": "Q7",
-    "nombre": "SkyBahamas Airlines"
+    "nombre": "Sky Bahamas Airlines"
   },
   {
     "iata": "Q8",
-    "nombre": "Pacific East Asia Cargo Airlines"
+    "nombre": "Trans Air Congo"
   },
   {
     "iata": "Q9",
-    "nombre": "Arik Niger"
+    "nombre": "Airliaison"
   },
   {
     "iata": "QB",
-    "nombre": "Georgian National Airlines"
+    "nombre": "Qeshm Air"
   },
   {
     "iata": "QC",
-    "nombre": "Camair-co"
+    "nombre": "Camair-Co"
   },
   {
     "iata": "QF",
@@ -1481,15 +1537,15 @@
   },
   {
     "iata": "QH",
-    "nombre": "Air Florida"
+    "nombre": "Air Bamboo"
   },
   {
     "iata": "QL",
-    "nombre": "Aero Lanka"
+    "nombre": "Linea Aerea De Servicio"
   },
   {
     "iata": "QN",
-    "nombre": "Air Armenia"
+    "nombre": "Skytrans Regional"
   },
   {
     "iata": "QR",
@@ -1497,11 +1553,11 @@
   },
   {
     "iata": "QS",
-    "nombre": "Travel Service"
+    "nombre": "Smartwings"
   },
   {
     "iata": "QU",
-    "nombre": "East African"
+    "nombre": "UTair Ukraine"
   },
   {
     "iata": "QV",
@@ -1513,15 +1569,15 @@
   },
   {
     "iata": "R2",
-    "nombre": "Orenburg Airlines"
+    "nombre": "Transair"
   },
   {
     "iata": "R3",
-    "nombre": "Aircompany Yakutia"
+    "nombre": "Yakutia Airlines"
   },
   {
     "iata": "R7",
-    "nombre": "Aserca Airlines"
+    "nombre": "Aserca"
   },
   {
     "iata": "RA",
@@ -1533,11 +1589,11 @@
   },
   {
     "iata": "RG",
-    "nombre": "VRG Linhas Aereas"
+    "nombre": "Rotana Jet"
   },
   {
     "iata": "RI",
-    "nombre": "Mandala Airlines"
+    "nombre": "Air Costa Rica"
   },
   {
     "iata": "RJ",
@@ -1545,11 +1601,11 @@
   },
   {
     "iata": "RL",
-    "nombre": "Royal Falcon"
+    "nombre": "Royal Flight"
   },
   {
     "iata": "RO",
-    "nombre": "Tarom"
+    "nombre": "TAROM"
   },
   {
     "iata": "RQ",
@@ -1561,15 +1617,15 @@
   },
   {
     "iata": "RZ",
-    "nombre": "Euro Exec Express"
+    "nombre": "SANSA Airlines"
   },
   {
     "iata": "S2",
-    "nombre": "Air Sahara"
+    "nombre": "Jet Lite"
   },
   {
     "iata": "S3",
-    "nombre": "Santa Barbara Airlines"
+    "nombre": "SBA Airlines"
   },
   {
     "iata": "S4",
@@ -1581,15 +1637,15 @@
   },
   {
     "iata": "S6",
-    "nombre": "Salmon Air"
+    "nombre": "Sunrise Airways"
   },
   {
     "iata": "S7",
-    "nombre": "S7 Airlines"
+    "nombre": "Siberia Airlines"
   },
   {
     "iata": "S9",
-    "nombre": "Starbow Airlines"
+    "nombre": "Starbow"
   },
   {
     "iata": "SA",
@@ -1597,7 +1653,7 @@
   },
   {
     "iata": "SB",
-    "nombre": "Air Caledonie International"
+    "nombre": "Aircalin"
   },
   {
     "iata": "SC",
@@ -1613,15 +1669,15 @@
   },
   {
     "iata": "SG",
-    "nombre": "Spicejet"
+    "nombre": "SpiceJet"
   },
   {
     "iata": "SH",
-    "nombre": "Sharp Airlines"
+    "nombre": "Sharp Aviation"
   },
   {
     "iata": "SI",
-    "nombre": "Skynet Airlines"
+    "nombre": "Blue Islands"
   },
   {
     "iata": "SJ",
@@ -1629,7 +1685,7 @@
   },
   {
     "iata": "SK",
-    "nombre": "Scandinavian Airlines System"
+    "nombre": "Scandinavian Airlines"
   },
   {
     "iata": "SN",
@@ -1645,7 +1701,7 @@
   },
   {
     "iata": "SS",
-    "nombre": "Corsairfly"
+    "nombre": "Corsair"
   },
   {
     "iata": "ST",
@@ -1653,11 +1709,11 @@
   },
   {
     "iata": "SU",
-    "nombre": "Aeroflot Russian Airlines"
+    "nombre": "Aeroflot"
   },
   {
     "iata": "SV",
-    "nombre": "Saudi Arabian Airlines"
+    "nombre": "Saudia"
   },
   {
     "iata": "SW",
@@ -1669,11 +1725,11 @@
   },
   {
     "iata": "SY",
-    "nombre": "Sun Country Airlines"
+    "nombre": "Sun Country"
   },
   {
     "iata": "SZ",
-    "nombre": "Salzburg arrows"
+    "nombre": "Somon Air"
   },
   {
     "iata": "T3",
@@ -1689,7 +1745,7 @@
   },
   {
     "iata": "TA",
-    "nombre": "Grupo TACA"
+    "nombre": "Avianca El Salvador"
   },
   {
     "iata": "TD",
@@ -1697,19 +1753,19 @@
   },
   {
     "iata": "TE",
-    "nombre": "FlyLal"
+    "nombre": "Sky Taxi"
   },
   {
     "iata": "TF",
-    "nombre": "Malmö Aviation"
+    "nombre": "BRA"
   },
   {
     "iata": "TG",
-    "nombre": "Thai Airways International"
+    "nombre": "Thai Airways"
   },
   {
     "iata": "TJ",
-    "nombre": "T.J. Air"
+    "nombre": "Tradewind Aviation"
   },
   {
     "iata": "TK",
@@ -1721,7 +1777,7 @@
   },
   {
     "iata": "TM",
-    "nombre": "Air Mozambique"
+    "nombre": "Lam Mozambique"
   },
   {
     "iata": "TN",
@@ -1737,7 +1793,7 @@
   },
   {
     "iata": "TR",
-    "nombre": "Tiger Airways"
+    "nombre": "Scoot"
   },
   {
     "iata": "TS",
@@ -1753,19 +1809,19 @@
   },
   {
     "iata": "TV",
-    "nombre": "Virgin Express"
+    "nombre": "Tibet Airlines"
   },
   {
     "iata": "TW",
-    "nombre": "Tway Airlines"
+    "nombre": "T'way Air"
   },
   {
     "iata": "TX",
-    "nombre": "Air Caraïbes"
+    "nombre": "Air Caraibes"
   },
   {
     "iata": "TY",
-    "nombre": "Iberworld"
+    "nombre": "Air Caledonie"
   },
   {
     "iata": "TZ",
@@ -1781,7 +1837,7 @@
   },
   {
     "iata": "U7",
-    "nombre": "Northern Dene Airways"
+    "nombre": "Air Uganda"
   },
   {
     "iata": "UA",
@@ -1793,7 +1849,7 @@
   },
   {
     "iata": "UG",
-    "nombre": "Tuninter"
+    "nombre": "Tunisair Express"
   },
   {
     "iata": "UJ",
@@ -1809,7 +1865,7 @@
   },
   {
     "iata": "UN",
-    "nombre": "Transaero Airlines"
+    "nombre": "United Nigeria Airlines Company Ltd"
   },
   {
     "iata": "UO",
@@ -1821,7 +1877,7 @@
   },
   {
     "iata": "UR",
-    "nombre": "UTair-Express"
+    "nombre": "Uganda Airlines"
   },
   {
     "iata": "US",
@@ -1837,7 +1893,7 @@
   },
   {
     "iata": "UY",
-    "nombre": "Cameroon Airlines"
+    "nombre": "Sky Prime Charter"
   },
   {
     "iata": "V0",
@@ -1849,15 +1905,15 @@
   },
   {
     "iata": "V4",
-    "nombre": "Reem Air"
+    "nombre": "Vieques Air Link"
   },
   {
     "iata": "V7",
-    "nombre": "VOLOTEA Airways"
+    "nombre": "Volotea"
   },
   {
     "iata": "V9",
-    "nombre": "Star1 Airlines"
+    "nombre": "Van Air Europe"
   },
   {
     "iata": "VA",
@@ -1865,19 +1921,19 @@
   },
   {
     "iata": "VB",
-    "nombre": "Birmingham European"
+    "nombre": "Viva Aerobus"
   },
   {
     "iata": "VF",
-    "nombre": "Valuair"
+    "nombre": "AJet"
   },
   {
     "iata": "VH",
-    "nombre": "Virgin Pacific"
+    "nombre": "Viva Air Colombia"
   },
   {
     "iata": "VJ",
-    "nombre": "Royal Air Cambodge"
+    "nombre": "VietJet Air"
   },
   {
     "iata": "VN",
@@ -1885,15 +1941,15 @@
   },
   {
     "iata": "VQ",
-    "nombre": "Viking Hellas"
+    "nombre": "Novoair"
   },
   {
     "iata": "VR",
-    "nombre": "TACV"
+    "nombre": "Tacv Cabo Verde Airlines"
   },
   {
     "iata": "VS",
-    "nombre": "Virgin Atlantic Airways"
+    "nombre": "Virgin Atlantic"
   },
   {
     "iata": "VT",
@@ -1909,23 +1965,23 @@
   },
   {
     "iata": "VY",
-    "nombre": "Formosa Airlines"
+    "nombre": "Vueling"
   },
   {
     "iata": "W2",
-    "nombre": "Maastricht Airlines"
+    "nombre": "Flexflight"
   },
   {
     "iata": "W3",
-    "nombre": "World Scale Airlines"
+    "nombre": "Arik Air"
   },
   {
     "iata": "W4",
-    "nombre": "AeroWorld"
+    "nombre": "Wizz Air Malta"
   },
   {
     "iata": "W5",
-    "nombre": "Mahan Air"
+    "nombre": "Mahan Airlines"
   },
   {
     "iata": "W6",
@@ -1933,11 +1989,11 @@
   },
   {
     "iata": "W9",
-    "nombre": "Air Bagan"
+    "nombre": "Wizz Air"
   },
   {
     "iata": "WB",
-    "nombre": "Rwandair Express"
+    "nombre": "Rwandair"
   },
   {
     "iata": "WF",
@@ -1945,11 +2001,11 @@
   },
   {
     "iata": "WJ",
-    "nombre": "WebJet Linhas A"
+    "nombre": "Air Labrador"
   },
   {
     "iata": "WM",
-    "nombre": "Windward Islands Airways"
+    "nombre": "Windward Island Airways"
   },
   {
     "iata": "WN",
@@ -1957,19 +2013,23 @@
   },
   {
     "iata": "WP",
-    "nombre": "Island Air (WP)"
+    "nombre": "Island Air"
   },
   {
     "iata": "WS",
     "nombre": "WestJet"
   },
   {
+    "iata": "WT",
+    "nombre": "Swiftair"
+  },
+  {
     "iata": "WU",
-    "nombre": "Wizz Air Ukraine"
+    "nombre": "Tikal Jets Airlines"
   },
   {
     "iata": "WW",
-    "nombre": "bmibaby"
+    "nombre": "Wow Air"
   },
   {
     "iata": "WX",
@@ -1985,19 +2045,23 @@
   },
   {
     "iata": "X7",
-    "nombre": "Chitaavia"
+    "nombre": "Challenge Aero"
   },
   {
     "iata": "XK",
-    "nombre": "Corse-Mediterranee"
+    "nombre": "Air Corsica"
   },
   {
     "iata": "XL",
-    "nombre": "Aerolane"
+    "nombre": "LATAM Ecuador"
   },
   {
     "iata": "XQ",
     "nombre": "SunExpress"
+  },
+  {
+    "iata": "XU",
+    "nombre": "African Express Airways"
   },
   {
     "iata": "XV",
@@ -2005,7 +2069,7 @@
   },
   {
     "iata": "XY",
-    "nombre": "Nas Air"
+    "nombre": "Flynas"
   },
   {
     "iata": "Y4",
@@ -2013,75 +2077,87 @@
   },
   {
     "iata": "Y5",
-    "nombre": "Asia Wings"
+    "nombre": "Golden Myanmar Airlines"
   },
   {
     "iata": "Y7",
-    "nombre": "NordStar Airlines"
+    "nombre": "NordStar"
   },
   {
     "iata": "Y8",
-    "nombre": "Marusya Airways"
+    "nombre": "Yangtze River Express"
   },
   {
     "iata": "Y9",
-    "nombre": "Kish Air"
+    "nombre": "Kish Airlines"
   },
   {
     "iata": "YC",
-    "nombre": "Ciel Canadien"
+    "nombre": "Yamal Airlines"
   },
   {
     "iata": "YI",
-    "nombre": "TUR Avrupa Hava YollarÄ±"
+    "nombre": "Yunnan Yingan Airline"
+  },
+  {
+    "iata": "YJ",
+    "nombre": "Asian Wings Airways"
   },
   {
     "iata": "YK",
-    "nombre": "Cyprus Turkish Airlines"
+    "nombre": "Avia Traffic Company"
   },
   {
     "iata": "YM",
     "nombre": "Montenegro Airlines"
   },
   {
+    "iata": "YN",
+    "nombre": "Air Creebec"
+  },
+  {
     "iata": "YO",
-    "nombre": "TransHolding System"
+    "nombre": "Heli Air Monaco"
   },
   {
     "iata": "YQ",
-    "nombre": "Polet Airlines (Priv)"
+    "nombre": "TAR Aerolíneas"
   },
   {
     "iata": "YR",
-    "nombre": "SENIC AIRLINES"
+    "nombre": "Scenic Airlines"
   },
   {
     "iata": "YT",
-    "nombre": "Yeti Airways"
+    "nombre": "Yeti Airlines"
   },
   {
     "iata": "Z2",
-    "nombre": "Zest Air"
+    "nombre": "Philippines AirAsia"
   },
   {
     "iata": "Z4",
-    "nombre": "Zoom Airlines"
+    "nombre": "Zagrosjet"
   },
   {
     "iata": "Z6",
-    "nombre": "ZABAIKAL AIRLINES"
+    "nombre": "Dniproavia"
   },
   {
     "iata": "Z8",
-    "nombre": "Amaszonas"
+    "nombre": "Línea Aérea Amaszonas"
   },
   {
     "iata": "Z9",
-    "nombre": "Flightlink Tanzania"
+    "nombre": "Jsc Bek Air"
   },
   {
     "iata": "ZB",
-    "nombre": "Air Bourbon"
+    "nombre": "Air Albania"
+  },
+  {
+    "iata": "ZD",
+    "nombre": "Ewa Air"
   },
   {
     "iata": "ZE",

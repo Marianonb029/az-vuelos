@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@az/core": "workspace:*",
+    "@az/espacio": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zod": "^4.1.11"

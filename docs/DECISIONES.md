@@ -131,7 +131,14 @@ El monto original también se redondea hacia arriba.
 - `necesitaVerificacion` y `estado: "pendiente"` sólo con prioridad alta o condicional (SPEC). EK queda `baja` / `sin_verificar`. Las de EE.UU. llevan la restricción de visa en la hipótesis.
 - **Gap 2 (`feeder_destino`)**: operadoras de tramos desde los aeropuertos alcanzados por rutas N1–2 (MAD, BCN, LIS…) hacia destinos candidatos, que no están en B ni operan en ningún origen (VY, FR, U2, V7…). Siempre `requiereBoletosSeparados: true`.
 - Comprobado con datos reales: Gap 1 de EZE contiene TK, ET, LX, BA, EK (criterio del SPEC) más DL/UA condicionales y 9 conexiones N3; Gap 2 contiene VY.
-- **Nombres del grafo:** `data/aerolineas-rutas.json` (OpenFlights `airlines.dat` por id de aerolínea). Los códigos IATA se reasignan: con el catálogo vigente `AB` se mostraba como Bonza cuando en 2014 era Air Berlin. El catálogo vigente (`airlines.json`) sigue siendo el del formulario.
+- **Nombres del grafo:** `data/aerolineas-rutas.json` = catálogo vigente (OpenTravelData) y, para códigos ya no asignados (US, AB…), OpenFlights `airlines.dat` por IATA (activas). Se probó nombrar por el id de aerolínea de `routes.dat` y falló: `VY` apuntaba a Formosa Airlines y `OB` a Astrakhan Airlines. Un código reasignado desde 2014 (`AB`: Air Berlin → Bonza) muestra a su titular actual; se acepta.
+
+## Fase 6.3b (14/09/2026) — pantalla del espacio de búsqueda
+
+- `GET /espacio?origen=&destino=` corre las Fases 1–3 en memoria (datasets cargados una vez al arrancar la API; sin Chrome, sin SQLite). Contrato `ResultadoEspacio` en `@az/espacio`, parseado con Zod en la web.
+- La web gana una pestaña **Espacio de búsqueda** junto a **Precios**: orígenes y destinos alternativos con distancia, rutas Nivel 1–2 (las Nivel 3–4 persistidas se muestran a pedido), Gap 1 y Gap 2 con hipótesis y estado. Las aerolíneas con adaptador llevan la marca "adaptador"; el botón "Verificar en el sitio oficial" (prellenar la búsqueda de precios) llega con 6.5.
+- Corrección en `Combobox`: al teclear sobre una elección previa, el efecto que sincroniza el texto con el valor borraba lo escrito. Ahora sólo sincroniza cuando el padre fija un valor.
+- Visto en la pantalla con datos reales: `US` (US Airways, absorbida por AA en 2015) cuenta como aerolínea distinta en las conexiones vía MIA/DFW y sube rutas a Nivel 2. Es un artefacto del dataset de 2014; se documenta, no se corrige a mano.
 
 ## Conversión a USD
 

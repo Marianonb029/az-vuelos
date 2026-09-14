@@ -27,8 +27,10 @@ export const Combobox = <T,>({ id, placeholder, valor, etiquetaValor, buscar, on
   const listaId = useId();
   const contenedor = useRef<HTMLDivElement>(null);
 
+  // Sincroniza el texto cuando el padre fija un valor. Cuando el valor pasa a null es porque la persona
+  // está tecleando sobre una elección previa: no hay que borrarle lo que escribe.
   useEffect(() => {
-    setTexto(valor === null ? "" : etiquetaValor(valor));
+    if (valor !== null) setTexto(etiquetaValor(valor));
   }, [valor, etiquetaValor]);
 
   useEffect(() => {
