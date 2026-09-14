@@ -124,6 +124,15 @@ El monto original también se redondea hacia arriba.
 - **Calibración contra el proceso manual:** los números del SPEC (230 destinos, 71 rutas N1–2) corresponden a **toda Europa** como destino, no al radio de 800 km alrededor de MAD: con destinos europeos grandes el motor da 239 destinos y 49 rutas N1–2 (40 pares O-D); con el radio aprobado, 40 destinos y 19 rutas (15 pares). No se forzaron los umbrales para llegar a 65–80: lo que falta son rutas posteriores a 2014 (Level, ITA, ampliaciones de Air Europa) que sólo aparecerán por gap analysis (6.3) o verificación en vivo (6.4). Pendiente de decisión del dueño: destino por radio (aprobado) o por región.
 - Umbrales de nivel (21/7/2/1) sin cambios respecto del SPEC.
 
+## Fase 6.3 (14/09/2026) — gaps de aerolíneas
+
+- `analizarGaps` (sin scrapers de sitios de aeropuertos todavía: Set A sale del grafo; los scrapers se agregan sólo después de sondearlos con `pnpm sondear`). Set A = operadoras con salidas desde cada origen candidato (codeshares excluidos); Set B = aerolíneas de las rutas Nivel 1–2.
+- **Gap 1 (`gap_origen`)** se arma en dos pasos: (1) reglas de hub de `config.hubs` — la aerolínea opera en el origen (TK, BA, EK, DL, UA), llega vía un aeropuerto intermedio con boleto único (`via`: ET y LX por GRU) o necesita un feeder de otra aerolínea con boletos separados (`requiereFeederA`: TP por GRU/GIG); (2) sin regla, sólo entran aerolíneas que ya muestran una conexión Nivel 3–4 en el dataset desde ese origen (AF, KL, LH, AZ…), con prioridad media. Las que operan en el origen pero no llegan a ningún destino candidato (regionales como 4M, 5Q) no se listan: no son un gap, son ruido.
+- `necesitaVerificacion` y `estado: "pendiente"` sólo con prioridad alta o condicional (SPEC). EK queda `baja` / `sin_verificar`. Las de EE.UU. llevan la restricción de visa en la hipótesis.
+- **Gap 2 (`feeder_destino`)**: operadoras de tramos desde los aeropuertos alcanzados por rutas N1–2 (MAD, BCN, LIS…) hacia destinos candidatos, que no están en B ni operan en ningún origen (VY, FR, U2, V7…). Siempre `requiereBoletosSeparados: true`.
+- Comprobado con datos reales: Gap 1 de EZE contiene TK, ET, LX, BA, EK (criterio del SPEC) más DL/UA condicionales y 9 conexiones N3; Gap 2 contiene VY.
+- **Nombres del grafo:** `data/aerolineas-rutas.json` (OpenFlights `airlines.dat` por id de aerolínea). Los códigos IATA se reasignan: con el catálogo vigente `AB` se mostraba como Bonza cuando en 2014 era Air Berlin. El catálogo vigente (`airlines.json`) sigue siendo el del formulario.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

@@ -5,6 +5,7 @@ import { AeropuertoGeo, RutaCompacta } from "@az/espacio";
 
 const OPENFLIGHTS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat";
 const OPENFLIGHTS_RUTAS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat";
+const OPENFLIGHTS_AEROLINEAS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat";
 const OURAIRPORTS = "https://davidmegginson.github.io/ourairports-data/airports.csv";
 const OPTD = "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv";
 const DESTINO = resolve(import.meta.dirname, "..", "data");
@@ -111,20 +112,29 @@ const procesarAeropuertosGeo = (lineas: string[]) => {
   return [...porIata.values()].sort((a, b) => a.iata.localeCompare(b.iata));
 };
 
+// OpenFlights airlines.dat: id, nombre, alias, IATA, ICAO, callsign, país, activa. Sólo sirve para
+// nombrar las aerolíneas del grafo de 2014: los códigos IATA se reasignan (AB era Air Berlin, hoy Bonza).
+const procesarNombresOpenFlights = (lineas: string[][]) =>
+  new Map(lineas.filter((f) => f.length >= 2 && f[0] !== undefined && f[1] !== undefined).map((f) => [f[0] ?? "", f[1] ?? ""]));
+
 // OpenFlights routes.dat: aerolínea, id, origen, id, destino, id, codeshare, escalas, equipo.
-const procesarRutas = (lineas: string[], aeropuertos: Set<string>) => {
+const procesarRutas = (lineas: string[], aeropuertos: Set<string>, nombresPorId: Map<string, string>) => {
   const rutas: RutaCompacta[] = [];
   const vistas = new Set<string>();
+  const nombres = new Map<string, string>();
   for (const linea of lineas) {
     const f = linea.split(",");
-    const [aerolinea = "", , origen = "", , destino = "", , codeshare = "", escalas = "0"] = f;
+    const [aerolinea = "", idAerolinea = "", origen = "", , destino = "", , codeshare = "", escalas = "0"] = f;
     if (!IATA_AEROLINEA.test(aerolinea) || !aeropuertos.has(origen) || !aeropuertos.has(destino)) continue;
     const clave = `${aerolinea}|${origen}|${destino}`;
     if (vistas.has(clave)) continue;
     vistas.add(clave);
     rutas.push(RutaCompacta.parse([aerolinea, origen, destino, Number(escalas) || 0, codeshare === "Y"]));
+    const nombre = nombresPorId.get(idAerolinea);
+    if (nombre && !nombres.has(aerolinea)) nombres.set(aerolinea, nombre);
   }
-  return rutas;
+  const aerolineasRutas = [...nombres].map(([iata, nombre]) => ({ iata, nombre })).sort((a, b) => a.iata.localeCompare(b.iata));
+  return { rutas, aerolineasRutas };
 };
 
 const guardar = async (archivo: string, contenido: unknown[]) => {
@@ -140,11 +150,13 @@ const aeropuertos = procesarAeropuertos((await descargarTexto(OPENFLIGHTS)).map(
 );
 
 const aeropuertosGeo = procesarAeropuertosGeo(await descargarTexto(OURAIRPORTS));
-const rutas = procesarRutas(await descargarTexto(OPENFLIGHTS_RUTAS), new Set(aeropuertosGeo.map((a) => a.iata)));
+const nombresOpenFlights = procesarNombresOpenFlights((await descargarTexto(OPENFLIGHTS_AEROLINEAS)).map(parsearLinea));
+const { rutas, aerolineasRutas } = procesarRutas(await descargarTexto(OPENFLIGHTS_RUTAS), new Set(aeropuertosGeo.map((a) => a.iata)), nombresOpenFlights);
 
 await guardar("airlines.json", aerolineas);
 await guardar("airports.json", aeropuertos);
 await guardar("aeropuertos-geo.json", aeropuertosGeo);
+await guardar("aerolineas-rutas.json", aerolineasRutas);
 await writeFile(resolve(DESTINO, "rutas.json"), JSON.stringify(rutas) + "\n", "utf8");
 console.log(`rutas.json: ${rutas.length} registros`);
 await writeFile(
@@ -172,6 +184,11 @@ await writeFile(
         aviso: "OpenFlights dejó de actualizar rutas en 2014: sirve como grafo de rutas posibles, no como malla vigente ni como frecuencia",
         filtro: "aerolínea con IATA, ambos aeropuertos en aeropuertos-geo, una por (aerolínea, origen, destino)",
         registros: rutas.length,
+      },
+      aerolineasRutas: {
+        fuente: OPENFLIGHTS_AEROLINEAS,
+        aviso: "Nombres de las aerolíneas del grafo según OpenFlights (id de aerolínea), no según el catálogo vigente: los códigos IATA se reasignan",
+        registros: aerolineasRutas.length,
       },
     },
     null,
