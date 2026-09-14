@@ -20,7 +20,8 @@
     "sondear": "tsx packages/scraper/src/sonda.ts"
   },
   "dependencies": {
-    "@az/core": "workspace:*"
+    "@az/core": "workspace:*",
+    "@az/espacio": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

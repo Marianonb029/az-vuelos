@@ -1,8 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Aerolinea, Aeropuerto } from "@az/core";
+import { AeropuertoGeo, RutaCompacta } from "@az/espacio";
 
 const OPENFLIGHTS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat";
+const OPENFLIGHTS_RUTAS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat";
+const OURAIRPORTS = "https://davidmegginson.github.io/ourairports-data/airports.csv";
 const OPTD = "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv";
 const DESTINO = resolve(import.meta.dirname, "..", "data");
 
@@ -81,6 +84,49 @@ const procesarAeropuertos = (filas: string[][]) => {
   return [...porIata.values()].sort((a, b) => a.iata.localeCompare(b.iata));
 };
 
+// OurAirports airports.csv: aeropuertos grandes y medianos con IATA, con coordenadas y tipo (espacio de búsqueda).
+const procesarAeropuertosGeo = (lineas: string[]) => {
+  const cabecera = parsearLinea(lineas[0] ?? "");
+  const col = (nombre: string) => cabecera.indexOf(nombre);
+  const [iTipo, iNombre, iLat, iLon, iPais, iCiudad, iRegular, iIcao, iIata] = ["type", "name", "latitude_deg", "longitude_deg", "iso_country", "municipality", "scheduled_service", "icao_code", "iata_code"].map(col);
+  const porIata = new Map<string, AeropuertoGeo>();
+  for (const linea of lineas.slice(1)) {
+    const f = parsearLinea(linea);
+    const iata = f[iIata ?? -1] ?? "";
+    const tipo = f[iTipo ?? -1] ?? "";
+    if (!IATA_AEROPUERTO.test(iata) || (tipo !== "large_airport" && tipo !== "medium_airport")) continue;
+    const candidato = AeropuertoGeo.parse({
+      iata,
+      icao: f[iIcao ?? -1] || null,
+      nombre: f[iNombre ?? -1] ?? "",
+      ciudad: f[iCiudad ?? -1] ?? "",
+      pais: f[iPais ?? -1] ?? "",
+      lat: Number(f[iLat ?? -1]),
+      lon: Number(f[iLon ?? -1]),
+      tipo: tipo === "large_airport" ? "grande" : "mediano",
+      servicioRegular: f[iRegular ?? -1] === "yes",
+    });
+    if (!porIata.has(iata) || candidato.tipo === "grande") porIata.set(iata, candidato);
+  }
+  return [...porIata.values()].sort((a, b) => a.iata.localeCompare(b.iata));
+};
+
+// OpenFlights routes.dat: aerolínea, id, origen, id, destino, id, codeshare, escalas, equipo.
+const procesarRutas = (lineas: string[], aeropuertos: Set<string>) => {
+  const rutas: RutaCompacta[] = [];
+  const vistas = new Set<string>();
+  for (const linea of lineas) {
+    const f = linea.split(",");
+    const [aerolinea = "", , origen = "", , destino = "", , codeshare = "", escalas = "0"] = f;
+    if (!IATA_AEROLINEA.test(aerolinea) || !aeropuertos.has(origen) || !aeropuertos.has(destino)) continue;
+    const clave = `${aerolinea}|${origen}|${destino}`;
+    if (vistas.has(clave)) continue;
+    vistas.add(clave);
+    rutas.push(RutaCompacta.parse([aerolinea, origen, destino, Number(escalas) || 0, codeshare === "Y"]));
+  }
+  return rutas;
+};
+
 const guardar = async (archivo: string, contenido: unknown[]) => {
   await writeFile(resolve(DESTINO, archivo), JSON.stringify(contenido, null, 2) + "\n", "utf8");
   console.log(`${archivo}: ${contenido.length} registros`);
@@ -93,8 +139,14 @@ const aeropuertos = procesarAeropuertos((await descargarTexto(OPENFLIGHTS)).map(
   Aeropuerto.parse(a),
 );
 
+const aeropuertosGeo = procesarAeropuertosGeo(await descargarTexto(OURAIRPORTS));
+const rutas = procesarRutas(await descargarTexto(OPENFLIGHTS_RUTAS), new Set(aeropuertosGeo.map((a) => a.iata)));
+
 await guardar("airlines.json", aerolineas);
 await guardar("airports.json", aeropuertos);
+await guardar("aeropuertos-geo.json", aeropuertosGeo);
+await writeFile(resolve(DESTINO, "rutas.json"), JSON.stringify(rutas) + "\n", "utf8");
+console.log(`rutas.json: ${rutas.length} registros`);
 await writeFile(
   resolve(DESTINO, "meta.json"),
   JSON.stringify(
@@ -109,6 +161,17 @@ await writeFile(
         fuente: OPENFLIGHTS,
         filtro: "IATA de 3 letras, tipo 'airport', uno por código",
         registros: aeropuertos.length,
+      },
+      aeropuertosGeo: {
+        fuente: OURAIRPORTS,
+        filtro: "large_airport y medium_airport con IATA; coordenadas y servicio regular",
+        registros: aeropuertosGeo.length,
+      },
+      rutas: {
+        fuente: OPENFLIGHTS_RUTAS,
+        aviso: "OpenFlights dejó de actualizar rutas en 2014: sirve como grafo de rutas posibles, no como malla vigente ni como frecuencia",
+        filtro: "aerolínea con IATA, ambos aeropuertos en aeropuertos-geo, una por (aerolínea, origen, destino)",
+        registros: rutas.length,
       },
     },
     null,

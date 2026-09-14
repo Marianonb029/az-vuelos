@@ -1,5 +1,5 @@
 {
-  "descargadoEn": "2026-09-14T02:51:34.573Z",
+  "descargadoEn": "2026-09-14T18:58:06.401Z",
   "aerolineas": {
     "fuente": "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv",
     "filtro": "IATA de 2 caracteres, sin fecha de fin de validez, una por código (mayor frecuencia de vuelos)",
@@ -9,5 +9,16 @@
     "fuente": "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat",
     "filtro": "IATA de 3 letras, tipo 'airport', uno por código",
     "registros": 6071
+  },
+  "aeropuertosGeo": {
+    "fuente": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+    "filtro": "large_airport y medium_airport con IATA; coordenadas y servicio regular",
+    "registros": 4569
+  },
+  "rutas": {
+    "fuente": "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat",
+    "aviso": "OpenFlights dejó de actualizar rutas en 2014: sirve como grafo de rutas posibles, no como malla vigente ni como frecuencia",
+    "filtro": "aerolínea con IATA, ambos aeropuertos en aeropuertos-geo, una por (aerolínea, origen, destino)",
+    "registros": 63599
   }
 }

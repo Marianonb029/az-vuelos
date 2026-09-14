@@ -1,0 +1,95 @@
+{
+  "fase1": {
+    "radioOrigenKm": 2000,
+    "radioDestinoKm": 800,
+    "tipoMinimo": "mediano",
+    "requiereInternacional": true,
+    "maxCandidatosOrigen": 12,
+    "maxCandidatosDestino": 40
+  },
+  "fase2": {
+    "niveles": {
+      "1": { "minVuelosSemanales": 21, "etiqueta": "Máxima" },
+      "2": { "minVuelosSemanales": 7, "etiqueta": "Alta" },
+      "3": { "minVuelosSemanales": 2, "etiqueta": "Media" },
+      "4": { "minVuelosSemanales": 1, "etiqueta": "Baja" }
+    },
+    "nivelesConservados": [1, 2],
+    "maxEscalas": 1,
+    "minSalidasSemanalesHub": 100,
+    "vuelosSemanalesPorRegistro": 7
+  },
+  "hubs": [
+    { "aerolineas": ["TK"], "hubs": ["IST"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "Vía IST alcanza prácticamente cualquier aeropuerto europeo, incluidos Nivel 3-4", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
+    { "aerolineas": ["ET"], "hubs": ["ADD"], "via": ["GRU"], "cubreRegiones": ["europa_principal"], "hipotesis": "EZE→GRU→ADD→Europa. Alta frecuencia de tarifas promocionales desde Buenos Aires", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
+    { "aerolineas": ["LX"], "hubs": ["ZRH"], "via": ["GRU"], "cubreRegiones": ["europa_central", "europa_sur"], "hipotesis": "Vía GRU y ZRH cubre Europa central y del sur", "prioridad": "media", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
+    { "aerolineas": ["BA"], "hubs": ["LHR"], "via": [], "cubreRegiones": ["reino_unido", "europa_toda"], "hipotesis": "Vía LHR cubre Reino Unido y toda Europa", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
+    { "aerolineas": ["EK"], "hubs": ["DXB"], "via": [], "cubreRegiones": ["europa_principal"], "hipotesis": "Vía DXB; trayecto total muy largo", "prioridad": "baja", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
+    { "aerolineas": ["TP"], "hubs": ["LIS"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "No opera en AR/CL/UY. Requiere tramo previo a Brasil. Líder Sudamérica-Europa", "prioridad": "alta", "requiereFeederA": ["GRU", "GIG"], "aerolineasFeeder": ["G3", "AD", "LA"], "restriccion": null, "requiereBoletosSeparados": true },
+    { "aerolineas": ["AA", "DL", "UA"], "hubs": ["MIA", "JFK", "ATL", "IAH"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "Vía hubs de EE.UU.; requiere visa o ESTA", "prioridad": "condicional", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": "requiere_visa_eeuu_o_esta", "requiereBoletosSeparados": false }
+  ],
+  "regiones": {
+    "europa_toda": ["ES", "PT", "FR", "IT", "DE", "GB", "IE", "NL", "BE", "LU", "CH", "AT", "DK", "SE", "NO", "FI", "IS", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI", "RS", "BA", "ME", "MK", "AL", "EE", "LV", "LT", "MT", "CY", "UA", "MD", "TR"],
+    "europa_principal": ["ES", "PT", "FR", "IT", "DE", "GB", "NL", "BE", "CH", "AT"],
+    "europa_central": ["DE", "CH", "AT", "CZ", "PL", "HU", "SK"],
+    "europa_sur": ["ES", "PT", "IT", "GR", "HR"],
+    "reino_unido": ["GB", "IE"],
+    "europa": ["ES", "PT", "FR", "IT", "DE", "GB", "IE", "NL", "BE", "LU", "CH", "AT", "DK", "SE", "NO", "FI", "IS", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI", "RS", "BA", "ME", "MK", "AL", "EE", "LV", "LT", "MT", "CY"]
+  },
+  "fase5": {
+    "pesos": {
+      "feriadoOrigen": 25,
+      "feriadoDestino": 15,
+      "recesoEscolarOrigen": 20,
+      "recesoEscolarDestino": 10,
+      "eventoMayorDestino": 30,
+      "adyacenteAFeriado": 10,
+      "salidaFinDeSemana": 12,
+      "salidaEntreSemana": -8,
+      "ventanaTemporadaAlta": 25,
+      "ventanaTemporadaBaja": -30
+    },
+    "bandas": { "verde": [0, 33], "amarillo": [34, 66], "rojo": [67, 100] },
+    "presionEstacional": { "pico": 25, "media": 0, "baja": -30, "minima": -30 },
+    "eventos": [
+      { "pais": "ES", "ciudad": "Madrid", "nombre": "FITUR", "mes": 1, "dias": "20-24", "tentativo": false, "impacto": "alto", "tipo": "feria" },
+      { "pais": "ES", "ciudad": "Madrid", "nombre": "C!Print / Promogift", "mes": 1, "dias": "12-14", "tentativo": false, "impacto": "medio", "tipo": "feria" },
+      { "pais": "GB", "ciudad": "London", "nombre": "ICE Gaming Expo", "mes": 1, "dias": "18-20", "tentativo": false, "impacto": "medio", "tipo": "feria" },
+      { "pais": "ES", "ciudad": "Barcelona", "nombre": "ISE", "mes": 2, "dias": null, "tentativo": true, "impacto": "alto", "tipo": "feria" },
+      { "pais": "ES", "ciudad": "Barcelona", "nombre": "Mobile World Congress", "mes": 2, "dias": null, "tentativo": true, "impacto": "muy_alto", "tipo": "feria" },
+      { "pais": "AR", "ciudad": null, "nombre": "Receso escolar de verano", "mes": 1, "dias": "1-31", "tentativo": false, "impacto": "alto", "tipo": "receso" },
+      { "pais": "ES", "ciudad": null, "nombre": "Vacaciones de Navidad", "mes": 12, "dias": "26-31", "tentativo": false, "impacto": "alto", "tipo": "receso" }
+    ],
+    "corredores": [
+      {
+        "nombre": "SA_EU_verano_austral",
+        "paisesOrigen": ["AR", "UY", "PY", "CL"],
+        "regionesDestino": ["europa"],
+        "ventanas": [
+          { "desde": "01-01", "hasta": "01-20", "presion": "pico", "nota": "Tarifas pico máximas de la serie 2022-2025" },
+          { "desde": "01-25", "hasta": "01-31", "presion": "media", "nota": "Aflojamiento post-éxodo, ventanas de liquidación" },
+          { "desde": "02-12", "hasta": "02-28", "presion": "baja", "nota": "Piso histórico. Reducciones del 25-40% vs. primera quincena de enero" },
+          { "desde": "02-15", "hasta": "02-25", "presion": "minima", "nota": "Mínimo absoluto de la serie" }
+        ],
+        "efectoDiaSemana": { "mar": -18, "mie": -18, "vie": 15, "sab": 15, "dom": 12 },
+        "efectoEscalas": { "penalizacionDirecto": 10, "bonoUnaEscala": -12, "nota": "Los directos (IB, UX, AR) sostienen valor alto en este bimestre. El piso tarifario aparece en rutas con 1 escala vía GRU o BOG." }
+      }
+    ],
+    "minDiasRachaVerde": 3
+  },
+  "fase6": {
+    "pesos": {
+      "nivelRuta": 30,
+      "presionInversa": 25,
+      "perfilPrecioAerolinea": 15,
+      "aeropuertoSolicitado": 12,
+      "penalizacionDistancia": -10,
+      "bonoDescubrimientoGap": 10,
+      "penalizacionBoletosSeparados": -8,
+      "penalizacionSinVerificar": -15
+    },
+    "kmPorPenalizacionTraslado": 500,
+    "aerolineasPerfilBajoCosto": ["JA", "WJ", "FO", "G3", "AD", "VY", "FR", "U2", "W6", "TK", "ET"],
+    "maxCombinaciones": 300
+  }
+}

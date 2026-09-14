@@ -106,6 +106,17 @@ El monto original también se redondea hacia arriba.
 - **Presupuesto por intento** (`presupuestoIntento`): 90 s (180 s en ida y vuelta) **más** 3 min si hay modo asistido de captcha y **más** 5 min si el adaptador es asistido. Antes, el timeout de 90 s cortaba la espera asistida y la reintentaba tres veces.
 - Comprobado en vivo: AEP→COR 21/11 en las tres aerolíneas; JetSMART respondió desde la caché de 6 h, AR verificó, Iberia esperó a la persona.
 
+## Fase 6.0 (14/09/2026) — espacio de búsqueda: SPEC portado a TypeScript
+
+- `docs/SPEC_ESPACIO.md` (adjunto del dueño, pensado en Python) se porta como `packages/espacio`: puro, sin I/O, los tipos derivan de Zod y **todos los números del SPEC viven en `config/espacio.json`** (radios, niveles, hubs, regiones, pesos, eventos, corredores). Cambiar una regla es editar el JSON, no el código.
+- **Regla 5 relajada para metabuscadores** (aprobado): Kayak y similares podrán aparecer en una sección separada "vía metabuscador", nunca mezclados con las lecturas del sitio oficial. Se asume que bloquearán y que harán falta modo asistido y `pnpm sondear` como con Iberia.
+- **Estado `verificado_manual`** (aprobado): para aerolíneas sin adaptador o bloqueadas, una persona podrá cargar el precio con evidencia obligatoria (URL + captura subida + monto + hora). Sin esos cuatro datos no se guarda nada. Se construye en 6.7.
+- **Grafo de rutas de fuente gratuita:** OpenFlights `routes.dat` (congelado en 2014, 63.599 rutas) filtrado a aeropuertos con IATA. No trae frecuencias: cada registro (aerolínea, ruta) cuenta como `vuelosSemanalesPorRegistro` (7) vuelos/semana; ese proxy se calibra en 6.2 contra las 65–80 rutas N1–2 esperadas para EZE→MAD. Las rutas nuevas desde 2014 (JetSMART, Flybondi, Level…) no están: el gap analysis y los adaptadores propios las cubren.
+- **Geografía:** OurAirports `airports.csv`, sólo `large_airport`/`medium_airport` con IATA (4.569). Haversine con R = 6371,0088 km. Radios 2000 km (origen) / 800 km (destino) del SPEC, aprobados; tope 12 orígenes / 40 destinos.
+- Fase 1 comprobada con datos reales: EZE → `EZE, AEP, MVD, ROS, PDP, COR, POA, MDZ, ASU, IGU, AGT, SCL` (incluye los 6 del proceso manual); MAD → 40 candidatos con BCN, LIS, VLC, AGP, SVQ, BIO y sin CDG.
+- `efectoDiaSemana` de los corredores es un registro parcial: los días que el SPEC no lista pesan 0.
+- `pnpm catalogos` genera además `data/aeropuertos-geo.json` y `data/rutas.json`; `data/meta.json` registra la advertencia de 2014.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
