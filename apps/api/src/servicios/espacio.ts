@@ -1,16 +1,32 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { AeropuertoGeo, ConfigEspacio, Grafo, NombreAerolinea, RutaCompacta, analizarGaps, calcularCalendario, expandirAeropuertos, generarRutas, ventanasVerdes } from "@az/espacio";
-import type { Feriado, ResultadoCalendario, ResultadoEspacio } from "@az/espacio";
+import {
+  AeropuertoGeo,
+  ConfigEspacio,
+  Grafo,
+  NombreAerolinea,
+  RutaCompacta,
+  analizarGaps,
+  calcularCalendario,
+  expandirAeropuertos,
+  generarCombinaciones,
+  generarRutas,
+  ventanasVerdes,
+} from "@az/espacio";
+import type { Feriado, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, Ventana } from "@az/espacio";
 
 export type ResultadoServicioEspacio = { ok: true; resultado: ResultadoEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioCalendario = { ok: true; resultado: ResultadoCalendario } | { ok: false; motivo: string };
+export type ResultadoServicioCombinaciones = { ok: true; resultado: ResultadoCombinaciones } | { ok: false; motivo: string };
 
 export interface ServicioEspacio {
   explorar: (origen: string, destino: string) => ResultadoServicioEspacio;
   paisesDe: (origen: string, destino: string) => string[] | null; // para pedir feriados antes del calendario
   calendario: (origen: string, destino: string, desde: string, hasta: string, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCalendario;
+  // Países de todos los orígenes candidatos más el destino: las combinaciones puntúan cada origen con su propio calendario.
+  paisesDelEspacio: (origen: string, destino: string) => string[] | null;
+  combinaciones: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCombinaciones;
 }
 
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
@@ -25,7 +41,59 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const aeropuerto = (iata: string) => aeropuertos.find((a) => a.iata === iata);
   const noEsta = (iata: string) => `El aeropuerto ${iata} no está en el dataset de OurAirports (grandes y medianos con IATA)`;
 
+  const explorar = (origen: string, destino: string): ResultadoServicioEspacio => {
+    const o = expandirAeropuertos(origen, "origen", aeropuertos, grafo, config.fase1);
+    if (!o.ok) return o;
+    const d = expandirAeropuertos(destino, "destino", aeropuertos, grafo, config.fase1);
+    if (!d.ok) return d;
+    const generadas = generarRutas(o.candidatos, d.candidatos, grafo, config.fase2, config.hubs);
+    const gaps = analizarGaps({ origenes: o.candidatos, destinos: d.candidatos, ...generadas, nombres }, grafo, config);
+    const mencionadas = new Set([...generadas.conservadas, ...generadas.descartadas].flatMap((r) => r.aerolineas));
+    return {
+      ok: true,
+      resultado: {
+        origen,
+        destino,
+        calculadoEn: new Date().toISOString(),
+        origenes: o.candidatos,
+        destinos: d.candidatos,
+        rutas: generadas,
+        gaps,
+        nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
+      },
+    };
+  };
+
   return {
+    explorar,
+    paisesDelEspacio: (origen, destino) => {
+      const e = explorar(origen, destino);
+      return e.ok ? [...new Set([...e.resultado.origenes, ...e.resultado.destinos].map((c) => c.aeropuerto.pais))] : null;
+    },
+    combinaciones: (origen, destino, ventanaPedida, rango, feriados, avisos) => {
+      const e = explorar(origen, destino);
+      if (!e.ok) return e;
+      const { origenes, destinos, rutas, gaps } = e.resultado;
+      const destinoGeo = aeropuerto(destino);
+      if (!destinoGeo) return { ok: false, motivo: noEsta(destino) };
+      const calendarios = new Map(origenes.map((o) => [o.aeropuerto.iata, calcularCalendario({ desde: rango.desde, hasta: rango.hasta, origen: o.aeropuerto, destino: destinoGeo, feriados }, config)]));
+      const verdes = new Map([...calendarios].map(([iata, puntajes]) => [iata, ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde)]));
+      const combinaciones = generarCombinaciones({ origenes, destinos, rutas: rutas.conservadas, gaps, ventanaPedida, calendarios, ventanasVerdes: verdes }, config.fase6);
+      const mencionadas = new Set(combinaciones.map((c) => c.aerolinea));
+      return {
+        ok: true,
+        resultado: {
+          origen,
+          destino,
+          ventanaPedida,
+          calendario: rango,
+          calculadoEn: new Date().toISOString(),
+          combinaciones,
+          nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
+          avisos: [...avisos],
+        },
+      };
+    },
     paisesDe: (origen, destino) => {
       const o = aeropuerto(origen);
       const d = aeropuerto(destino);
@@ -40,28 +108,6 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
       return {
         ok: true,
         resultado: { origen, destino, desde, hasta, calculadoEn: new Date().toISOString(), puntajes, ventanasVerdes: ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde), avisos: [...avisos] },
-      };
-    },
-    explorar: (origen, destino) => {
-      const o = expandirAeropuertos(origen, "origen", aeropuertos, grafo, config.fase1);
-      if (!o.ok) return o;
-      const d = expandirAeropuertos(destino, "destino", aeropuertos, grafo, config.fase1);
-      if (!d.ok) return d;
-      const generadas = generarRutas(o.candidatos, d.candidatos, grafo, config.fase2, config.hubs);
-      const gaps = analizarGaps({ origenes: o.candidatos, destinos: d.candidatos, ...generadas, nombres }, grafo, config);
-      const mencionadas = new Set([...generadas.conservadas, ...generadas.descartadas].flatMap((r) => r.aerolineas));
-      return {
-        ok: true,
-        resultado: {
-          origen,
-          destino,
-          calculadoEn: new Date().toISOString(),
-          origenes: o.candidatos,
-          destinos: d.candidatos,
-          rutas: generadas,
-          gaps,
-          nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
-        },
       };
     },
   };

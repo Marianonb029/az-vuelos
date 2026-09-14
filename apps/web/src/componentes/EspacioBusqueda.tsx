@@ -6,6 +6,8 @@ import type { ResultadoEspacio } from "@az/espacio";
 import { obtenerEspacio } from "../lib/api";
 import { CalendarioPresion } from "./CalendarioPresion";
 import { Campo } from "./Campo";
+import { Combinaciones } from "./Combinaciones";
+import type { VerificacionPedida } from "./Combinaciones";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
 import { ResultadosEspacio } from "./ResultadosEspacio";
@@ -14,12 +16,13 @@ interface Props {
   aeropuertos: readonly Aeropuerto[];
   adaptadores: ReadonlySet<string>;
   hoy: string;
+  onVerificar: (v: VerificacionPedida) => void; // lleva la combinación a la pestaña Precios
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // Pantalla del espacio de búsqueda: corre las Fases 1–3 del SPEC sobre los datasets (sin abrir Chrome).
-export const EspacioBusqueda = ({ aeropuertos, adaptadores, hoy }: Props) => {
+export const EspacioBusqueda = ({ aeropuertos, adaptadores, hoy, onVerificar }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [intentado, setIntentado] = useState(false);
@@ -76,7 +79,8 @@ export const EspacioBusqueda = ({ aeropuertos, adaptadores, hoy }: Props) => {
       {resultado && (
         <>
           <ResultadosEspacio resultado={resultado} adaptadores={adaptadores} />
-          <CalendarioPresion key={`${resultado.origen}-${resultado.destino}`} origen={resultado.origen} destino={resultado.destino} hoy={hoy} />
+          <CalendarioPresion key={`c-${resultado.origen}-${resultado.destino}`} origen={resultado.origen} destino={resultado.destino} hoy={hoy} />
+          <Combinaciones key={`x-${resultado.origen}-${resultado.destino}`} origen={resultado.origen} destino={resultado.destino} hoy={hoy} adaptadores={adaptadores} onVerificar={onVerificar} />
         </>
       )}
     </div>

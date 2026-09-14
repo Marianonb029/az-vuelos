@@ -2,7 +2,7 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { ResultadoCalendario, ResultadoEspacio } from "@az/espacio";
+import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
 import { crearApp } from "../app";
 import { config } from "../config";
 import { abrirDb } from "../db/conexion";
@@ -34,6 +34,24 @@ describe("GET /espacio/calendario", () => {
     expect((await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=MAD&desde=2027-02-01&hasta=2027-01-01" })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=MAD&desde=2027-01-01&hasta=2027-12-31" })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/espacio/calendario?origen=EZE&destino=ZZZ&desde=2027-01-01&hasta=2027-01-10" })).statusCode).toBe(404);
+  });
+});
+
+describe("GET /espacio/combinaciones", () => {
+  it("puntúa cada origen con su calendario y busca ventanas verdes ±14 días alrededor de la ida pedida", async () => {
+    feriados.obtener.mockClear();
+    const res = await app.inject({ method: "GET", url: "/espacio/combinaciones?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15" });
+    expect(res.statusCode).toBe(200);
+    const r = ResultadoCombinaciones.parse(res.json());
+    expect(feriados.obtener).toHaveBeenCalledWith(expect.arrayContaining(["AR", "UY", "CL", "PY", "BR", "ES"]), [2027]);
+    expect(r.calendario).toEqual({ desde: "2027-01-01", hasta: "2027-01-29" });
+    expect(r.combinaciones.length).toBeGreaterThan(50);
+    expect(r.combinaciones.length).toBeLessThanOrEqual(300);
+    const mejor = r.combinaciones[0];
+    expect(mejor).toMatchObject({ origen: "EZE", destino: "MAD", nivelRuta: 1, confianza: "alta" });
+    expect(r.combinaciones.some((c) => c.ventanaIda.desde === "2027-01-15" && c.aerolinea === "AR")).toBe(true); // la fecha pedida no se reemplaza
+    expect(r.combinaciones.some((c) => c.aerolinea === "TK" && c.confianza === "baja")).toBe(true);
+    expect(r.nombres.some((n) => n.iata === "TK")).toBe(true);
   });
 });
 

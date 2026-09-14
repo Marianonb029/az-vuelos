@@ -97,8 +97,9 @@ export const Combinacion = z.object({
   id: z.string().min(1),
   origen: IataAeropuerto,
   destino: IataAeropuerto,
-  aerolinea: IataAerolinea.nullable(),
-  nivelRuta: Nivel,
+  aerolinea: IataAerolinea,
+  nivelRuta: Nivel.nullable(), // null: nace de un gap (hipótesis), no de una ruta del dataset
+  via: IataAeropuerto.nullable(),
   ventanaIda: Ventana,
   ventanaVuelta: Ventana.nullable(),
   puntaje: z.number().min(0).max(100),
@@ -138,9 +139,21 @@ export const ResultadoCalendario = z.object({
   avisos: z.array(z.string()), // p. ej. país sin feriados en Nager.Date
 });
 
+export const ResultadoCombinaciones = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  ventanaPedida: Ventana,
+  calendario: Ventana, // rango sobre el que se buscaron ventanas verdes
+  calculadoEn: z.iso.datetime(),
+  combinaciones: z.array(Combinacion),
+  nombres: z.array(NombreAerolinea),
+  avisos: z.array(z.string()),
+});
+
 export type AeropuertoGeo = z.infer<typeof AeropuertoGeo>;
 export type ResultadoEspacio = z.infer<typeof ResultadoEspacio>;
 export type ResultadoCalendario = z.infer<typeof ResultadoCalendario>;
+export type ResultadoCombinaciones = z.infer<typeof ResultadoCombinaciones>;
 export type RutaCompacta = z.infer<typeof RutaCompacta>;
 export type Rol = z.infer<typeof Rol>;
 export type CandidatoAeropuerto = z.infer<typeof CandidatoAeropuerto>;

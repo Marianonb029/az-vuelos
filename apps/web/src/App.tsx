@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import type { Busqueda, Cotizacion, EnvioFormulario, EstadoAdaptador, Exploracion } from "@az/core";
+import { MAX_DIAS_RANGO, sumarDias } from "@az/core";
+import type { Busqueda, Cotizacion, EnvioFormulario, EstadoAdaptador, Exploracion, ValoresFormulario } from "@az/core";
+import type { VerificacionPedida } from "./componentes/Combinaciones";
 import { EspacioBusqueda } from "./componentes/EspacioBusqueda";
 import { EstadoAdaptadores } from "./componentes/EstadoAdaptadores";
 import { EstadoResultados } from "./componentes/EstadoResultados";
@@ -33,6 +35,18 @@ export const App = () => {
   const [vista, setVista] = useState<Vista | null>(null);
   const [ultimoEnvio, setUltimoEnvio] = useState<EnvioFormulario | null>(null);
   const [pestana, setPestana] = useState<Pestana>("precios");
+  const [prellenado, setPrellenado] = useState<{ clave: number; valores: Partial<ValoresFormulario> } | null>(null);
+
+  // Una combinación del espacio de búsqueda se verifica con la búsqueda de precios: ida sola, carry on,
+  // la ventana de ida recortada al tope del formulario. La persona revisa y confirma; no se lanza sola.
+  const verificar = (v: VerificacionPedida) => {
+    const hasta = sumarDias(v.desde, MAX_DIAS_RANGO - 1) < v.hasta ? sumarDias(v.desde, MAX_DIAS_RANGO - 1) : v.hasta;
+    setPrellenado({
+      clave: Date.now(),
+      valores: { compararTodas: false, aerolineaIata: v.aerolineaIata, origenIata: v.origenIata, destinoIata: v.destinoIata, tipo: "ida", rangoIda: { desde: v.desde, hasta }, rangoVuelta: null },
+    });
+    setPestana("precios");
+  };
 
   // La salud de los adaptadores cambia con cada búsqueda (última verificación, bloqueos): se recarga al terminar.
   const todasTerminadas = vista === null || (vista.tipo === "busqueda" ? terminada(vista.busqueda) : vista.busquedas.every(terminada));
@@ -101,12 +115,14 @@ export const App = () => {
 
       {pestana === "espacio" && (
         <section aria-label="Espacio de búsqueda">
-          <EspacioBusqueda aeropuertos={aeropuertos} adaptadores={iatasConAdaptador} hoy={hoyIso()} />
+          <EspacioBusqueda aeropuertos={aeropuertos} adaptadores={iatasConAdaptador} hoy={hoyIso()} onVerificar={verificar} />
         </section>
       )}
 
       <section aria-label="Búsqueda" className="mb-8" hidden={pestana !== "precios"}>
         <FormularioBusqueda
+          key={prellenado?.clave ?? 0}
+          iniciales={prellenado?.valores}
           aerolineas={aerolineas}
           aeropuertos={aeropuertos}
           adaptadores={iatasConAdaptador}

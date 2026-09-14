@@ -126,3 +126,27 @@ describe("FormularioBusqueda", () => {
     expect((screen.getAllByRole("button", { name: "14/09/2026" })[0] as HTMLButtonElement).disabled).toBe(false);
   });
 });
+
+describe("FormularioBusqueda prellenado desde el espacio de búsqueda", () => {
+  it("arranca con la combinación elegida y la envía tal cual al confirmar", () => {
+    const onEnviar = vi.fn();
+    render(
+      <FormularioBusqueda
+        aerolineas={aerolineas}
+        aeropuertos={aeropuertos}
+        adaptadores={new Set(["IB"])}
+        hoy={HOY}
+        enviando={false}
+        onEnviar={onEnviar}
+        iniciales={{ aerolineaIata: "IB", origenIata: "ASU", destinoIata: "MAD", tipo: "ida", rangoIda: { desde: "2027-01-25", hasta: "2027-01-28" }, rangoVuelta: null }}
+      />,
+    );
+    expect((screen.getByRole("combobox", { name: "Aerolínea" }) as HTMLInputElement).value).toContain("Iberia");
+    expect((screen.getByRole("combobox", { name: "Origen" }) as HTMLInputElement).value).toContain("ASU");
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    expect(onEnviar).toHaveBeenCalledWith({
+      tipo: "busqueda",
+      busqueda: expect.objectContaining({ aerolineaIata: "IB", origenIata: "ASU", destinoIata: "MAD", tipo: "ida", rangoIda: { desde: "2027-01-25", hasta: "2027-01-28" } }),
+    });
+  });
+});

@@ -23,10 +23,11 @@ interface Props {
   hoy: string;
   enviando: boolean;
   onEnviar: (envio: EnvioFormulario) => void;
+  iniciales?: Partial<ValoresFormulario> | undefined; // prellenado desde el espacio de búsqueda
 }
 
-export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, enviando, onEnviar }: Props) => {
-  const [valores, setValores] = useState<ValoresFormulario>(valoresIniciales);
+export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, enviando, onEnviar, iniciales }: Props) => {
+  const [valores, setValores] = useState<ValoresFormulario>({ ...valoresIniciales, ...iniciales });
   const [errores, setErrores] = useState<ErroresFormulario>({});
   const [intentado, setIntentado] = useState(false);
 

@@ -148,6 +148,15 @@ El monto original también se redondea hacia arriba.
 - Criterio del SPEC cumplido con feriados reales de Nager.Date: 15/01/2027 = 60 (amarillo); 15–25/02/2027 en verde; ventanas verdes 25–28/01 y 31/01–28/02.
 - `GET /espacio/calendario?origen&destino&desde&hasta` (máx. 180 días). La pestaña Espacio de búsqueda muestra la grilla mensual coloreada por banda, con el fundamento al hacer clic en un día.
 
+## Fase 6.5 (14/09/2026) — combinaciones y puntaje
+
+- `generarCombinaciones`: ruta Nivel 1–2 × aerolínea que la cubre × ventana de ida. Ventanas = **la pedida siempre** (nunca se reemplaza) más las rachas verdes del calendario de ese origen, buscadas ±14 días alrededor de la ida pedida (`MARGEN_VENTANAS_DIAS`). Cada origen candidato se puntúa con su propio calendario (feriados de su país); la API pide a Nager.Date los feriados de todos los países del espacio.
+- Puntaje 0–100 con `config.fase6.pesos`: nivel (N1 = 30, N2 = 18), presión inversa (25 × (100 − presión media de la ventana)/100), perfil de ofertas (15, lista en config), aeropuertos pedidos (12 si ambos, 6 si uno), traslado terrestre (−10 por cada 500 km sumando origen y destino alternativos), gap (+10 descubrimiento, −15 sin verificar, −8 boletos separados). Recorte a 0–100; el desglose queda en `desglose` y en `fundamento`.
+- **Gaps → combinaciones:** un `gap_origen` que cubre el destino pedido genera una combinación (origen donde opera, o el pedido si opera fuera del espacio como TP en GRU) con `nivelRuta: null`, `confianza: "baja"` y la hipótesis en el fundamento. Los feeders de destino no generan combinación propia (SPEC). `Combinacion.nivelRuta` pasó a nullable y suma `via`; `aerolinea` dejó de ser nullable.
+- Deduplicación por (origen, destino, aerolínea, ventana) quedándose con la mejor; tope 300. `ventanaVuelta` queda null: el calendario modela salidas, no regresos (pendiente para ida y vuelta).
+- Con el radio aprobado, EZE→MAD ida 15/01/2027 da **120 combinaciones** (EZE 60, SCL 18, MVD 15, POA 15, ASU 12) frente a las 250–330 del proceso manual con toda Europa: misma causa que en 6.2 (radio y dataset 2014).
+- **Verificar en el sitio oficial:** en la tabla de combinaciones, las aerolíneas con adaptador tienen un botón que salta a la pestaña Precios con el formulario prellenado (aerolínea, origen, destino, ida sola, carry on, la ventana recortada a 30 días). La persona confirma con "Buscar": el precio sólo sale de la lectura del sitio (regla 1).
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
