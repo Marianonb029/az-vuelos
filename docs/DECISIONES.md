@@ -90,6 +90,15 @@ El monto original también se redondea hacia arriba.
 - `Busqueda.aviso: string | null` se agrega al contrato para el modo asistido.
 - **Timeout por intento:** 90 s para ida; **180 s para ida y vuelta**, porque JetSMART encadena dos selecciones en la misma página (formulario, dos tramos, packs) y no entra en 90 s. Sigue siendo un solo intento con 2 reintentos.
 
+## Fase 5.0 (14/09/2026) — bloqueos como parte del producto
+
+- **Sin Amadeus.** El dueño del producto canceló la fuente secundaria: todo sale de lecturas verificadas en sitios oficiales.
+- **Modo asistido de navegación** (`scraper/asistido.ts`): un adaptador puede declarar `modo: "asistido"`. Abre el sitio, publica una instrucción (`Busqueda.aviso`) y espera hasta 5 min a que una persona llegue a la pantalla de resultados; recién ahí lee. Iberia usa este modo; su lector de resultados se escribirá con el primer HTML que quede guardado junto a la evidencia (`<n>.html`).
+- **Enfriamiento de 6 h** (`bloqueos`): un `ErrorBloqueo` registra la aerolínea; mientras el enfriamiento esté vigente, las búsquedas sobre ella se marcan `bloqueada` sin abrir Chrome, con el motivo original y la hora del próximo intento.
+- **Salud por aerolínea:** `GET /adaptadores` devuelve `EstadoAdaptador` (modo, última verificación, último bloqueo); la UI lo muestra bajo el formulario.
+- **Sonda** `pnpm sondear <url> [segundos]`: el spike de bloqueo empaquetado, paso 0 obligatorio antes de escribir un adaptador.
+- Diagnóstico pendiente del dueño: abrir el deep link de Iberia en un Chrome no automatizado para saber si el 403 es por la automatización o por el enlace.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

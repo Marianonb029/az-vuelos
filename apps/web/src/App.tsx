@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Busqueda, Cotizacion, NuevaBusqueda } from "@az/core";
+import type { Busqueda, Cotizacion, EstadoAdaptador, NuevaBusqueda } from "@az/core";
+import { EstadoAdaptadores } from "./componentes/EstadoAdaptadores";
 import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
 import { crearBusqueda, obtenerAdaptadores } from "./lib/api";
@@ -10,18 +11,21 @@ import { suscribirProgreso } from "./lib/progreso";
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export const App = () => {
-  const [adaptadores, setAdaptadores] = useState<ReadonlySet<string>>(new Set());
+  const [adaptadores, setAdaptadores] = useState<EstadoAdaptador[]>([]);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [busqueda, setBusqueda] = useState<Busqueda | null>(null);
   const [cotizaciones, setCotizaciones] = useState<Cotizacion[]>([]);
   const [ultimaEnviada, setUltimaEnviada] = useState<NuevaBusqueda | null>(null);
 
+  // La salud de los adaptadores cambia con cada búsqueda (última verificación, bloqueos): se recarga al terminar una.
+  const busquedaEstado = busqueda?.estado ?? null;
   useEffect(() => {
     obtenerAdaptadores()
-      .then((lista) => setAdaptadores(new Set(lista.map((a) => a.iata))))
+      .then(setAdaptadores)
       .catch((e: unknown) => setErrorApi(`No se pudo consultar la API: ${describirError(e)}`));
-  }, []);
+  }, [busquedaEstado]);
+  const iatasConAdaptador = new Set(adaptadores.map((a) => a.iata));
 
   // Progreso en vivo: la API envía la búsqueda y sus cotizaciones en cada cambio.
   const busquedaId = busqueda?.id ?? null;
@@ -63,13 +67,18 @@ export const App = () => {
         <FormularioBusqueda
           aerolineas={aerolineas}
           aeropuertos={aeropuertos}
-          adaptadores={adaptadores}
+          adaptadores={iatasConAdaptador}
           hoy={hoyIso()}
           enviando={enviando}
           onEnviar={(nueva) => void enviar(nueva)}
         />
-        {adaptadores.size === 0 && errorApi === null && (
+        {adaptadores.length === 0 && errorApi === null && (
           <p className="mt-3 text-sm text-slate-500">No hay adaptadores de aerolínea registrados todavía.</p>
+        )}
+        {adaptadores.length > 0 && (
+          <div className="mt-4">
+            <EstadoAdaptadores adaptadores={adaptadores} />
+          </div>
         )}
         {errorApi && (
           <p role="alert" className="mt-3 text-sm text-red-700">

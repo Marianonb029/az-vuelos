@@ -1,55 +1,50 @@
 /// <reference lib="dom" />
+import { writeFile } from "node:fs/promises";
 import type { Page } from "playwright";
 import type { AdaptadorAerolinea, ParamsBusqueda, ResultadoAdaptador } from "../../adaptador";
+import { esperarNavegacionAsistida } from "../../asistido";
 import { verificarBloqueo } from "../../bloqueo";
 import { evidenciaParcial } from "../../evidencia";
-import { ErrorBloqueo } from "../../intento";
-import { construirUrl, esPaginaDeError } from "./logica";
+import { DOMINIO, construirUrl, esPaginaDeError, instruccion } from "./logica";
 
-const ESPERA_RESULTADOS_MS = 60_000;
-const API_AUTH = "ibisauth.iberia.com";
+const URL_INICIO = `${DOMINIO}/ar/`;
 
-// Iberia carga su buscador, pero su API (ibisauth.iberia.com) respondió HTTP 403 a todas las sesiones
-// automatizadas durante el desarrollo, y el motor termina en "#!/ibbkerror". Este adaptador navega,
-// detecta ese rechazo y lo reporta como bloqueo con evidencia. El lector de resultados no existe
-// porque nunca se pudo observar una página de resultados; si algún día el sitio responde, la
-// consulta termina en error_lectura, nunca en un precio inventado.
+// Corre en el navegador: el motor de reservas de Iberia mostró resultados (fuera de su página de error).
+const hayResultados = () =>
+  location.pathname.startsWith("/flights/") &&
+  !location.hash.includes("ibbkerror") &&
+  !/no podemos mostrarte los vuelos/i.test(document.body.innerText) &&
+  /\d[\d.,]*\s?(€|EUR|ARS|USD|\$)/.test(document.body.innerText);
+
+// Iberia rechaza la sesión automatizada (HTTP 403 de ibisauth.iberia.com al usar el deep link), así
+// que este adaptador trabaja en modo asistido: abre iberia.com/ar, pide a la persona que haga la
+// búsqueda y espera a ver la pantalla de resultados. Como esa pantalla nunca pudo observarse durante
+// el desarrollo, todavía no hay lector: guarda captura y HTML junto a la evidencia y devuelve
+// error_lectura, nunca un precio.
 const buscar = async (params: ParamsBusqueda, page: Page): Promise<ResultadoAdaptador> => {
-  const url = construirUrl(params);
-  const rechazos: string[] = [];
-  const escucha = (r: { status(): number; url(): string }) => {
-    if (r.url().includes(API_AUTH) && (r.status() === 403 || r.status() === 429)) rechazos.push(`HTTP ${r.status()} ${r.url()}`);
-  };
-  page.on("response", escucha);
-  try {
-    const respuesta = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await verificarBloqueo(page, respuesta, params.asistido);
-    await page.waitForFunction(
-      () => location.hash.includes("ibbkerror") || /no podemos mostrarte los vuelos/i.test(document.body.innerText) || document.querySelector("[class*='flight'], [class*='fare']") !== null,
-      undefined,
-      { timeout: ESPERA_RESULTADOS_MS },
-    );
-    await page.waitForTimeout(2000);
-    await verificarBloqueo(page, null, params.asistido);
-    const texto = (await page.evaluate("document.body.innerText")) as string;
-    if (esPaginaDeError(page.url(), texto)) {
-      const detalle = rechazos[0] ?? "el motor de reservas terminó en su página de error";
-      throw new ErrorBloqueo(`Iberia rechazó la sesión automatizada: ${detalle}`, page.url());
-    }
-    return {
-      estado: "error_lectura",
-      motivo: "Iberia mostró resultados, pero este adaptador todavía no sabe leerlos (el sitio bloqueó todas las sesiones durante el desarrollo)",
-      evidencia: await evidenciaParcial(page, params.rutaScreenshot),
-    };
-  } finally {
-    page.off("response", escucha);
+  const respuesta = await page.goto(URL_INICIO, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await verificarBloqueo(page, respuesta, params.asistido);
+  await esperarNavegacionAsistida(page, params.asistido, { instruccion: instruccion(params), esResultados: hayResultados });
+  await verificarBloqueo(page, null, params.asistido);
+
+  const texto = (await page.evaluate("document.body.innerText")) as string;
+  const evidencia = await evidenciaParcial(page, params.rutaScreenshot);
+  if (esPaginaDeError(page.url(), texto)) {
+    return { estado: "bloqueado", motivo: "Iberia terminó en su página de error tras la navegación asistida", evidencia };
   }
+  await writeFile(params.rutaScreenshot.replace(/\.png$/, ".html"), await page.content()).catch(() => undefined);
+  return {
+    estado: "error_lectura",
+    motivo: "Iberia mostró resultados: se guardaron captura y HTML junto a la evidencia, pero el lector de esta pantalla todavía no existe",
+    evidencia,
+  };
 };
 
 export const iberia: AdaptadorAerolinea = {
   iata: "IB",
   nombre: "Iberia",
   dominios: ["www.iberia.com"],
+  modo: "asistido",
   urlBusqueda: construirUrl,
   buscar,
 };

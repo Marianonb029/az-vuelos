@@ -9,6 +9,7 @@ import { ErrorBloqueo } from "@az/scraper";
 import type { AdaptadorAerolinea, ContextoNavegador, ResultadoAdaptador } from "@az/scraper";
 import { config } from "../config";
 import { abrirDb } from "../db/conexion";
+import { repoBloqueos } from "../repos/bloqueos";
 import { repoBusquedas } from "../repos/busquedas";
 import { repoCache } from "../repos/cache";
 import { repoCotizaciones } from "../repos/cotizaciones";
@@ -31,6 +32,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     iata: "IB",
     nombre: "Iberia",
     dominios: ["www.iberia.com"],
+    modo: "automatico",
     urlBusqueda: () => "https://www.iberia.com/x",
     buscar,
   };
@@ -39,6 +41,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     cotizaciones: repoCotizaciones(db),
     registros: repoRegistros(db),
     cache: repoCache(db),
+    bloqueos: repoBloqueos(db),
     obtenerTablaFx,
     abrirNavegador: async () => navegadorDePrueba(),
     adaptadorPorIata: (iata) => (iata === "IB" ? adaptador : undefined),
@@ -56,7 +59,12 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
 
 const verificado = (rutaScreenshot: string): ResultadoAdaptador => ({
   estado: "verificado",
-  lectura: { ...lecturaEur, tipo: "ida", tramos: [tramoIda], evidencia: { ...lecturaEur.evidencia, screenshotPath: rutaScreenshot } },
+  lectura: {
+    ...lecturaEur,
+    tipo: "ida",
+    tramos: [tramoIda],
+    evidencia: { ...lecturaEur.evidencia, screenshotPath: rutaScreenshot, capturadoEn: new Date().toISOString() },
+  },
 });
 
 describe("ejecutarBusqueda", () => {
@@ -113,6 +121,17 @@ describe("ejecutarBusqueda", () => {
     expect(b?.motivoFallo).toBe("HTTP 403");
     expect(buscar).toHaveBeenCalledTimes(1);
     expect(dep.cotizaciones.listarPorBusqueda(busquedaIda.id)[0]?.estado).toBe("bloqueado");
+    expect(dep.bloqueos.vigente("IB")?.motivo).toBe("HTTP 403");
+
+    // Enfriamiento: una búsqueda nueva sobre la misma aerolínea no abre el navegador.
+    const id2 = "5c4b3a29-1807-4e6d-9c5b-4a3928170f6e";
+    dep.busquedas.crear({ ...busquedaIda, id: id2 });
+    await ejecutarBusqueda(dep, id2);
+    expect(buscar).toHaveBeenCalledTimes(1);
+    const b2 = dep.busquedas.obtener(id2);
+    expect(b2?.estado).toBe("bloqueada");
+    expect(b2?.motivoFallo).toContain("no se vuelve a consultar hasta las");
+    expect(dep.cotizaciones.listarPorBusqueda(id2)[0]?.estado).toBe("bloqueado");
   });
 
   it("rango de fechas: una consulta por combinación, pausa entre consultas y aviso por cada cambio", async () => {

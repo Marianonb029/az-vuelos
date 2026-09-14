@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { AerolineaRef, Busqueda } from "@az/core";
+import { Busqueda, EstadoAdaptador } from "@az/core";
 import type { NuevaBusqueda } from "@az/core";
 
 const BASE = "/api";
@@ -10,7 +10,7 @@ const pedir = async <T>(esquema: z.ZodType<T>, ruta: string, init?: RequestInit)
   return esquema.parse(await res.json());
 };
 
-export const obtenerAdaptadores = () => pedir(z.array(AerolineaRef), "/adaptadores");
+export const obtenerAdaptadores = () => pedir(z.array(EstadoAdaptador), "/adaptadores");
 
 export const crearBusqueda = (nueva: NuevaBusqueda) =>
   pedir(Busqueda, "/busquedas", {

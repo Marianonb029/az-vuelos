@@ -2,6 +2,7 @@ import { abrirNavegador, adaptadorPorIata } from "@az/scraper";
 import { crearApp } from "./app";
 import { config } from "./config";
 import { abrirDb } from "./db/conexion";
+import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
 import { repoCache } from "./repos/cache";
 import { repoCotizaciones } from "./repos/cotizaciones";
@@ -20,6 +21,7 @@ const dependencias = {
   cotizaciones: repoCotizaciones(db),
   registros: repoRegistros(db),
   cache: repoCache(db),
+  bloqueos: repoBloqueos(db),
   obtenerTablaFx,
   abrirNavegador,
   adaptadorPorIata,

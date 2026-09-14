@@ -226,6 +226,7 @@ export const jetsmart: AdaptadorAerolinea = {
   iata: "JA",
   nombre: "JetSMART",
   dominios: ["jetsmart.com"],
+  modo: "automatico",
   urlBusqueda: () => URL_INICIO,
   buscar,
 };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { construirUrl, esPaginaDeError } from "./logica";
+import { construirUrl, esPaginaDeError, instruccion } from "./logica";
 
 const params = { tipo: "ida" as const, origenIata: "EZE", destinoIata: "MAD", fechaIda: "2026-11-20", fechaVuelta: null, equipaje: "carry_on" as const, rutaScreenshot: "x.png", asistido: null };
 
@@ -20,6 +20,11 @@ describe("Iberia", () => {
     expect(url.searchParams.get("TRIP_TYPE")).toBe("2");
     expect(url.searchParams.get("END_DAY_01")).toBe("05");
     expect(url.searchParams.get("END_MONTH_01")).toBe("202612");
+  });
+
+  it("instrucción para la navegación asistida", () => {
+    expect(instruccion(params)).toContain("EZE → MAD, ida el 20/11/2026 (solo ida)");
+    expect(instruccion({ ...params, tipo: "ida_y_vuelta", fechaVuelta: "2026-12-05" })).toContain("y vuelta el 05/12/2026");
   });
 
   it("reconoce la página de error del motor", () => {

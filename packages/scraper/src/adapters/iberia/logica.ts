@@ -33,3 +33,10 @@ export const construirUrl = (p: ParamsBusqueda): string => {
 // El motor responde con "#!/ibbkerror" cuando su API de autenticación rechaza la sesión.
 export const esPaginaDeError = (url: string, texto: string): boolean =>
   url.includes("ibbkerror") || /no podemos mostrarte los vuelos/i.test(texto);
+
+const fechaCorta = (iso: string) => iso.split("-").reverse().join("/");
+
+export const instruccion = (p: ParamsBusqueda): string => {
+  const vuelta = p.tipo === "ida_y_vuelta" && p.fechaVuelta ? ` y vuelta el ${fechaCorta(p.fechaVuelta)}` : " (solo ida)";
+  return `Iberia bloquea la búsqueda automática. En la ventana de Chrome buscá ${p.origenIata} → ${p.destinoIata}, ida el ${fechaCorta(p.fechaIda)}${vuelta}, 1 adulto; cuando veas los vuelos, la app lee la pantalla sola.`;
+};

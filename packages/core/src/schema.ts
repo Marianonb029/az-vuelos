@@ -201,6 +201,15 @@ export const AerolineaRef = z.object({
   nombre: z.string().min(1),
 });
 
+// Salud de un adaptador tal como la publica la API.
+export const EstadoAdaptador = z.object({
+  iata: IataAerolinea,
+  nombre: z.string().min(1),
+  modo: z.enum(["automatico", "asistido"]),
+  ultimaVerificacion: z.object({ capturadoEn: FechaHoraIso, ruta: z.string() }).nullable(),
+  ultimoBloqueo: z.object({ bloqueadoEn: FechaHoraIso, hasta: FechaHoraIso, motivo: z.string(), vigente: z.boolean() }).nullable(),
+});
+
 // ---------------------------------------------------------------------------
 // Lectura: lo que un adaptador extrae del sitio, antes de convertir a USD.
 // Es la unidad que se cachea; cada búsqueda le aplica su propia tasa.
@@ -286,6 +295,7 @@ export type Equipaje = z.infer<typeof Equipaje>;
 export type Evidencia = z.infer<typeof Evidencia>;
 export type EvidenciaParcial = z.infer<typeof EvidenciaParcial>;
 export type AerolineaRef = z.infer<typeof AerolineaRef>;
+export type EstadoAdaptador = z.infer<typeof EstadoAdaptador>;
 export type Lectura = z.infer<typeof Lectura>;
 export type CotizacionVerificada = z.infer<typeof CotizacionVerificada>;
 export type CotizacionNoVerificada = z.infer<typeof CotizacionNoVerificada>;

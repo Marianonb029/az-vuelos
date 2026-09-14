@@ -180,6 +180,7 @@ export const aerolineasArgentinas: AdaptadorAerolinea = {
   iata: "AR",
   nombre: "Aerolíneas Argentinas",
   dominios: ["www.aerolineas.com.ar"],
+  modo: "automatico",
   urlBusqueda: construirUrl,
   buscar,
 };

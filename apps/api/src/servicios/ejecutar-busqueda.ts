@@ -4,6 +4,7 @@ import { combinaciones, convertirAUsd } from "@az/core";
 import type { Busqueda, Combinacion, Cotizacion, TablaFx } from "@az/core";
 import { ErrorBloqueo, ESPERAS_REINTENTO_MS, TIMEOUT_INTENTO_MS, conReintentos, consultarRobots, evidenciaParcial } from "@az/scraper";
 import type { AdaptadorAerolinea, ContextoNavegador, Pagina, ParamsBusqueda, ResultadoAdaptador } from "@az/scraper";
+import type { RepoBloqueos } from "../repos/bloqueos";
 import type { RepoBusquedas } from "../repos/busquedas";
 import type { RepoCache } from "../repos/cache";
 import type { RepoCotizaciones } from "../repos/cotizaciones";
@@ -14,6 +15,7 @@ export interface Dependencias {
   cotizaciones: RepoCotizaciones;
   registros: RepoRegistros;
   cache: RepoCache;
+  bloqueos: RepoBloqueos;
   obtenerTablaFx: () => Promise<TablaFx>;
   abrirNavegador: (directorioPerfil: string) => Promise<ContextoNavegador>;
   adaptadorPorIata: (iata: string) => AdaptadorAerolinea | undefined;
@@ -134,6 +136,20 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
     dep.busquedas.cambiarEstado(b.id, "fallida", `No hay adaptador para ${b.aerolineaIata}`);
     return;
   }
+  const enfriamiento = dep.bloqueos.vigente(adaptador.iata);
+  if (enfriamiento) {
+    const hora = (iso: string) => new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    const motivo = `${adaptador.nombre} bloqueó la automatización a las ${hora(enfriamiento.bloqueadoEn)} (${enfriamiento.motivo}); no se vuelve a consultar hasta las ${hora(enfriamiento.hasta)}`;
+    const combo = combinaciones(b)[0];
+    if (combo) {
+      const evidencia = { url: enfriamiento.url, capturadoEn: enfriamiento.bloqueadoEn, screenshotPath: null };
+      const sinFx = () => Promise.reject(new Error("Una cotización bloqueada no se convierte"));
+      dep.cotizaciones.crear(await aCotizacion(b, adaptador, combo, { estado: "bloqueado", motivo, evidencia }, sinFx, dep));
+    }
+    dep.busquedas.cambiarEstado(b.id, "bloqueada", motivo);
+    dep.notificar(b.id);
+    return;
+  }
   dep.busquedas.cambiarEstado(b.id, "corriendo");
   dep.notificar(b.id);
 
@@ -156,6 +172,7 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
         const evidencia = await evidenciaParcial(page, join(dep.directorioEvidencia, b.id, `${i + 1}-bloqueo.png`));
         const bloqueada = await aCotizacion(b, adaptador, combo, { estado: "bloqueado", motivo: e.message, evidencia }, tablaFx, dep);
         dep.cotizaciones.crear(bloqueada);
+        dep.bloqueos.registrar(adaptador.iata, e.message, e.url);
         dep.busquedas.cambiarEstado(b.id, "bloqueada", e.message);
         dep.notificar(b.id);
         return;

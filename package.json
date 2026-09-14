@@ -16,7 +16,8 @@
     "test:watch": "vitest",
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
-    "catalogos": "tsx scripts/descargar-catalogos.ts"
+    "catalogos": "tsx scripts/descargar-catalogos.ts",
+    "sondear": "tsx packages/scraper/src/sonda.ts"
   },
   "dependencies": {
     "@az/core": "workspace:*"

@@ -19,10 +19,14 @@ export type ResultadoAdaptador =
   | { estado: "verificado"; lectura: Lectura }
   | { estado: EstadoNoVerificado; motivo: string; evidencia: EvidenciaParcial };
 
+export type ModoAdaptador = "automatico" | "asistido";
+
 export interface AdaptadorAerolinea {
   iata: string;
   nombre: string;
   dominios: string[];
+  // "asistido": el sitio rechaza la automatización completa; una persona navega y el sistema lee.
+  modo: ModoAdaptador;
   // URL que `buscar` va a abrir; se usa para consultar robots.txt antes de navegar.
   urlBusqueda(params: ParamsBusqueda): string;
   buscar(params: ParamsBusqueda, page: Page): Promise<ResultadoAdaptador>;

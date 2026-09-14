@@ -1,4 +1,4 @@
-export type { AdaptadorAerolinea, ParamsBusqueda, ResultadoAdaptador } from "./adaptador";
+export type { AdaptadorAerolinea, ModoAdaptador, ParamsBusqueda, ResultadoAdaptador } from "./adaptador";
 export { REGISTRO, adaptadorPorIata } from "./adapters";
 export { abrirNavegador } from "./navegador";
 export type { BrowserContext as ContextoNavegador, Page as Pagina } from "playwright";
@@ -9,3 +9,5 @@ export type { RegistroIntento } from "./intento";
 export { evidenciaParcial } from "./evidencia";
 export { detectarBloqueo, verificarBloqueo, ESPERA_ASISTIDA_MS } from "./bloqueo";
 export type { Bloqueo, ModoAsistido } from "./bloqueo";
+export { esperarNavegacionAsistida, ESPERA_NAVEGACION_ASISTIDA_MS } from "./asistido";
+export type { NavegacionAsistida } from "./asistido";

@@ -2,12 +2,14 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { busquedaIda } from "@az/core/fixtures";
+import { busquedaIda, busquedaIdaYVuelta, cotizacionVerificada } from "@az/core/fixtures";
 import { crearApp } from "./app";
 import { abrirDb } from "./db/conexion";
 import { config } from "./config";
 import { crearEventos } from "./servicios/eventos";
+import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
+import { repoCotizaciones } from "./repos/cotizaciones";
 
 const armar = () => {
   const db = abrirDb(":memory:", config.directorioMigraciones);
@@ -24,8 +26,21 @@ describe("API", () => {
   it("responde en /salud y lista adaptadores", async () => {
     const { app } = armar();
     expect((await app.inject({ method: "GET", url: "/salud" })).json()).toEqual({ ok: true });
-    const adaptadores = (await app.inject({ method: "GET", url: "/adaptadores" })).json() as { iata: string }[];
-    expect(adaptadores.map((a) => a.iata)).toContain("AR");
+    const adaptadores = (await app.inject({ method: "GET", url: "/adaptadores" })).json() as { iata: string; modo: string; ultimaVerificacion: unknown; ultimoBloqueo: unknown }[];
+    expect(adaptadores.map((a) => a.iata)).toEqual(["AR", "JA", "IB"]);
+    expect(adaptadores.find((a) => a.iata === "IB")?.modo).toBe("asistido");
+    expect(adaptadores[0]).toMatchObject({ ultimaVerificacion: null, ultimoBloqueo: null });
+    await app.close();
+  });
+
+  it("publica la salud de cada adaptador: última verificación y último bloqueo", async () => {
+    const { app, db } = armar();
+    repoBusquedas(db).crear(busquedaIdaYVuelta);
+    repoCotizaciones(db).crear(cotizacionVerificada);
+    repoBloqueos(db).registrar("JA", "captcha sin resolver", "https://jetsmart.com/x");
+    const adaptadores = (await app.inject({ method: "GET", url: "/adaptadores" })).json() as { iata: string; ultimaVerificacion: { ruta: string } | null; ultimoBloqueo: { vigente: boolean; motivo: string } | null }[];
+    expect(adaptadores.find((a) => a.iata === "IB")?.ultimaVerificacion).toEqual({ capturadoEn: cotizacionVerificada.evidencia.capturadoEn, ruta: "ASU-MAD" });
+    expect(adaptadores.find((a) => a.iata === "JA")?.ultimoBloqueo).toMatchObject({ vigente: true, motivo: "captcha sin resolver" });
     await app.close();
   });
 
