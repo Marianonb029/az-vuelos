@@ -3,9 +3,11 @@ import type { Db } from "./db/conexion";
 import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
 import { repoCotizaciones } from "./repos/cotizaciones";
+import { repoExploraciones } from "./repos/exploraciones";
 import { rutasAdaptadores } from "./rutas/adaptadores";
 import { rutasBusquedas } from "./rutas/busquedas";
 import { rutasEvidencia } from "./rutas/evidencia";
+import { rutasExploraciones } from "./rutas/exploraciones";
 import { rutasProgreso } from "./rutas/progreso";
 import type { Eventos } from "./servicios/eventos";
 
@@ -26,6 +28,7 @@ export const crearApp = (op: OpcionesApp) => {
   rutasAdaptadores(app, { cotizaciones, bloqueos });
   rutasBusquedas(app, { busquedas, cotizaciones, ejecutar: op.ejecutar });
   rutasProgreso(app, { busquedas, cotizaciones, eventos: op.eventos });
+  rutasExploraciones(app, { exploraciones: repoExploraciones(op.db), busquedas, cotizaciones, eventos: op.eventos, ejecutar: op.ejecutar });
   rutasEvidencia(app, op.directorioEvidencia);
 
   return app;

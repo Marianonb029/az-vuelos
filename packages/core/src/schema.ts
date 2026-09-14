@@ -65,9 +65,9 @@ export const RangoFechas = z
     path: ["hasta"],
   });
 
-const camposBusqueda = {
+// Ruta, fechas y equipaje: lo que una búsqueda pide, sin decir a qué aerolínea.
+const camposRuta = {
   tipo: TipoViaje,
-  aerolineaIata: IataAerolinea,
   origenIata: IataAeropuerto,
   destinoIata: IataAeropuerto,
   equipaje: EquipajeSolicitado,
@@ -75,9 +75,14 @@ const camposBusqueda = {
   rangoVuelta: RangoFechas.nullable(),
 };
 
-type CamposBusqueda = z.infer<z.ZodObject<typeof camposBusqueda>>;
+const camposBusqueda = {
+  ...camposRuta,
+  aerolineaIata: IataAerolinea,
+};
 
-const reglasBusqueda = (b: CamposBusqueda, ctx: z.RefinementCtx) => {
+type CamposRuta = z.infer<z.ZodObject<typeof camposRuta>>;
+
+const reglasBusqueda = (b: CamposRuta, ctx: z.RefinementCtx) => {
   if (b.origenIata === b.destinoIata) {
     ctx.addIssue({
       code: "custom",
@@ -109,6 +114,8 @@ const reglasBusqueda = (b: CamposBusqueda, ctx: z.RefinementCtx) => {
   }
 };
 
+export const ParametrosRuta = z.object(camposRuta).superRefine(reglasBusqueda);
+
 // Lo que el formulario envía; la API le asigna id, creadaEn y estado.
 export const NuevaBusqueda = z.object(camposBusqueda).superRefine(reglasBusqueda);
 
@@ -123,6 +130,25 @@ export const Busqueda = z
     aviso: z.string().nullable(),
   })
   .superRefine(reglasBusqueda);
+
+// ---------------------------------------------------------------------------
+// Exploración: varias búsquedas lanzadas juntas con un objetivo (comparar aerolíneas, ...).
+// ---------------------------------------------------------------------------
+
+export const ModoExploracion = z.enum(["comparar"]);
+
+export const NuevaExploracion = z.object({
+  modo: ModoExploracion,
+  parametros: ParametrosRuta,
+});
+
+export const Exploracion = z.object({
+  id: z.uuid(),
+  modo: ModoExploracion,
+  parametros: ParametrosRuta,
+  creadaEn: FechaHoraIso,
+  busquedaIds: z.array(z.uuid()).min(1),
+});
 
 // ---------------------------------------------------------------------------
 // Componentes de una cotización
@@ -286,7 +312,11 @@ export type EstadoBusqueda = z.infer<typeof EstadoBusqueda>;
 export type EstadoCotizacion = z.infer<typeof EstadoCotizacion>;
 export type EstadoNoVerificado = z.infer<typeof EstadoNoVerificado>;
 export type RangoFechas = z.infer<typeof RangoFechas>;
+export type ParametrosRuta = z.infer<typeof ParametrosRuta>;
 export type NuevaBusqueda = z.infer<typeof NuevaBusqueda>;
+export type ModoExploracion = z.infer<typeof ModoExploracion>;
+export type NuevaExploracion = z.infer<typeof NuevaExploracion>;
+export type Exploracion = z.infer<typeof Exploracion>;
 export type Busqueda = z.infer<typeof Busqueda>;
 export type Tramo = z.infer<typeof Tramo>;
 export type Fx = z.infer<typeof Fx>;

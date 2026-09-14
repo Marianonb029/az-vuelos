@@ -1,11 +1,13 @@
 import { combinaciones, diasDelRango } from "./fechas";
-import { NuevaBusqueda } from "./schema";
+import { NuevaBusqueda, ParametrosRuta } from "./schema";
 import type { EquipajeSolicitado, RangoFechas, TipoViaje } from "./schema";
 
 export const MAX_DIAS_RANGO = 30;
 export const MAX_COMBINACIONES = 31;
 
 export interface ValoresFormulario {
+  // true: se lanza una búsqueda por cada aerolínea con adaptador y se ignora `aerolineaIata`.
+  compararTodas: boolean;
   aerolineaIata: string | null;
   origenIata: string | null;
   destinoIata: string | null;
@@ -18,11 +20,16 @@ export interface ValoresFormulario {
 export type CampoFormulario = keyof ValoresFormulario;
 export type ErroresFormulario = Partial<Record<CampoFormulario, string>>;
 
+export type EnvioFormulario =
+  | { tipo: "busqueda"; busqueda: NuevaBusqueda }
+  | { tipo: "comparacion"; parametros: ParametrosRuta };
+
 export type ResultadoValidacion =
-  | { ok: true; busqueda: NuevaBusqueda }
+  | { ok: true; envio: EnvioFormulario }
   | { ok: false; errores: ErroresFormulario };
 
 export const valoresIniciales: ValoresFormulario = {
+  compararTodas: false,
   aerolineaIata: null,
   origenIata: null,
   destinoIata: null,
@@ -39,7 +46,9 @@ export const validarFormulario = (
 ): ResultadoValidacion => {
   const errores: ErroresFormulario = {};
 
-  if (v.aerolineaIata === null) errores.aerolineaIata = "Elegí una aerolínea";
+  if (v.compararTodas) {
+    if (aerolineasConAdaptador.size === 0) errores.aerolineaIata = "No hay aerolíneas con adaptador para comparar";
+  } else if (v.aerolineaIata === null) errores.aerolineaIata = "Elegí una aerolínea";
   else if (!aerolineasConAdaptador.has(v.aerolineaIata)) {
     errores.aerolineaIata = "Esta aerolínea no tiene adaptador disponible";
   }
@@ -72,19 +81,24 @@ export const validarFormulario = (
 
   if (Object.keys(errores).length > 0) return { ok: false, errores };
 
-  const parseo = NuevaBusqueda.safeParse({
+  const parametros = {
     tipo: v.tipo,
-    aerolineaIata: v.aerolineaIata,
     origenIata: v.origenIata,
     destinoIata: v.destinoIata,
     equipaje: v.equipaje,
     rangoIda: v.rangoIda,
     rangoVuelta: v.tipo === "ida" ? null : v.rangoVuelta,
-  });
+  };
+  const parseo = v.compararTodas
+    ? ParametrosRuta.safeParse(parametros)
+    : NuevaBusqueda.safeParse({ ...parametros, aerolineaIata: v.aerolineaIata });
   if (!parseo.success) {
     const primera = parseo.error.issues[0];
     const campo = (primera?.path[0] ?? "rangoIda") as CampoFormulario;
     return { ok: false, errores: { [campo]: primera?.message ?? "Datos inválidos" } };
   }
-  return { ok: true, busqueda: parseo.data };
+  const envio: EnvioFormulario = v.compararTodas
+    ? { tipo: "comparacion", parametros: ParametrosRuta.parse(parseo.data) }
+    : { tipo: "busqueda", busqueda: NuevaBusqueda.parse(parseo.data) };
+  return { ok: true, envio };
 };

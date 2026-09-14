@@ -84,13 +84,39 @@ describe("FormularioBusqueda", () => {
     fireEvent.click(screen.getByRole("button", { name: "22/09/2026" }));
     fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
     expect(onEnviar).toHaveBeenCalledWith({
-      tipo: "ida",
-      aerolineaIata: "IB",
-      origenIata: "ASU",
-      destinoIata: "MAD",
-      equipaje: "bodega",
-      rangoIda: { desde: "2026-09-20", hasta: "2026-09-22" },
-      rangoVuelta: null,
+      tipo: "busqueda",
+      busqueda: {
+        tipo: "ida",
+        aerolineaIata: "IB",
+        origenIata: "ASU",
+        destinoIata: "MAD",
+        equipaje: "bodega",
+        rangoIda: { desde: "2026-09-20", hasta: "2026-09-22" },
+        rangoVuelta: null,
+      },
+    });
+  });
+
+  it("comparar todas las aerolíneas: oculta el combo y envía los parámetros de ruta", () => {
+    const onEnviar = renderizar();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Comparar todas las aerolíneas/ }));
+    expect(screen.queryByRole("combobox", { name: "Aerolínea" })).toBeNull();
+    expect(screen.getByText(/Todas las aerolíneas con adaptador \(IB\)/)).toBeTruthy();
+    elegirEnCombobox("Origen", "asu", /ASU/);
+    elegirEnCombobox("Destino", "mad", /MAD/);
+    fireEvent.click(screen.getByRole("radio", { name: "Ida" }));
+    fireEvent.click(screen.getByRole("button", { name: "21/09/2026" }));
+    fireEvent.click(screen.getByRole("button", { name: "Buscar" }));
+    expect(onEnviar).toHaveBeenCalledWith({
+      tipo: "comparacion",
+      parametros: {
+        tipo: "ida",
+        origenIata: "ASU",
+        destinoIata: "MAD",
+        equipaje: "carry_on",
+        rangoIda: { desde: "2026-09-21", hasta: "2026-09-21" },
+        rangoVuelta: null,
+      },
     });
   });
 

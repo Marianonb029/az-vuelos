@@ -1,5 +1,6 @@
 import type {
   Busqueda,
+  Exploracion,
   CotizacionNoVerificada,
   CotizacionVerificada,
   Lectura,
@@ -124,4 +125,19 @@ export const cotizacionErrorLectura: CotizacionNoVerificada = {
     capturadoEn: "2026-09-14T10:07:40.000Z",
     screenshotPath: "evidencia/0d8b3d3e/def456.png",
   },
+};
+
+export const exploracionComparar: Exploracion = {
+  id: "7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+  modo: "comparar",
+  parametros: {
+    tipo: "ida",
+    origenIata: "ASU",
+    destinoIata: "MAD",
+    equipaje: "carry_on",
+    rangoIda: { desde: "2027-01-01", hasta: "2027-01-01" },
+    rangoVuelta: null,
+  },
+  creadaEn: "2026-09-14T10:00:00.000Z",
+  busquedaIds: [busquedaIda.id],
 };

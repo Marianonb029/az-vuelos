@@ -99,6 +99,13 @@ El monto original también se redondea hacia arriba.
 - **Sonda** `pnpm sondear <url> [segundos]`: el spike de bloqueo empaquetado, paso 0 obligatorio antes de escribir un adaptador.
 - Diagnóstico pendiente del dueño: abrir el deep link de Iberia en un Chrome no automatizado para saber si el 403 es por la automatización o por el enlace.
 
+## Fase 5.1 (14/09/2026) — comparar aerolíneas
+
+- `Exploracion` agrupa varias búsquedas con un modo (`comparar` por ahora) y `ParametrosRuta` (todo lo de una búsqueda menos la aerolínea). `POST /exploraciones` crea una búsqueda por adaptador registrado; la cola las reparte (2 dominios a la vez). `GET /exploraciones/:id/eventos` emite la foto agregada por SSE.
+- El formulario suma la casilla "Comparar todas las aerolíneas con adaptador"; la tabla unificada agrega la columna Aerolínea y se ordena por USD. Asientos y comidas no aparecen en ninguna pantalla de resultados de los sitios: no se muestran.
+- **Presupuesto por intento** (`presupuestoIntento`): 90 s (180 s en ida y vuelta) **más** 3 min si hay modo asistido de captcha y **más** 5 min si el adaptador es asistido. Antes, el timeout de 90 s cortaba la espera asistida y la reintentaba tres veces.
+- Comprobado en vivo: AEP→COR 21/11 en las tres aerolíneas; JetSMART respondió desde la caché de 6 h, AR verificó, Iberia esperó a la persona.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

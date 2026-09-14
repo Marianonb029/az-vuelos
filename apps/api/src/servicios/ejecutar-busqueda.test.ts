@@ -14,7 +14,7 @@ import { repoBusquedas } from "../repos/busquedas";
 import { repoCache } from "../repos/cache";
 import { repoCotizaciones } from "../repos/cotizaciones";
 import { repoRegistros } from "../repos/registros";
-import { ejecutarBusqueda } from "./ejecutar-busqueda";
+import { ejecutarBusqueda, presupuestoIntento } from "./ejecutar-busqueda";
 import type { Dependencias } from "./ejecutar-busqueda";
 
 const tabla: TablaFx = { fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z", usdA: { EUR: 0.926441 } };
@@ -192,6 +192,13 @@ describe("ejecutarBusqueda", () => {
     await ejecutarBusqueda(dep, busquedaIda.id);
     expect(dep.busquedas.obtener(busquedaIda.id)?.aviso).toBeNull();
     expect(dep.busquedas.obtener(busquedaIda.id)?.estado).toBe("completa");
+  });
+
+  it("presupuesto por intento: 90 s base, doble en ida y vuelta, más las esperas asistidas", () => {
+    expect(presupuestoIntento({ tipo: "ida" }, { modo: "automatico" }, false)).toBe(90_000);
+    expect(presupuestoIntento({ tipo: "ida_y_vuelta" }, { modo: "automatico" }, false)).toBe(180_000);
+    expect(presupuestoIntento({ tipo: "ida" }, { modo: "automatico" }, true)).toBe(90_000 + 3 * 60_000);
+    expect(presupuestoIntento({ tipo: "ida" }, { modo: "asistido" }, true)).toBe(90_000 + 3 * 60_000 + 5 * 60_000);
   });
 
   it("sin adaptador → fallida", async () => {

@@ -6,6 +6,7 @@ const HOY = "2026-09-14";
 const ADAPTADORES = new Set(["IB", "AR"]);
 
 const completo: ValoresFormulario = {
+  compararTodas: false,
   aerolineaIata: "IB",
   origenIata: "ASU",
   destinoIata: "MAD",
@@ -37,13 +38,25 @@ describe("validarFormulario", () => {
   it("acepta un formulario completo y devuelve la búsqueda", () => {
     const r = validarFormulario(completo, HOY, ADAPTADORES);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.busqueda.rangoVuelta).toEqual(completo.rangoVuelta);
+    if (r.ok && r.envio.tipo === "busqueda") expect(r.envio.busqueda.rangoVuelta).toEqual(completo.rangoVuelta);
   });
 
   it("ida sola ignora el rango de vuelta", () => {
     const r = validarFormulario({ ...completo, tipo: "ida" }, HOY, ADAPTADORES);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.busqueda.rangoVuelta).toBeNull();
+    if (r.ok && r.envio.tipo === "busqueda") expect(r.envio.busqueda.rangoVuelta).toBeNull();
+  });
+
+  it("comparar todas: ignora la aerolínea y devuelve los parámetros de ruta", () => {
+    const r = validarFormulario({ ...completo, compararTodas: true, aerolineaIata: null }, HOY, ADAPTADORES);
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.envio.tipo).toBe("comparacion");
+      if (r.envio.tipo === "comparacion") expect(r.envio.parametros.origenIata).toBe("ASU");
+    }
+    expect(errores({ ...completo, compararTodas: true, aerolineaIata: null })).toEqual({});
+    const sinAdaptadores = validarFormulario({ ...completo, compararTodas: true }, HOY, new Set());
+    expect(sinAdaptadores.ok).toBe(false);
   });
 
   it("aerolínea sin adaptador", () => {

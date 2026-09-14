@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   Busqueda,
   Cotizacion,
+  Exploracion,
+  NuevaExploracion,
   CotizacionVerificada,
   Lectura,
   Precio,
@@ -11,6 +13,7 @@ import {
 import {
   busquedaIda,
   busquedaIdaYVuelta,
+  exploracionComparar,
   cotizacionErrorLectura,
   cotizacionUsdIda,
   cotizacionVerificada,
@@ -149,5 +152,18 @@ describe("Cotizacion", () => {
   it("esVerificada discrimina por estado", () => {
     expect(esVerificada(cotizacionVerificada)).toBe(true);
     expect(esVerificada(cotizacionErrorLectura)).toBe(false);
+  });
+});
+
+describe("Exploracion", () => {
+  it("acepta una exploración de comparación con al menos una búsqueda", () => {
+    expect(Exploracion.safeParse(exploracionComparar).success).toBe(true);
+    expect(Exploracion.safeParse({ ...exploracionComparar, busquedaIds: [] }).success).toBe(false);
+  });
+
+  it("los parámetros de ruta respetan las mismas reglas que una búsqueda", () => {
+    const r = NuevaExploracion.safeParse({ modo: "comparar", parametros: { ...exploracionComparar.parametros, destinoIata: "ASU" } });
+    expect(rutasDeError(r)).toContain("parametros.destinoIata");
+    expect(NuevaExploracion.safeParse({ modo: "calendario", parametros: exploracionComparar.parametros }).success).toBe(false);
   });
 });

@@ -9,7 +9,7 @@ import {
   validarFormulario,
   valoresIniciales,
 } from "@az/core";
-import type { Aerolinea, Aeropuerto, ErroresFormulario, NuevaBusqueda, ValoresFormulario } from "@az/core";
+import type { Aerolinea, Aeropuerto, EnvioFormulario, ErroresFormulario, ValoresFormulario } from "@az/core";
 import { CalendarioRango } from "./CalendarioRango";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
@@ -22,7 +22,7 @@ interface Props {
   adaptadores: ReadonlySet<string>;
   hoy: string;
   enviando: boolean;
-  onEnviar: (busqueda: NuevaBusqueda) => void;
+  onEnviar: (envio: EnvioFormulario) => void;
 }
 
 export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, enviando, onEnviar }: Props) => {
@@ -45,7 +45,7 @@ export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, 
     const r = validarFormulario(valores, hoy, adaptadores);
     if (r.ok) {
       setErrores({});
-      onEnviar(r.busqueda);
+      onEnviar(r.envio);
     } else {
       setErrores(r.errores);
     }
@@ -81,15 +81,29 @@ export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, 
     <form onSubmit={enviar} noValidate className="grid gap-5">
       <div className="grid gap-4 md:grid-cols-3">
         <Campo id="aerolinea" etiqueta="Aerolínea" error={errores.aerolineaIata}>
-          <Combobox
-            id="aerolinea"
-            placeholder="Código o nombre"
-            valor={aerolinea}
-            etiquetaValor={etiquetaAerolinea}
-            buscar={opcionesAerolinea}
-            onCambio={(a) => actualizar({ aerolineaIata: a?.iata ?? null })}
-            invalido={errores.aerolineaIata !== undefined}
-          />
+          {valores.compararTodas ? (
+            <p className="rounded-md border border-dashed border-slate-300 px-3 py-2 text-sm text-slate-600">
+              Todas las aerolíneas con adaptador ({[...adaptadores].sort().join(", ") || "ninguna"})
+            </p>
+          ) : (
+            <Combobox
+              id="aerolinea"
+              placeholder="Código o nombre"
+              valor={aerolinea}
+              etiquetaValor={etiquetaAerolinea}
+              buscar={opcionesAerolinea}
+              onCambio={(a) => actualizar({ aerolineaIata: a?.iata ?? null })}
+              invalido={errores.aerolineaIata !== undefined}
+            />
+          )}
+          <label className="flex items-center gap-2 text-xs text-slate-600">
+            <input
+              type="checkbox"
+              checked={valores.compararTodas}
+              onChange={(e) => actualizar({ compararTodas: e.target.checked })}
+            />
+            Comparar todas las aerolíneas con adaptador
+          </label>
         </Campo>
         <Campo id="origen" etiqueta="Origen" error={errores.origenIata}>
           <Combobox

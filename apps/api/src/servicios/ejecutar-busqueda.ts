@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { join, relative } from "node:path";
 import { combinaciones, convertirAUsd } from "@az/core";
 import type { Busqueda, Combinacion, Cotizacion, TablaFx } from "@az/core";
-import { ErrorBloqueo, ESPERAS_REINTENTO_MS, TIMEOUT_INTENTO_MS, conReintentos, consultarRobots, evidenciaParcial } from "@az/scraper";
+import { ErrorBloqueo, ESPERA_ASISTIDA_MS, ESPERA_NAVEGACION_ASISTIDA_MS, ESPERAS_REINTENTO_MS, TIMEOUT_INTENTO_MS, conReintentos, consultarRobots, evidenciaParcial } from "@az/scraper";
 import type { AdaptadorAerolinea, ContextoNavegador, Pagina, ParamsBusqueda, ResultadoAdaptador } from "@az/scraper";
 import type { RepoBloqueos } from "../repos/bloqueos";
 import type { RepoBusquedas } from "../repos/busquedas";
@@ -33,6 +33,15 @@ export const PAUSA_MAX_MS = 8_000;
 
 export const pausaAleatoria = () =>
   new Promise<void>((r) => setTimeout(r, PAUSA_MIN_MS + Math.random() * (PAUSA_MAX_MS - PAUSA_MIN_MS)));
+
+// Ida y vuelta son dos lecturas encadenadas en la misma página: el doble de presupuesto. Las esperas
+// asistidas (captcha, navegación de una persona) se suman: no se le corta el tiempo a la persona.
+export const presupuestoIntento = (b: Pick<Busqueda, "tipo">, adaptador: Pick<AdaptadorAerolinea, "modo">, asistido: boolean): number => {
+  let ms = b.tipo === "ida_y_vuelta" ? TIMEOUT_INTENTO_MS * 2 : TIMEOUT_INTENTO_MS;
+  if (asistido) ms += ESPERA_ASISTIDA_MS;
+  if (adaptador.modo === "asistido") ms += ESPERA_NAVEGACION_ASISTIDA_MS;
+  return ms;
+};
 
 const aRelativa = (base: string, ruta: string | null) => (ruta === null ? null : relative(base, ruta).split("\\").join("/"));
 
@@ -117,8 +126,7 @@ const consultarCombinacion = async (
         });
       },
       ESPERAS_REINTENTO_MS,
-      // Ida y vuelta son dos lecturas encadenadas en la misma página: el doble de presupuesto.
-      b.tipo === "ida_y_vuelta" ? TIMEOUT_INTENTO_MS * 2 : TIMEOUT_INTENTO_MS,
+      presupuestoIntento(b, adaptador, dep.asistido),
     );
     if (resultado.estado === "verificado") dep.cache.guardar(claveCache, resultado.lectura);
     return resultado;

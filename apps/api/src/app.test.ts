@@ -97,6 +97,42 @@ describe("API", () => {
     await app.close();
   });
 
+  it("una exploración de comparación crea una búsqueda por adaptador y emite el progreso agregado", async () => {
+    const { app, ejecutar, eventos, db } = armar();
+    const { aerolineaIata: _ia, ...parametros } = nueva;
+    const creada = await app.inject({ method: "POST", url: "/exploraciones", payload: { modo: "comparar", parametros } });
+    expect(creada.statusCode).toBe(201);
+    const e = creada.json() as { id: string; busquedaIds: string[] };
+    expect(e.busquedaIds).toHaveLength(3);
+    expect(ejecutar).toHaveBeenCalledTimes(3);
+    const hijas = e.busquedaIds.map((id) => repoBusquedas(db).obtener(id));
+    expect(hijas.map((b) => b?.aerolineaIata)).toEqual(["AR", "JA", "IB"]);
+    expect((await app.inject({ method: "GET", url: `/exploraciones/${e.id}` })).json()).toEqual(creada.json());
+
+    const direccion = await app.listen({ port: 0, host: "127.0.0.1" });
+    const res = await fetch(`${direccion}/exploraciones/${e.id}/eventos`);
+    const lector = res.body?.getReader();
+    const decodificador = new TextDecoder();
+    // Varios eventos pueden llegar en un mismo trozo: se toma el último completo.
+    const ultimoEvento = async () => {
+      const { value, done } = (await lector?.read()) ?? { done: true };
+      if (done) return null;
+      const trozos = decodificador.decode(value).split("\n\n").filter((l) => l.startsWith("data: "));
+      const ultimo = trozos[trozos.length - 1];
+      return ultimo ? (JSON.parse(ultimo.slice(6)) as { busquedas: { estado: string }[] }) : null;
+    };
+    expect((await ultimoEvento())?.busquedas.map((b) => b.estado)).toEqual(["pendiente", "pendiente", "pendiente"]);
+    for (const id of e.busquedaIds) {
+      repoBusquedas(db).cambiarEstado(id, "completa");
+      eventos.notificar(id);
+    }
+    let evento = await ultimoEvento();
+    while (evento && !evento.busquedas.every((b) => b.estado === "completa")) evento = await ultimoEvento();
+    expect(evento?.busquedas.map((b) => b.estado)).toEqual(["completa", "completa", "completa"]);
+    expect((await lector?.read())?.done).toBe(true);
+    await app.close();
+  });
+
   it("sirve screenshots sólo dentro del directorio de evidencia", async () => {
     const { app, directorioEvidencia } = armar();
     writeFileSync(join(directorioEvidencia, "x.png"), Buffer.from([0x89, 0x50, 0x4e, 0x47]));

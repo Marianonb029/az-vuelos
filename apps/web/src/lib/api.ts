@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { Busqueda, EstadoAdaptador } from "@az/core";
-import type { NuevaBusqueda } from "@az/core";
+import { Busqueda, EstadoAdaptador, Exploracion } from "@az/core";
+import type { NuevaBusqueda, NuevaExploracion } from "@az/core";
 
 const BASE = "/api";
 
@@ -14,6 +14,13 @@ export const obtenerAdaptadores = () => pedir(z.array(EstadoAdaptador), "/adapta
 
 export const crearBusqueda = (nueva: NuevaBusqueda) =>
   pedir(Busqueda, "/busquedas", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(nueva),
+  });
+
+export const crearExploracion = (nueva: NuevaExploracion) =>
+  pedir(Exploracion, "/exploraciones", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(nueva),

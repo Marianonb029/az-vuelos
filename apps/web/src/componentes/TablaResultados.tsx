@@ -44,7 +44,13 @@ const Encabezado = ({
   </th>
 );
 
-export const TablaResultados = ({ cotizaciones }: { cotizaciones: CotizacionVerificada[] }) => {
+interface Props {
+  cotizaciones: CotizacionVerificada[];
+  // Con varias aerolíneas en la misma tabla (comparación) se agrega la columna.
+  mostrarAerolinea?: boolean;
+}
+
+export const TablaResultados = ({ cotizaciones, mostrarAerolinea = false }: Props) => {
   const [criterio, setCriterio] = useState<Criterio>("precio");
   const [ascendente, setAscendente] = useState(true);
   const [abierta, setAbierta] = useState<string | null>(null);
@@ -71,6 +77,7 @@ export const TablaResultados = ({ cotizaciones }: { cotizaciones: CotizacionVeri
       <table className="w-full border-collapse text-sm">
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>
+            {mostrarAerolinea && <th scope="col" className="px-3 py-2 text-left font-medium text-slate-700">Aerolínea</th>}
             <th scope="col" className="px-3 py-2 text-left font-medium text-slate-700">Fechas</th>
             <th scope="col" className="px-3 py-2 text-left font-medium text-slate-700">Horarios</th>
             <Encabezado criterio="duracion" activo={criterio === "duracion"} ascendente={ascendente} onClick={ordenarPor}>
@@ -91,6 +98,7 @@ export const TablaResultados = ({ cotizaciones }: { cotizaciones: CotizacionVeri
             const lineaFx = formatearLineaFx(c.precio);
             return [
               <tr key={c.id} className="border-b border-slate-100 align-top">
+                {mostrarAerolinea && <td className="px-3 py-2 font-medium text-slate-800">{c.aerolinea.nombre}</td>}
                 <td className="px-3 py-2">
                   {c.tramos.map((t) => (
                     <div key={t.direccion}>{fechaCorta(t.fecha)}</div>
@@ -122,7 +130,7 @@ export const TablaResultados = ({ cotizaciones }: { cotizaciones: CotizacionVeri
               </tr>,
               expandida && (
                 <tr key={`${c.id}-detalle`} className="border-b border-slate-100 bg-slate-50">
-                  <td colSpan={6} className="px-3 py-3">
+                  <td colSpan={mostrarAerolinea ? 7 : 6} className="px-3 py-3">
                     <DetalleCotizacion cotizacion={c} />
                   </td>
                 </tr>
