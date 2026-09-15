@@ -96,7 +96,7 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
           )}
           {buscarEn.map((b) => (
             <span key={b.tramo} className="block text-xs font-normal text-slate-700" title="Las que venden ese boleto: compará el precio ahí y no en las que sólo operan un tramo">
-              <span className="text-slate-500">Buscar en{buscarEn.length > 1 ? ` (${b.tramo})` : ""}:</span> {b.aerolineas.map(nombre).join(", ")}
+              <span className="text-slate-500">Buscar en{buscarEn.length > 1 ? ` (${b.tramo})` : r.via !== null ? " (un boleto con escala; sólo quien opera los dos tramos lo vende)" : ""}:</span> {b.aerolineas.map(nombre).join(", ")}
             </span>
           ))}
         </td>
