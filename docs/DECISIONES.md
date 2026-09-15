@@ -342,6 +342,10 @@ Aprobado por el dueño ("avanza así") tras la propuesta de la 9.2.
 - Las reglas del brief se reescriben en `CLAUDE.md`: nada se presenta como precio; toda variable declara fuente y exactitud; no se lee ningún sitio de terceros.
 - Tests: de 283 a 74 (los que quedan cubren motor, API y las dos pantallas).
 
+## Ajuste (15/09/2026) — competencia total y aerolíneas por tramo
+
+El dueño pidió el total de aerolíneas que operan cada ruta, no sólo la del tramo más cerrado. `RutaPriorizada` suma `competenciaTotal` (aerolíneas distintas en algún tramo); la columna Competencia muestra ese total, debajo "tramo más cerrado: N" (que es lo que pesa en el índice, porque el tramo con menos oferta marca el precio) y la marca low cost. La columna de aerolíneas ahora lista los operadores de cada tramo, con las que venden el boleto en negrita. Nota operativa: Vite cachea los paquetes del workspace; tras cambiar un esquema Zod de `@az/espacio` hay que borrar `apps/web/node_modules/.vite` y reiniciar la web, o los campos nuevos se pierden en el `parse` (Zod descarta claves desconocidas).
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

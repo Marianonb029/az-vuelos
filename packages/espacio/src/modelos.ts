@@ -164,7 +164,8 @@ export const RutaPriorizada = z.object({
   trasladoDestinoKm: z.number().min(0),
   desvioPct: z.number().min(0),
   tramos: z.array(TramoCompetencia).min(1),
-  competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado
+  competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado (la que manda en el índice)
+  competenciaTotal: z.number().int().min(1), // aerolíneas distintas que operan algún tramo de la ruta
   bajoCosto: z.boolean(),
   presionIda: PuntajeDia,
   presionVuelta: PuntajeDia.nullable(),

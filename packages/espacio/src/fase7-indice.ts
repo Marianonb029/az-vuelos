@@ -69,6 +69,7 @@ const priorizarRuta = (r: Ruta, entrada: EntradaFase7, cfg: ConfigFase7): Omit<R
   const trasladoDestinoKm = sd && sd.iata !== d.iata ? Math.round(distanciaKm(d, sd)) : 0;
   const boletos = r.tramoPrevio === null ? 1 : 2;
   const competenciaMinima = Math.max(1, Math.min(...tramos.map((t) => t.aerolineas.length)));
+  const competenciaTotal = Math.max(1, new Set(tramos.flatMap((t) => t.aerolineas)).size);
   const vendedoras = [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? [])];
   const bajoCosto = vendedoras.some((a) => cfg.fase6.aerolineasPerfilBajoCosto.includes(a));
   const presion = presionVuelta === null ? presionIda.presion : (presionIda.presion + presionVuelta.presion) / 2;
@@ -97,6 +98,7 @@ const priorizarRuta = (r: Ruta, entrada: EntradaFase7, cfg: ConfigFase7): Omit<R
     desvioPct: directa === 0 ? 0 : Math.max(0, Math.round(((distancia - directa) / directa) * 100)),
     tramos,
     competenciaMinima,
+    competenciaTotal,
     bajoCosto,
     presionIda,
     presionVuelta,
@@ -104,7 +106,7 @@ const priorizarRuta = (r: Ruta, entrada: EntradaFase7, cfg: ConfigFase7): Omit<R
     desglose: { kmEquivalentes: Math.round(km), kmTraslado: Math.round(kmTraslado), factorCompetencia: redondear(fCompetencia), factorBajoCosto: redondear(fBajoCosto), factorPresion: redondear(fPresion), factorEscalas: redondear(fEscalas) },
     fundamento: [
       `${distancia} km volados (${directa} km directos${directa > 0 && distancia > directa ? `, +${Math.round(((distancia - directa) / directa) * 100)} %` : ""})${trasladoOrigenKm > 0 ? ` + traslado ${entrada.solicitado.origen}→${o.iata} ${trasladoOrigenKm} km` : ""}${trasladoDestinoKm > 0 ? ` + traslado ${d.iata}→${entrada.solicitado.destino} ${trasladoDestinoKm} km` : ""} → ${Math.round(km)} km equivalentes con ${boletos} boleto${boletos === 1 ? "" : "s"}`,
-      `competencia: ${competenciaMinima} aerolínea${competenciaMinima === 1 ? "" : "s"} en el tramo más cerrado ×${redondear(fCompetencia)}${bajoCosto ? ` · bajo costo ×${cfg.fase7.factorBajoCosto}` : ""}`,
+      `competencia: ${competenciaTotal} aerolínea${competenciaTotal === 1 ? "" : "s"} operan la ruta, ${competenciaMinima} en el tramo más cerrado ×${redondear(fCompetencia)}${bajoCosto ? ` · bajo costo ×${cfg.fase7.factorBajoCosto}` : ""}`,
       `presión ${Math.round(presion)}/100 (${presionIda.banda}${presionVuelta ? ` ida, ${presionVuelta.banda} vuelta` : ""}) ×${redondear(fPresion)}`,
       `${r.escalas} escala${r.escalas === 1 ? "" : "s"} ×${redondear(fEscalas)}`,
       `índice ${indice}`,

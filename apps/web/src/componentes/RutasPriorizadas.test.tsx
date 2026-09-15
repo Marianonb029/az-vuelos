@@ -19,8 +19,8 @@ const resultado: ResultadoRutas = {
   avisos: [],
   nombres: [{ iata: "UX", nombre: "Air Europa" }, { iata: "TP", nombre: "TAP" }, { iata: "G3", nombre: "GOL" }],
   rutas: [
-    { posicion: 1, origen: "ASU", destino: "MAD", via: "GRU", escalas: 1, boletos: 2, aerolineas: ["TP"], tramoPrevio: { hub: "GRU", aerolineas: ["G3"] }, distanciaKm: 9500, distanciaDirectaKm: 8900, trasladoOrigenKm: 0, trasladoDestinoKm: 0, desvioPct: 7, tramos: [{ origen: "ASU", destino: "GRU", km: 1100, aerolineas: ["G3", "LA"] }, { origen: "GRU", destino: "MAD", km: 8400, aerolineas: ["TP", "IB"] }], competenciaMinima: 2, bajoCosto: true, presionIda: presion, presionVuelta: null, indice: 5100, desglose: { kmEquivalentes: 6100 }, fundamento: "9500 km volados … índice 5100", enlaces: [{ id: "kayak", nombre: "Kayak", tramo: "ASU→GRU", url: "https://www.kayak.com/flights/ASU-GRU/2027-02-16" }, { id: "kayak", nombre: "Kayak", tramo: "GRU→MAD", url: "https://www.kayak.com/flights/GRU-MAD/2027-02-16" }] },
-    { posicion: 2, origen: "ASU", destino: "MAD", via: null, escalas: 0, boletos: 1, aerolineas: ["UX"], tramoPrevio: null, distanciaKm: 8900, distanciaDirectaKm: 8900, trasladoOrigenKm: 0, trasladoDestinoKm: 0, desvioPct: 0, tramos: [{ origen: "ASU", destino: "MAD", km: 8900, aerolineas: ["UX"] }], competenciaMinima: 1, bajoCosto: false, presionIda: presion, presionVuelta: null, indice: 6300, desglose: {}, fundamento: "8900 km volados … índice 6300", enlaces: [{ id: "kiwi", nombre: "Kiwi.com", tramo: "ASU→MAD", url: "https://www.kiwi.com/deep?from=ASU&to=MAD" }] },
+    { posicion: 1, origen: "ASU", destino: "MAD", via: "GRU", escalas: 1, boletos: 2, aerolineas: ["TP"], tramoPrevio: { hub: "GRU", aerolineas: ["G3"] }, distanciaKm: 9500, distanciaDirectaKm: 8900, trasladoOrigenKm: 0, trasladoDestinoKm: 0, desvioPct: 7, tramos: [{ origen: "ASU", destino: "GRU", km: 1100, aerolineas: ["G3", "LA"] }, { origen: "GRU", destino: "MAD", km: 8400, aerolineas: ["TP", "IB"] }], competenciaMinima: 2, competenciaTotal: 4, bajoCosto: true, presionIda: presion, presionVuelta: null, indice: 5100, desglose: { kmEquivalentes: 6100 }, fundamento: "9500 km volados … índice 5100", enlaces: [{ id: "kayak", nombre: "Kayak", tramo: "ASU→GRU", url: "https://www.kayak.com/flights/ASU-GRU/2027-02-16" }, { id: "kayak", nombre: "Kayak", tramo: "GRU→MAD", url: "https://www.kayak.com/flights/GRU-MAD/2027-02-16" }] },
+    { posicion: 2, origen: "ASU", destino: "MAD", via: null, escalas: 0, boletos: 1, aerolineas: ["UX"], tramoPrevio: null, distanciaKm: 8900, distanciaDirectaKm: 8900, trasladoOrigenKm: 0, trasladoDestinoKm: 0, desvioPct: 0, tramos: [{ origen: "ASU", destino: "MAD", km: 8900, aerolineas: ["UX"] }], competenciaMinima: 1, competenciaTotal: 1, bajoCosto: false, presionIda: presion, presionVuelta: null, indice: 6300, desglose: {}, fundamento: "8900 km volados … índice 6300", enlaces: [{ id: "kiwi", nombre: "Kiwi.com", tramo: "ASU→MAD", url: "https://www.kiwi.com/deep?from=ASU&to=MAD" }] },
   ],
 };
 
@@ -46,6 +46,9 @@ describe("RutasPriorizadas", () => {
     expect(filas[0]?.textContent).toContain("ASU → GRU → MAD");
     expect(filas[0]?.textContent).toContain("2 boletos");
     expect(filas[0]?.textContent).toContain("low cost");
+    expect(filas[0]?.textContent).toContain("4 aerolíneas");
+    expect(filas[0]?.textContent).toContain("ASU→GRU: G3, LA");
+    expect(filas[0]?.textContent).toContain("GRU→MAD: TP, IB");
     expect(filas[1]?.textContent).toContain("ASU → MAD");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver" })[0] as HTMLElement);
     expect(screen.getByText(/9500 km volados/)).toBeTruthy();

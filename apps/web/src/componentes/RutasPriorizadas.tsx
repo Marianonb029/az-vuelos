@@ -46,14 +46,22 @@ const Fila = ({ r, nombres }: { r: RutaPriorizada; nombres: ReadonlyMap<string, 
           {r.trasladoOrigenKm + r.trasladoDestinoKm > 0 && <span className="block text-xs text-slate-500">+ traslado {(r.trasladoOrigenKm + r.trasladoDestinoKm).toLocaleString("es")} km</span>}
         </td>
         <td className="py-1.5 pr-3 text-slate-700">
-          <span title={r.tramos.map((t) => `${t.origen}→${t.destino}: ${t.aerolineas.map(nombre).join(", ") || "sin datos"}`).join("\n")}>
-            {r.competenciaMinima} {r.bajoCosto && <span className="rounded bg-sky-100 px-1 text-[10px] uppercase text-sky-800">low cost</span>}
-          </span>
+          <span className="font-semibold tabular-nums">{r.competenciaTotal}</span> aerolínea{r.competenciaTotal === 1 ? "" : "s"}
+          {r.tramos.length > 1 && <span className="block text-xs text-slate-500">tramo más cerrado: {r.competenciaMinima}</span>}
+          {r.bajoCosto && <span className="mt-0.5 inline-block rounded bg-sky-100 px-1 text-[10px] uppercase text-sky-800">low cost</span>}
         </td>
-        <td className="py-1.5 pr-3 text-slate-700">
-          {[...(r.tramoPrevio?.aerolineas ?? []), ...r.aerolineas].map((a) => (
-            <span key={a} title={nombre(a)} className="mr-1 whitespace-nowrap">
-              {a}
+        <td className="py-1.5 pr-3 text-xs text-slate-700">
+          {r.tramos.map((t) => (
+            <span key={`${t.origen}-${t.destino}`} className="block whitespace-nowrap">
+              <span className="text-slate-500">{t.origen}→{t.destino}:</span>{" "}
+              {t.aerolineas.length === 0
+                ? "sin datos"
+                : t.aerolineas.map((a, i) => (
+                    <span key={a} title={nombre(a)} className={r.aerolineas.includes(a) || (r.tramoPrevio?.aerolineas ?? []).includes(a) ? "font-semibold text-slate-900" : ""}>
+                      {a}
+                      {i < t.aerolineas.length - 1 ? ", " : ""}
+                    </span>
+                  ))}
             </span>
           ))}
         </td>
@@ -83,8 +91,10 @@ const Fila = ({ r, nombres }: { r: RutaPriorizada; nombres: ReadonlyMap<string, 
               )}
             </p>
             <p className="mb-1">
-              <span className="font-medium">Tramos y aerolíneas que los operan:</span>{" "}
+              <span className="font-medium">Tramos:</span>{" "}
               {r.tramos.map((t) => `${t.origen}→${t.destino} (${t.km} km): ${t.aerolineas.map(nombre).join(", ") || "sin datos"}`).join(" · ")}
+              {" · "}
+              <span className="font-medium">vende el boleto:</span> {[...(r.tramoPrevio?.aerolineas ?? []), ...r.aerolineas].map(nombre).join(", ")}
             </p>
             {r.enlaces.length > 0 && (
               <p>
@@ -211,7 +221,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                   <th className="py-1 pr-3">Ruta</th>
                   <th className="py-1 pr-3">km volados</th>
                   <th className="py-1 pr-3">Competencia</th>
-                  <th className="py-1 pr-3">Aerolíneas</th>
+                  <th className="py-1 pr-3">Aerolíneas que operan cada tramo</th>
                   <th className="py-1 pr-3">Presión</th>
                   <th className="py-1 pr-3">Índice</th>
                   <th className="py-1" />
