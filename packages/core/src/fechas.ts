@@ -1,4 +1,4 @@
-import type { Busqueda, RangoFechas } from "./schema";
+import type { RangoFechas } from "./schema";
 
 const MS_POR_DIA = 86_400_000;
 
@@ -21,27 +21,6 @@ export const expandirRango = (r: RangoFechas): string[] => {
   const fechas: string[] = [];
   for (let f = r.desde; f <= r.hasta; f = sumarDias(f, 1)) fechas.push(f);
   return fechas;
-};
-
-export interface Combinacion {
-  fechaIda: string;
-  fechaVuelta: string | null;
-}
-
-// Producto cartesiano ida × vuelta, descartando vueltas anteriores a su ida.
-export const combinaciones = (
-  b: Pick<Busqueda, "tipo" | "rangoIda" | "rangoVuelta">,
-): Combinacion[] => {
-  const idas = expandirRango(b.rangoIda);
-  if (b.tipo === "ida" || b.rangoVuelta === null) return idas.map((fechaIda) => ({ fechaIda, fechaVuelta: null }));
-  const vueltas = expandirRango(b.rangoVuelta);
-  const resultado: Combinacion[] = [];
-  for (const fechaIda of idas) {
-    for (const fechaVuelta of vueltas) {
-      if (fechaVuelta >= fechaIda) resultado.push({ fechaIda, fechaVuelta });
-    }
-  }
-  return resultado;
 };
 
 export const fechaCorta = (iso: string): string => {

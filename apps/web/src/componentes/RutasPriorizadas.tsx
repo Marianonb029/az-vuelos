@@ -2,12 +2,14 @@ import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta } from "@az/core";
 import type { Aeropuerto } from "@az/core";
-import type { PuntajeDia, ResultadoRutas, RutaPriorizada } from "@az/espacio";
-import { obtenerRutas } from "../lib/api";
+import type { PuntajeDia, ResultadoEspacio, ResultadoRutas, RutaPriorizada } from "@az/espacio";
+import { obtenerEspacio, obtenerRutas } from "../lib/api";
 import { Bloque } from "./Bloque";
+import { CalendarioPresion } from "./CalendarioPresion";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
+import { ResultadosEspacio } from "./ResultadosEspacio";
 import { Toggle } from "./Toggle";
 
 interface Props {
@@ -112,6 +114,8 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoRutas | null>(null);
+  const [espacio, setEspacio] = useState<ResultadoEspacio | null>(null);
+  const [errorEspacio, setErrorEspacio] = useState<string | null>(null);
 
   const opciones = useCallback((texto: string): Opcion<Aeropuerto>[] => buscarAeropuertos(aeropuertos, texto).map((a) => ({ clave: a.iata, valor: a, etiqueta: etiquetaAeropuerto(a) })), [aeropuertos]);
 
@@ -128,6 +132,8 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
     if (Object.values(errores).some((x) => x !== undefined) || !origen || !destino || fechaIda === "") return;
     setCargando(true);
     setError(null);
+    setEspacio(null);
+    setErrorEspacio(null);
     try {
       setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null));
     } catch (err: unknown) {
@@ -139,6 +145,16 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
   };
 
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
+
+  // El detalle del espacio de búsqueda (alternativos, rutas, separados, gaps) se pide sólo si se abre.
+  const abrirEspacio = async (e: { currentTarget: HTMLDetailsElement }) => {
+    if (!e.currentTarget.open || espacio !== null || !resultado) return;
+    try {
+      setEspacio(await obtenerEspacio(resultado.origen, resultado.destino));
+    } catch (err: unknown) {
+      setErrorEspacio(`No se pudo calcular el espacio de búsqueda: ${describirError(err)}`);
+    }
+  };
 
   return (
     <div className="grid gap-6">
@@ -209,6 +225,25 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
             </table>
           </div>
         </Bloque>
+      )}
+      {resultado && (
+        <details onToggle={(e) => void abrirEspacio(e)} className="rounded-lg border border-slate-200 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-medium text-slate-800">Ver el espacio de búsqueda detrás de estas rutas (cuándo volar, boletos separados, rutas, aeropuertos alternativos, gaps)</summary>
+          <div className="mt-4 grid gap-4">
+            {errorEspacio && (
+              <p role="alert" className="text-sm text-red-700">
+                {errorEspacio}
+              </p>
+            )}
+            {espacio === null && errorEspacio === null && <p className="text-sm text-slate-500">Calculando…</p>}
+            {espacio && (
+              <>
+                <CalendarioPresion key={`c-${espacio.origen}-${espacio.destino}`} origen={espacio.origen} destino={espacio.destino} hoy={hoy} />
+                <ResultadosEspacio resultado={espacio} />
+              </>
+            )}
+          </div>
+        </details>
       )}
     </div>
   );

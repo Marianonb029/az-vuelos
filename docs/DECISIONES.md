@@ -331,6 +331,17 @@ Pedido del dueño: eventos masivos 2026–2027 confirmados, actualizados mensual
 
 - Escuela y recesos: sólo los de `fase5.eventos` (tipo `receso`); no hay fuente abierta y estructurada para calendarios escolares de todos los países.
 
+## Fase 9.3 (15/09/2026) — dos pestañas y retiro de la lectura de precios
+
+Aprobado por el dueño ("avanza así") tras la propuesta de la 9.2.
+
+- **Interfaz**: quedan **Rutas** (la salida, con un desplegable que muestra el espacio de búsqueda detrás: calendario de presión, boletos separados, rutas, aeropuertos alternativos, gaps) y **Datos** (fuente, última actualización, exactitud y vencimiento de cada variable). Se eliminan Buscar, Precio de una aerolínea, Espacio de búsqueda como pestaña y Operaciones (sus métricas eran de la lectura de precios).
+- **Código retirado**: `packages/scraper` completo (adaptadores propios y genéricos, lectores de metabuscadores, bloqueos, robots, evidencia, sonda), SQLite y migraciones, repos, cola, cotizaciones, carga manual, FX, SSE de progreso, exploraciones; en core, el contrato de búsqueda/cotización, conversión, formato de precios y fixtures. Se fue `better-sqlite3` y Playwright de las dependencias; Chrome ya no es requisito. Todo sigue en el historial de git (hasta `326a520`) por si algún día vuelve a pedirse leer precios.
+- **Se conserva**: las URLs de los siete metabuscadores, ahora en `packages/core/src/enlaces-metabuscadores.ts` (sólo arman el enlace; los formatos se comprobaron en vivo en la Fase 7.3); el motor completo del espacio y la exportación XLSX/JSON.
+- API resultante: `GET /rutas`, `GET /espacio`, `GET /espacio/calendario`, `GET /espacio/combinaciones`, `GET /espacio/exportar`, `GET /datos`, `GET /salud`. Sin estado, sin escritura.
+- Las reglas del brief se reescriben en `CLAUDE.md`: nada se presenta como precio; toda variable declara fuente y exactitud; no se lee ningún sitio de terceros.
+- Tests: de 283 a 74 (los que quedan cubren motor, API y las dos pantallas).
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

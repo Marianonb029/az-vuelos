@@ -11,14 +11,11 @@
   "dependencies": {
     "@az/core": "workspace:*",
     "@az/espacio": "workspace:*",
-    "@az/scraper": "workspace:*",
-    "better-sqlite3": "^12.4.1",
     "exceljs": "^4.4.0",
     "fastify": "^5.6.0",
     "zod": "^4.1.11"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.5.2",
     "tsx": "^4.20.5"
   }

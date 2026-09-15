@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combinaciones, diasDelRango, diasEntre, expandirRango, fechaCorta, sumarDias } from "./fechas";
+import { diasDelRango, diasEntre, expandirRango, fechaCorta, sumarDias } from "./fechas";
 
 describe("fechas", () => {
   it("suma días cruzando meses y años", () => {
@@ -25,31 +25,5 @@ describe("fechas", () => {
 
   it("formatea DD/MM/AAAA", () => {
     expect(fechaCorta("2027-01-05")).toBe("05/01/2027");
-  });
-});
-
-describe("combinaciones", () => {
-  it("ida sola: una por fecha, sin vuelta", () => {
-    const c = combinaciones({ tipo: "ida", rangoIda: { desde: "2027-01-01", hasta: "2027-01-03" }, rangoVuelta: null });
-    expect(c).toEqual([
-      { fechaIda: "2027-01-01", fechaVuelta: null },
-      { fechaIda: "2027-01-02", fechaVuelta: null },
-      { fechaIda: "2027-01-03", fechaVuelta: null },
-    ]);
-  });
-
-  it("ida y vuelta: producto cartesiano descartando vueltas anteriores a su ida", () => {
-    const c = combinaciones({
-      tipo: "ida_y_vuelta",
-      rangoIda: { desde: "2027-01-01", hasta: "2027-01-03" },
-      rangoVuelta: { desde: "2027-01-02", hasta: "2027-01-03" },
-    });
-    expect(c).toEqual([
-      { fechaIda: "2027-01-01", fechaVuelta: "2027-01-02" },
-      { fechaIda: "2027-01-01", fechaVuelta: "2027-01-03" },
-      { fechaIda: "2027-01-02", fechaVuelta: "2027-01-02" },
-      { fechaIda: "2027-01-02", fechaVuelta: "2027-01-03" },
-      { fechaIda: "2027-01-03", fechaVuelta: "2027-01-03" },
-    ]);
   });
 });

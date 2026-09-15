@@ -5,7 +5,6 @@ import { Bloque } from "./Bloque";
 
 interface Props {
   resultado: ResultadoEspacio;
-  adaptadores: ReadonlySet<string>; // aerolíneas con adaptador: se pueden verificar en el sitio oficial
 }
 
 const NIVEL: Record<Ruta["nivel"], string> = {
@@ -53,18 +52,17 @@ const Candidatos = ({ titulo, lista }: { titulo: string; lista: CandidatoAeropue
   </div>
 );
 
-const Aerolineas = ({ iatas, nombres, adaptadores }: { iatas: string[]; nombres: ReadonlyMap<string, string>; adaptadores: ReadonlySet<string> }) => (
+const Aerolineas = ({ iatas, nombres }: { iatas: string[]; nombres: ReadonlyMap<string, string> }) => (
   <span className="flex flex-wrap gap-x-2 gap-y-0.5">
     {iatas.map((iata) => (
       <span key={iata} title={nombres.get(iata) ?? iata} className="whitespace-nowrap">
         {iata}
-        {adaptadores.has(iata) && <span className="ml-0.5 text-[10px] uppercase text-emerald-700">adaptador</span>}
       </span>
     ))}
   </span>
 );
 
-const TablaRutas = ({ rutas, nombres, adaptadores }: { rutas: Ruta[]; nombres: ReadonlyMap<string, string>; adaptadores: ReadonlySet<string> }) => (
+const TablaRutas = ({ rutas, nombres }: { rutas: Ruta[]; nombres: ReadonlyMap<string, string> }) => (
   <div className="overflow-x-auto">
     <table className="w-full text-sm">
       <thead>
@@ -89,10 +87,10 @@ const TablaRutas = ({ rutas, nombres, adaptadores }: { rutas: Ruta[]; nombres: R
             <td className="py-1 pr-3 text-slate-700">
               {r.tramoPrevio && (
                 <span className="mr-2 text-xs text-amber-800">
-                  {r.origen}→{r.tramoPrevio.hub} con <Aerolineas iatas={r.tramoPrevio.aerolineas} nombres={nombres} adaptadores={adaptadores} /> (boleto aparte) · {r.tramoPrevio.hub}→{r.destino} con
+                  {r.origen}→{r.tramoPrevio.hub} con <Aerolineas iatas={r.tramoPrevio.aerolineas} nombres={nombres} /> (boleto aparte) · {r.tramoPrevio.hub}→{r.destino} con
                 </span>
               )}
-              <Aerolineas iatas={r.aerolineas} nombres={nombres} adaptadores={adaptadores} />
+              <Aerolineas iatas={r.aerolineas} nombres={nombres} />
             </td>
             <td className="py-1 pr-3 text-right tabular-nums text-slate-700">{r.vuelosSemanales}</td>
           </tr>
@@ -136,7 +134,7 @@ const TablaGaps = ({ gaps }: { gaps: GapAerolinea[] }) => (
   </div>
 );
 
-export const ResultadosEspacio = ({ resultado, adaptadores }: Props) => {
+export const ResultadosEspacio = ({ resultado }: Props) => {
   const [verDescartadas, setVerDescartadas] = useState(false);
   const nombres = new Map(resultado.nombres.map((n) => [n.iata, n.nombre]));
   const gapsOrigen = resultado.gaps.filter((g) => g.rol === "gap_origen");
@@ -152,17 +150,17 @@ export const ResultadosEspacio = ({ resultado, adaptadores }: Props) => {
       </p>
 
       <Bloque orden={3} titulo={`Boletos separados: dos compras por un hub barato (${separadas.length})`} objetivo="Origen → hub con una aerolínea y hub → destino con otra (p. ej. GRU/GIG → LIS con TAP), sólo donde no hay boleto único. Suele ser lo más barato hacia Europa; sin protección de conexión, dejá margen entre vuelos.">
-        {separadas.length === 0 ? <p className="text-sm text-slate-500">Sin boletos separados con el dataset actual.</p> : <TablaRutas rutas={separadas} nombres={nombres} adaptadores={adaptadores} />}
+        {separadas.length === 0 ? <p className="text-sm text-slate-500">Sin boletos separados con el dataset actual.</p> : <TablaRutas rutas={separadas} nombres={nombres} />}
       </Bloque>
 
-      <Bloque orden={4} titulo={`Rutas con boleto único, Nivel 1–2 (${conservadas.length})`} objetivo="Aerolíneas que vuelan la ruta directa o con 1 escala con frecuencia suficiente: son las que se verifican en su sitio oficial. Nivel 1 = máxima frecuencia. Las de Nivel 3–4 quedan guardadas por si hace falta.">
+      <Bloque orden={4} titulo={`Rutas con boleto único, Nivel 1–2 (${conservadas.length})`} objetivo="Aerolíneas que vuelan la ruta directa o con 1 escala con frecuencia suficiente (números de vuelo vigentes). Nivel 1 = máxima frecuencia. Las de Nivel 3–4 quedan guardadas por si hace falta.">
         <label className="flex items-center gap-2 text-xs text-slate-600">
           <input type="checkbox" checked={verDescartadas} onChange={(e) => setVerDescartadas(e.target.checked)} />
           Mostrar Nivel 3–4 persistidas ({descartadas.length})
         </label>
         {conservadas.length === 0 && <p className="text-sm text-slate-500">Ninguna ruta llega al Nivel 1–2 con el dataset actual.</p>}
-        {conservadas.length > 0 && <TablaRutas rutas={conservadas} nombres={nombres} adaptadores={adaptadores} />}
-        {verDescartadas && descartadas.length > 0 && <TablaRutas rutas={descartadas} nombres={nombres} adaptadores={adaptadores} />}
+        {conservadas.length > 0 && <TablaRutas rutas={conservadas} nombres={nombres} />}
+        {verDescartadas && descartadas.length > 0 && <TablaRutas rutas={descartadas} nombres={nombres} />}
       </Bloque>
 
       <Bloque orden={5} titulo="Aeropuertos alternativos (hasta 2000 km del origen y del destino)" objetivo="Salir o llegar por un aeropuerto cercano suele cambiar el precio más que la fecha. Estos ya están dentro de las rutas y combinaciones de arriba; acá se ve cuáles entraron y a qué distancia.">

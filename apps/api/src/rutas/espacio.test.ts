@@ -1,14 +1,9 @@
-import { mkdtempSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import ExcelJS from "exceljs";
 import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
 import { crearApp } from "../app";
 import { config } from "../config";
-import { abrirDb } from "../db/conexion";
 import { crearServicioEspacio } from "../servicios/espacio";
-import { crearEventos } from "../servicios/eventos";
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
 const feriados = {
@@ -17,7 +12,7 @@ const feriados = {
     avisos: ["Sin feriados de ES 2027: Nager.Date respondió HTTP 503 para ES 2027"],
   }),
 };
-const app = crearApp({ db: abrirDb(":memory:", config.directorioMigraciones), directorioEvidencia: mkdtempSync(join(tmpdir(), "az-")), eventos: crearEventos(), ejecutar: vi.fn(), espacio, feriados, cargaManual: { obtenerTablaFx: vi.fn(), nombreAerolinea: () => null, notificar: vi.fn() }, metabuscadores: [], leerMetabuscador: vi.fn(async () => {}), estadoCola: () => ({ corriendo: 0, pendientes: 0, dominiosActivos: [], maxSimultaneos: 2 }) });
+const app = crearApp({ espacio, feriados });
 
 describe("GET /espacio/calendario", () => {
   it("pide feriados de ambos países y devuelve el calendario con ventanas verdes y avisos", async () => {
@@ -128,9 +123,21 @@ describe("GET /rutas (Fase 7)", () => {
     expect(r.rutas.length).toBeGreaterThan(5);
     expect(r.rutas.map((x) => x.indice)).toEqual([...r.rutas.map((x) => x.indice)].sort((a, b) => a - b));
     expect(r.rutas[0]?.presionVuelta?.fecha).toBe("2027-03-01");
-    expect(r.rutas[0]?.enlaces.length).toBe(0); // sin metabuscadores registrados en el test no hay enlaces
+    expect(r.rutas[0]?.enlaces.length).toBe(7 * (r.rutas[0]?.boletos ?? 0)); // un enlace por metabuscador y por boleto
+    expect(r.rutas[0]?.enlaces.find((e) => e.id === "kayak")?.url).toMatch(/^https:\/\/www\.kayak\.com\/flights\/[A-Z]{3}-[A-Z]{3}\/2027-02-16\/2027-03-01\?sort=bestflight_a$/);
     expect(feriados.obtener).toHaveBeenCalledWith(expect.arrayContaining(["PY", "ES"]), [2027]);
     const invalida = await app.inject({ method: "GET", url: "/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&fechaVuelta=2027-02-01" });
     expect(invalida.statusCode).toBe(400);
+  });
+});
+
+describe("GET /datos", () => {
+  it("lista cada variable con fuente, última actualización, exactitud y vencimiento", async () => {
+    const res = await app.inject({ method: "GET", url: "/datos" });
+    expect(res.statusCode).toBe(200);
+    const datos = res.json() as { variable: string; exactitud: string; vencida: boolean }[];
+    expect(datos.map((d) => d.variable)).toContain("Competencia: aerolíneas por tramo");
+    expect(datos.map((d) => d.variable)).toContain("Eventos masivos");
+    expect(datos.every((d) => ["exacta", "vigente", "aproximada", "supuesto"].includes(d.exactitud))).toBe(true);
   });
 });

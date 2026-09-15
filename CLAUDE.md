@@ -1,20 +1,18 @@
 # AZ Vuelos
 
-Ordena rutas aéreas por chance de tarifa baja **sin leer precios** (Fase 9.1): índice de costo estimado con km volados, competencia de aerolíneas por tramo, presión de la fecha y escalas, más enlaces a metabuscadores. La lectura de precios en sitios oficiales (Playwright) existe todavía en el código y se retira en la Fase 9.2.
-
-Brief completo: `docs/BRIEF.md`. Ajustes acordados sobre el brief: `docs/DECISIONES.md` (manda sobre el brief).
+Ordena rutas aéreas por chance de tarifa baja **sin leer precios**: índice de costo estimado con km volados, competencia de aerolíneas por tramo, presión de la fecha (feriados, fines de semana largos, día de la semana, temporada por región, eventos masivos) y escalas, más enlaces a metabuscadores. El brief original (`docs/BRIEF.md`) pedía leer precios en sitios oficiales; la Fase 9 lo reemplazó y retiró el scraper. `docs/DECISIONES.md` manda sobre el brief.
 
 ## Stack
 
 pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquema)
 
-- `apps/web` — React 18 + Vite + Tailwind v4
-- `apps/api` — Node 24 + Fastify 5, SQLite (better-sqlite3), migraciones SQL planas
-- `packages/core` — esquema Zod + lógica de dominio, sin I/O
-- `packages/scraper` — Playwright + un adaptador por aerolínea en `src/adapters/` (con lector propio) y el asistido genérico `src/adapters/generico/` para el resto del registro; metabuscadores (Kayak, Momondo, Trip.com, Google Flights, Kiwi.com, Turismocity, Viajala) en `src/metabuscadores/`, sección aparte
-- `packages/espacio` — motor del espacio de búsqueda (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas (VRS, vigente), gaps, calendario con señales de demanda, combinaciones y **Fase 7: índice de costo estimado por ruta**. Sin I/O; la configuración vive en `config/espacio.json`
-- `config/espacio.json` — todos los números del SPEC del espacio de búsqueda
-- `data` — catálogos IATA y datasets del espacio de búsqueda (JSON generado por `pnpm catalogos`, no editar a mano)
+- `apps/web` — React 18 + Vite + Tailwind v4. Dos pestañas: Rutas y Datos.
+- `apps/api` — Node 24 + Fastify 5. Cálculo puro sobre datasets: sin base de datos, sin navegador. `GET /rutas`, `GET /espacio*`, `GET /datos`.
+- `packages/core` — primitivos Zod, catálogos IATA, fechas, esquema de fuentes de datos y enlaces a metabuscadores (sólo URLs).
+- `packages/espacio` — motor (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas vigentes, gaps, calendario con señales de demanda, combinaciones y Fase 7 (índice por ruta). Sin I/O.
+- `config/espacio.json` — todos los números del modelo (radios, niveles, pesos de presión, temporadas por región con fuente, factores del índice).
+- `data` — datasets generados (`pnpm catalogos`, `pnpm eventos`), no editar a mano.
+- `scripts` — descarga de catálogos (OurAirports, OpenTravelData, VRS) y de eventos (Wikidata).
 
 ## Comandos
 
@@ -24,21 +22,19 @@ pnpm test        # vitest en todos los paquetes
 pnpm build       # typecheck + vite build
 pnpm typecheck
 pnpm lint
-pnpm catalogos  # rutas (VRS) y aeropuertos: mensual
-pnpm eventos    # eventos masivos (Wikidata): mensual
+pnpm catalogos   # rutas (VRS) y aeropuertos: mensual
+pnpm eventos     # eventos masivos (Wikidata): mensual
 ```
 
-Requisitos de máquina: Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`; ver `docs/DECISIONES.md`).
-
-Datos en tiempo de ejecución (ignorados por git): `apps/api/datos/` (SQLite, perfil de Chrome) y `apps/api/evidencia/` (screenshots).
+Requisitos: Node ≥ 22 y pnpm ≥ 10. No hace falta Chrome.
 
 ## Reglas innegociables
 
-1. Nada se presenta como precio: la salida principal es un **índice de costo estimado** marcado como tal, con su cuenta a la vista. Donde todavía se lee un precio (código en retiro, Fase 9.2), sigue valiendo: si no se leyó del DOM, `estado: "error_lectura"`, nunca un número.
-2. Toda cotización verificada lleva evidencia completa (URL, screenshot, timestamp, selector, texto crudo).
-3. USD siempre explícito y fechado: una llamada FX por búsqueda, tasa congelada, sin caché > 24 h ni tasas hardcodeadas.
-4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en `__fixtures__/`.
-5. El precio sale del sitio oficial de la aerolínea, no de agregadores ni OTAs. Excepción acordada: los metabuscadores (Kayak, Momondo, Trip.com, Google Flights, Kiwi.com, Turismocity, Viajala) se leen en una sección separada como referencia, nunca como cotización.
+1. Nada se presenta como precio: la salida es un **índice de costo estimado** marcado como tal, con su cuenta a la vista en `fundamento` y `desglose`.
+2. Toda variable declara su fuente, última actualización y exactitud (`GET /datos`); lo aproximado y lo supuesto se dice.
+3. No se lee ningún sitio de terceros: los enlaces a metabuscadores son sólo URLs.
+4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en tests.
+5. Todo número del modelo vive en `config/espacio.json`, nunca en el código.
 
 ## Guardarraíles
 
