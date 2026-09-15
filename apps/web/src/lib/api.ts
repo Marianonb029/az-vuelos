@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Busqueda, Cotizacion, CotizacionManual, EstadoAdaptador, Exploracion } from "@az/core";
+import { Busqueda, Cotizacion, CotizacionManual, EstadoAdaptador, EstadoMetabuscador, Exploracion, MetabuscadorRef } from "@az/core";
 import type { CargaManual, NuevaBusqueda, NuevaExploracion } from "@az/core";
 import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
 
@@ -35,6 +35,10 @@ export const cargarManual = (busquedaId: string, carga: CargaManual) =>
     headers: { "content-type": "application/json" },
     body: JSON.stringify(carga),
   });
+
+export const obtenerMetabuscadores = () => pedir(z.array(MetabuscadorRef), "/metabuscadores");
+export const obtenerEstadoMetabuscador = (busquedaId: string, meta: string) => pedir(EstadoMetabuscador, `/busquedas/${busquedaId}/metabuscadores/${meta}`);
+export const pedirMetabuscador = (busquedaId: string, meta: string) => pedir(EstadoMetabuscador, `/busquedas/${busquedaId}/metabuscadores/${meta}`, { method: "POST" });
 
 export const crearExploracion = (nueva: NuevaExploracion) =>
   pedir(Exploracion, "/exploraciones", {

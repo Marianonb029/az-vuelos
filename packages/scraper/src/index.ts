@@ -11,3 +11,5 @@ export { detectarBloqueo, verificarBloqueo, ESPERA_ASISTIDA_MS } from "./bloqueo
 export type { Bloqueo, ModoAsistido } from "./bloqueo";
 export { esperarNavegacionAsistida, ESPERA_NAVEGACION_ASISTIDA_MS } from "./asistido";
 export type { NavegacionAsistida } from "./asistido";
+export type { AdaptadorMetabuscador, ParamsMetabuscador, ResultadoMetabuscador } from "./metabuscadores/contrato";
+export { REGISTRO_METABUSCADORES, metabuscadorPorId } from "./metabuscadores";

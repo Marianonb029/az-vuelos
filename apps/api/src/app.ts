@@ -4,15 +4,18 @@ import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
 import { repoCotizaciones } from "./repos/cotizaciones";
 import { repoExploraciones } from "./repos/exploraciones";
+import { repoLecturasMetabuscador } from "./repos/lecturas-metabuscador";
 import { rutasAdaptadores } from "./rutas/adaptadores";
 import { rutasBusquedas } from "./rutas/busquedas";
 import { rutasEspacio } from "./rutas/espacio";
 import { rutasEvidencia } from "./rutas/evidencia";
 import { rutasExploraciones } from "./rutas/exploraciones";
+import { rutasMetabuscadores } from "./rutas/metabuscadores";
 import { rutasProgreso } from "./rutas/progreso";
 import type { DependenciasCargaManual } from "./servicios/carga-manual";
 import type { ServicioEspacio } from "./servicios/espacio";
 import type { ServicioFeriados } from "./servicios/feriados";
+import type { AdaptadorMetabuscador } from "@az/scraper";
 import type { Eventos } from "./servicios/eventos";
 
 export interface OpcionesApp {
@@ -23,6 +26,8 @@ export interface OpcionesApp {
   espacio: ServicioEspacio;
   feriados: ServicioFeriados;
   cargaManual: Pick<DependenciasCargaManual, "obtenerTablaFx" | "nombreAerolinea" | "notificar">;
+  metabuscadores: readonly AdaptadorMetabuscador[];
+  leerMetabuscador: (busquedaId: string, m: AdaptadorMetabuscador) => Promise<void>;
 }
 
 export const crearApp = (op: OpcionesApp) => {
@@ -38,6 +43,7 @@ export const crearApp = (op: OpcionesApp) => {
   rutasProgreso(app, { busquedas, cotizaciones, eventos: op.eventos });
   rutasExploraciones(app, { exploraciones: repoExploraciones(op.db), busquedas, cotizaciones, eventos: op.eventos, ejecutar: op.ejecutar });
   rutasEvidencia(app, op.directorioEvidencia);
+  rutasMetabuscadores(app, { busquedas, lecturas: repoLecturasMetabuscador(op.db), metabuscadores: op.metabuscadores, encolar: op.leerMetabuscador });
   rutasEspacio(app, op.espacio, op.feriados);
 
   return app;

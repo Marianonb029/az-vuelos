@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { combinaciones, esManual, esNoVerificada, esVerificada, fechaCorta, fechaHoraCorta } from "@az/core";
-import type { Busqueda, Cotizacion, CotizacionManual, CotizacionNoVerificada } from "@az/core";
+import type { Busqueda, Cotizacion, CotizacionManual, CotizacionNoVerificada, MetabuscadorRef } from "@az/core";
 import { CargaManual } from "./CargaManual";
+import { ComparacionMetabuscador } from "./ComparacionMetabuscador";
 import { CotizacionesManuales } from "./CotizacionesManuales";
 import { TablaResultados } from "./TablaResultados";
 
@@ -11,6 +12,7 @@ interface Props {
   cotizaciones: Cotizacion[];
   onReintentar: () => void;
   onCargaManual: (busqueda: Busqueda, cotizacion: CotizacionManual) => void;
+  metabuscadores?: MetabuscadorRef[];
 }
 
 const etiquetaCombinacion = (fechaIda: string, fechaVuelta: string | null) =>
@@ -76,20 +78,24 @@ const SinAutomatizacion = ({ busqueda, ultimoIntento, onReintentar, children }: 
   );
 };
 
-export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCargaManual }: Props) => {
+export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCargaManual, metabuscadores = [] }: Props) => {
   const combos = combinaciones(busqueda);
   const verificadas = cotizaciones.filter(esVerificada);
   const manuales = cotizaciones.filter(esManual);
   const noVerificadas = cotizaciones.filter(esNoVerificada);
   const corriendo = busqueda.estado === "pendiente" || busqueda.estado === "corriendo";
   const formulario = <CargaManual busqueda={busqueda} onCargada={onCargaManual} />;
+  const metabuscador = <ComparacionMetabuscador busquedaId={busqueda.id} metabuscadores={metabuscadores} cotizaciones={cotizaciones} />;
 
   if (busqueda.estado === "bloqueada" || busqueda.estado === "fallida") {
     const ultimoIntento = noVerificadas.at(-1)?.evidencia.capturadoEn ?? busqueda.creadaEn;
     return (
-      <SinAutomatizacion busqueda={busqueda} ultimoIntento={ultimoIntento} onReintentar={onReintentar}>
-        {formulario}
-      </SinAutomatizacion>
+      <div className="grid gap-4">
+        <SinAutomatizacion busqueda={busqueda} ultimoIntento={ultimoIntento} onReintentar={onReintentar}>
+          {formulario}
+        </SinAutomatizacion>
+        {metabuscador}
+      </div>
     );
   }
 
@@ -101,6 +107,7 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCarga
           {busqueda.aviso && <p className="mt-1">{busqueda.aviso}</p>}
         </section>
         {formulario}
+        {metabuscador}
       </div>
     );
   }
@@ -125,6 +132,7 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCarga
           <div className="mt-3">{formulario}</div>
         </details>
       )}
+      {!corriendo && metabuscador}
     </div>
   );
 };

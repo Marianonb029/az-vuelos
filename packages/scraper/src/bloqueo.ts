@@ -13,9 +13,10 @@ const SONDEO_ASISTIDO_MS = 3_000;
 
 // Corre en el navegador: busca captchas, desafíos anti-bot y páginas de acceso denegado.
 const inspeccionar = (): { tipo: "captcha" | "challenge" | "acceso_denegado"; detalle: string } | null => {
-  const captcha = document.querySelector(
-    'iframe[src*="captcha"], iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="turnstile"], .g-recaptcha, .h-captcha, #px-captcha, [id*="captcha" i]',
-  );
+  // El marco "aframe" de reCAPTCHA es la versión invisible (puntaje): está en muchas páginas normales y no bloquea nada.
+  const captcha = Array.from(
+    document.querySelectorAll('iframe[src*="captcha"], iframe[src*="recaptcha"], iframe[src*="hcaptcha"], iframe[src*="turnstile"], .g-recaptcha, .h-captcha, #px-captcha, [id*="captcha" i]'),
+  ).find((e) => !(e instanceof HTMLIFrameElement && e.src.includes("recaptcha/api2/aframe")));
   if (captcha) return { tipo: "captcha", detalle: `Elemento ${captcha.tagName.toLowerCase()}${captcha.id ? "#" + captcha.id : ""}` };
   const titulo = document.title;
   const cuerpo = document.body?.innerText ?? "";

@@ -1,6 +1,8 @@
 export interface Trabajo {
   busquedaId: string;
   dominio: string;
+  // Por defecto el trabajo es ejecutar la búsqueda; un metabuscador trae su propia tarea sobre la misma búsqueda.
+  correr?: () => Promise<void>;
 }
 
 export const MAX_NAVEGADORES = 2;
@@ -19,7 +21,7 @@ export const crearCola = (ejecutar: (busquedaId: string) => Promise<void>, maxSi
       if (!trabajo) return;
       corriendo++;
       dominiosActivos.add(trabajo.dominio);
-      ejecutar(trabajo.busquedaId)
+      (trabajo.correr ?? (() => ejecutar(trabajo.busquedaId)))()
         .catch((e: unknown) => console.error(`Búsqueda ${trabajo.busquedaId} terminó con excepción`, e))
         .finally(() => {
           corriendo--;

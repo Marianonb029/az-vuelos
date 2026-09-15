@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { MAX_DIAS_RANGO, sumarDias } from "@az/core";
-import type { Busqueda, Cotizacion, CotizacionManual, EnvioFormulario, EstadoAdaptador, Exploracion, ValoresFormulario } from "@az/core";
+import type { Busqueda, Cotizacion, CotizacionManual, EnvioFormulario, EstadoAdaptador, Exploracion, MetabuscadorRef, ValoresFormulario } from "@az/core";
 import type { VerificacionPedida } from "./componentes/Combinaciones";
 import { EspacioBusqueda } from "./componentes/EspacioBusqueda";
 import { EstadoAdaptadores } from "./componentes/EstadoAdaptadores";
@@ -8,7 +8,7 @@ import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
 import { PendientesManual } from "./componentes/PendientesManual";
 import { ResultadosComparacion } from "./componentes/ResultadosComparacion";
-import { crearBusqueda, crearExploracion, obtenerAdaptadores, obtenerCotizaciones, obtenerPendientesManual } from "./lib/api";
+import { crearBusqueda, crearExploracion, obtenerAdaptadores, obtenerCotizaciones, obtenerMetabuscadores, obtenerPendientesManual } from "./lib/api";
 import { aerolineas, aeropuertos } from "./lib/catalogos";
 import { hoyIso } from "./lib/hoy";
 import { suscribirExploracion, suscribirProgreso } from "./lib/progreso";
@@ -32,6 +32,7 @@ const PESTANAS: { id: Pestana; titulo: string }[] = [
 export const App = () => {
   const [adaptadores, setAdaptadores] = useState<EstadoAdaptador[]>([]);
   const [pendientes, setPendientes] = useState<Busqueda[]>([]);
+  const [metabuscadores, setMetabuscadores] = useState<MetabuscadorRef[]>([]);
   const [errorApi, setErrorApi] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<Vista | null>(null);
@@ -60,6 +61,9 @@ export const App = () => {
       .then(setPendientes)
       .catch((e: unknown) => setErrorApi(`No se pudo consultar la API: ${describirError(e)}`));
   }, [todasTerminadas]);
+  useEffect(() => {
+    obtenerMetabuscadores().then(setMetabuscadores).catch(() => setMetabuscadores([]));
+  }, []);
   const iatasConAdaptador = new Set(adaptadores.map((a) => a.iata));
 
   // Progreso en vivo por SSE: la API envía la foto completa en cada cambio.
@@ -174,6 +178,7 @@ export const App = () => {
             cotizaciones={vista.cotizaciones}
             onReintentar={() => ultimoEnvio && void enviar(ultimoEnvio)}
             onCargaManual={registrarCargaManual}
+            metabuscadores={metabuscadores}
           />
         </section>
       )}

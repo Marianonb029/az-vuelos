@@ -15,13 +15,16 @@ import { PNG_1X1 } from "./servicios/carga-manual.test";
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
 
+const kayakFalso = { ref: { id: "kayak" as const, nombre: "Kayak" }, dominios: ["www.kayak.com"], urlBusqueda: () => "https://www.kayak.com/x", leer: vi.fn() };
+
 const armar = () => {
   const db = abrirDb(":memory:", config.directorioMigraciones);
   const directorioEvidencia = mkdtempSync(join(tmpdir(), "az-evidencia-"));
   const ejecutar = vi.fn();
   const eventos = crearEventos();
-  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) }, cargaManual: { obtenerTablaFx: vi.fn(async () => ({ fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z", usdA: { EUR: 0.926441 } })), nombreAerolinea: () => "LATAM", notificar: eventos.notificar } });
-  return { app, ejecutar, eventos, directorioEvidencia, db };
+  const leerMetabuscador = vi.fn(async () => {});
+  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) }, cargaManual: { obtenerTablaFx: vi.fn(async () => ({ fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z", usdA: { EUR: 0.926441 } })), nombreAerolinea: () => "LATAM", notificar: eventos.notificar }, metabuscadores: [kayakFalso], leerMetabuscador });
+  return { app, ejecutar, eventos, directorioEvidencia, db, leerMetabuscador };
 };
 
 const { id: _id, creadaEn: _c, estado: _e, motivoFallo: _m, aviso: _a, ...nueva } = busquedaIda;
@@ -50,6 +53,30 @@ describe("carga manual", () => {
     expect(invalida.statusCode).toBe(400);
     expect((invalida.json() as { error: string }).error).toContain("monto");
     expect((await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/manual`, payload: { ...carga, fechaIda: "2027-06-01" } })).statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+describe("metabuscadores", () => {
+  it("lista los disponibles, encola una lectura una sola vez y publica su estado por sondeo", async () => {
+    const { app, db, leerMetabuscador } = armar();
+    repoBusquedas(db).crear({ ...busquedaIda, estado: "completa" });
+    expect((await app.inject({ method: "GET", url: "/metabuscadores" })).json()).toEqual([{ id: "kayak", nombre: "Kayak" }]);
+
+    let terminar: () => void = () => {};
+    leerMetabuscador.mockImplementationOnce(() => new Promise<void>((r) => { terminar = r; }));
+    const pedido = await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/metabuscadores/kayak` });
+    expect(pedido.statusCode).toBe(202);
+    expect(pedido.json()).toEqual({ metabuscador: { id: "kayak", nombre: "Kayak" }, enCurso: true, lecturas: [] });
+    await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/metabuscadores/kayak` });
+    expect(leerMetabuscador).toHaveBeenCalledTimes(1); // ya estaba en curso
+    expect((await app.inject({ method: "GET", url: `/busquedas/${busquedaIda.id}/metabuscadores/kayak` })).json()).toMatchObject({ enCurso: true });
+    terminar();
+    await new Promise((r) => setTimeout(r, 0));
+    expect((await app.inject({ method: "GET", url: `/busquedas/${busquedaIda.id}/metabuscadores/kayak` })).json()).toMatchObject({ enCurso: false, lecturas: [] });
+
+    expect((await app.inject({ method: "GET", url: `/busquedas/${busquedaIda.id}/metabuscadores/otro` })).statusCode).toBe(404);
+    expect((await app.inject({ method: "POST", url: "/busquedas/00000000-0000-4000-8000-000000000000/metabuscadores/kayak" })).statusCode).toBe(404);
     await app.close();
   });
 });

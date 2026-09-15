@@ -168,6 +168,16 @@ El monto original también se redondea hacia arriba.
 - Migración `005_aviso.sql`: búsquedas anteriores a la Fase 5.0 no tenían `aviso` y rompían el listado.
 - Comprobado en vivo: TK EZE→MAD 28/09/2026, EUR 1.234,50 → USD 1.432 (tasa 1,1598 del 14/09/2026), captura servida en `/evidencia/manual/…png`.
 
+## Fase 6.8 (14/09/2026) — metabuscadores (sección "vía metabuscador")
+
+- **Sondeo previo** con `pnpm sondear` (paso 0 obligatorio): Kayak muestra precios en el DOM a una sesión automatizada (kayak.com en USD; kayak.com.ar en ARS); Skyscanner bloquea con PerimeterX (`#px-captcha`, 403 en su API) → descartado por ahora, candidato a asistido; Momondo Argentina redirige a Kayak (`lcshutdown=mm-ar`); Google Flights no muestra precios por URL directa. Sólo Kayak queda en `REGISTRO_METABUSCADORES`.
+- **robots.txt de Kayak prohíbe `/flights/`** a los robots: se registra en `registro_robots` como con las aerolíneas (política "registro" acordada), no se elude ningún control; captcha → aviso a la persona (modo asistido), bloqueo → lectura `bloqueado`.
+- Se usa **kayak.com (USD)** y no kayak.com.ar: el precio se compara tal cual, sin conversión propia (`fx: null`), y evita mezclar la tasa oficial ARS→USD con la conversión de Kayak.
+- Modelo aparte (`LecturaMetabuscador` / `OfertaMetabuscador` en core, tabla `lecturas_metabuscador`): nunca es una `Cotizacion`. Se guardan las primeras 8 ofertas (sin patrocinadas) con aerolíneas, tarifa, tramos (horas convertidas a 24 h, escalas, vías, duración), marca de **transbordo por cuenta propia** (boletos separados), evidencia completa (URL, captura, selector, texto crudo) y el total que mostró Kayak.
+- Lectura a demanda: `POST /busquedas/:id/metabuscadores/kayak` encola en la misma cola (nunca dos Chrome sobre kayak.com, cuenta para el máximo de 2), `GET` para sondear cada 3 s. Una lectura vale 6 h por búsqueda y fecha. `detectarBloqueo` ya no toma el marco invisible de reCAPTCHA (`api2/aframe`) como captcha: Kayak lo carga en toda página normal.
+- La UI muestra la sección naranja "Vía metabuscador" debajo de los resultados con el **delta contra el precio oficial más bajo de la misma fecha** (verificado o manual).
+- Comprobado en vivo, EZE→MAD 28/09/2026: sitio oficial de AR = USD 1.105 (ARS 1.668.129 a 0,0006623); Kayak = USD 797 para el mismo vuelo AR 15:05 y USD 759 la más barata (3 escalas, transbordo por cuenta propia). El delta de −31 % es real y es exactamente lo que esta sección tiene que mostrar: precio en ARS al tipo oficial vs. precio en USD de terceros.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

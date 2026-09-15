@@ -31,6 +31,10 @@ La pantalla principal muestra el **estado de cada adaptador**: modo, última lec
 
 Cualquier aerolínea del catálogo se puede buscar. Si no tiene adaptador, la búsqueda queda en `manual_pendiente`; si el adaptador fue bloqueado o falló, también se ofrece la carga manual. Una persona busca el precio en el sitio oficial y lo registra con **URL, captura de pantalla (PNG/JPEG), monto con moneda y hora**: sin los cuatro datos no se guarda nada. El monto se convierte a USD con la tasa del momento y la cotización queda como `verificado_manual`, siempre separada de las leídas por el scraper y con su evidencia enlazada. La lista "Pendientes de carga manual" (últimos 30 días) está debajo del estado de adaptadores.
 
+## Vía metabuscador (Kayak)
+
+Debajo de los resultados de una búsqueda, "Comparar con Kayak" lee kayak.com (USD) para cada fecha y muestra las primeras ofertas con aerolíneas, itinerario, transbordo por cuenta propia y captura como evidencia, más el delta contra el precio oficial de la misma fecha. Es **referencia de terceros, nunca una cotización verificada**: vive en su tabla y su sección propias. Kayak prohíbe `/flights/` en su robots.txt: la consulta queda registrada, y si aparece un captcha se le avisa a la persona. Skyscanner (PerimeterX), Momondo (redirige a Kayak) y Google Flights (sin precios por URL) se sondearon y quedaron afuera; ver `docs/DECISIONES.md`, Fase 6.8.
+
 ## Requisitos
 
 Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`).

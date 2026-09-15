@@ -48,6 +48,16 @@ describe("crearCola", () => {
     expect(iniciadas.map((x) => x.id)).toEqual(["a", "c", "b"]);
   });
 
+  it("un trabajo con tarea propia corre esa tarea y ocupa su dominio", async () => {
+    const { cola, iniciadas } = armar(1);
+    const corrida: string[] = [];
+    cola.encolar({ busquedaId: "a", dominio: "www.kayak.com", correr: async () => { corrida.push("kayak:a"); } });
+    cola.encolar({ busquedaId: "a", dominio: "ar" });
+    await tick();
+    expect(corrida).toEqual(["kayak:a"]);
+    expect(iniciadas.map((x) => x.id)).toEqual(["a"]);
+  });
+
   it("una excepción del ejecutor libera el lugar", async () => {
     const iniciadas: string[] = [];
     const cola = crearCola(async (id) => {

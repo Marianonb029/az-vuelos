@@ -1,0 +1,30 @@
+{
+  "iframes": [
+    "lightningjs-frame-usabilla_live||",
+    "google_ads_iframe_12907657/kayak/ar/flight/results_4|https://0acd6e1cb8e83c15e5c29727b0a98034.safeframe.googlesyndication.com/safefra|Publicidad de Google",
+    "google_ads_iframe_12907657/kayak/ar/flight/results_3|https://0acd6e1cb8e83c15e5c29727b0a98034.safeframe.googlesyndication.com/safefra|Publicidad de Google",
+    "||",
+    "r9GTMFrame-main|https://www.kayak.com.ar/ugtm/flights/EZE-MAD/2027-01-25?sort=bestflight_a|gtm",
+    "||",
+    "|about:blank|",
+    "|about:blank|",
+    "usabilla_live_button_container_iframe487763901|https://www.kayak.com.ar/flights/EZE-MAD/2027-01-25?sort=bestflight_a|Usabilla Feedback Button",
+    "|https://www.google.com/recaptcha/api2/aframe|",
+    "google_ads_top_frame||",
+    "goog_plcm_frame|https://cm.g.doubleclick.net/partnerpixels?rdp=1&gdpr_consent=CQqiDoAQqiDoAGdACB|"
+  ],
+  "cantidadPrecios": 79,
+  "cadenaPrimerPrecio": [
+    "div.hYzH-price",
+    "div.hYzH-price-box",
+    "div.hYzH.hYzH-mod-variant-no-heading",
+    "div.p6Cx-content",
+    "div.p6Cx",
+    "div.Qk4D",
+    "div.PfeE",
+    "div.e_0j"
+  ],
+  "textoTarjeta": null,
+  "htmlTarjeta": null,
+  "progreso": "Py0r Py0r-mod-variant-solid Py0r-mod-theme-progress Py0r-mod-shape-default Py0r-mod-size-medium"
+}

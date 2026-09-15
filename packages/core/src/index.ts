@@ -5,3 +5,4 @@ export * from "./formato";
 export * from "./parseo";
 export * from "./conversion";
 export * from "./validar-formulario";
+export * from "./metabuscador";
