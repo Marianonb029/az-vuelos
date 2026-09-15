@@ -227,6 +227,15 @@ El monto original también se redondea hacia arriba.
 - Tests: registro sin duplicados, URL e instrucción, flujo completo contra un sitio falso servido con `page.route` (captura + HTML + aviso), y corte por `ErrorBloqueo` si nadie llega a los precios. El flujo real exige una persona en la ventana de Chrome: no se corrió en vivo para no dejar a TAP en enfriamiento de 6 h por una espera vencida.
 - Siguiente paso natural: lectores propios para las aerolíneas que más aparezcan en las corridas (TP, G3, LA, UX, CM, AV, ET, TK), una por vez, con sondeo previo.
 
+## Fase 7.1 (15/09/2026) — lector propio de TAP Air Portugal
+
+- `adapters/tap/`: booking.flytap.com es un formulario Angular sin deep link (los parámetros de la URL se ignoran). Flujo: retirar el banner OneTrust **sin consentir** (se elimina el nodo, no se acepta nada), "Solo ida", origen y destino por el autocompletar (`#flight-search-from/to`; el campo pierde la primera tecla al reiniciarse, así que se escribe y se comprueba), "Seleccionar fechas" → calendario con precios estimados por día (no se usan: son referencia, no precio) y clic en el botón con id estable `AAAA-MM-DD-calendar`, "Confirmar Fechas" → lista `app-flight-result`.
+- Cada tarjeta muestra "Economy desde"; el precio real está en las **marcas** (Basic/Classic/Plus, o Discount en otras rutas) que aparecen al expandir la cabina Economy (`button.flight__cabin[aria-label^="Economy from"]`). Se expanden las 4 tarjetas más baratas y se elige la marca más barata cuyo grupo "Equipaje" incluya lo pedido (mano o bodega). Los números de vuelo y las escalas salen del modal "Detalles de vuelo" (`.flight-timeline`). Las conexiones renderizan el número de escalas en otro `<span>` ("1escala | 21h 40min") y la llegada con "+1".
+- **Sólo ida por ahora**: la vuelta se elige en una segunda pantalla que no se observó; ida y vuelta devuelve `error_lectura` explícito.
+- Sondeo: robots.txt de booking.flytap.com dice `Disallow: /` (registrado, política "registro"). Sin captcha ni bloqueo en las corridas.
+- Verificado en vivo: GRU→LIS 19/01/2027 con bodega = **EUR 966,70 (USD 1.116,68)**, TP4076 + TP0058 vía BSB, 09:05 → 06:40+1; la Basic directa (TP0084) costaba 989,50. Fixture real en `__fixtures__/vuelos-gru-lis.html` (primera tarjeta expandida) y `detalles-gru-lis.html`.
+- Incidente de infraestructura: `tsx watch` reiniciaba la API antes de que el proceso viejo soltara el puerto (EADDRINUSE) y quedaba corriendo código viejo. Ante cambios en el scraper conviene reiniciar `pnpm dev` a mano.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

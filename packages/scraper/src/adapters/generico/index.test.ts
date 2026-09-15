@@ -18,8 +18,7 @@ afterAll(async () => {
   await navegador.close();
 });
 
-const tap = SITIOS.find((s) => s.iata === "TP");
-if (!tap) throw new Error("TP");
+const tap = { iata: "TP", nombre: "TAP Air Portugal", dominio: "www.flytap.com", busqueda: null }; // sitio de ejemplo para el genérico
 const params = (rutaScreenshot: string, avisar = vi.fn()): ParamsBusqueda => ({ tipo: "ida", origenIata: "GRU", destinoIata: "LIS", fechaIda: "2027-01-19", fechaVuelta: null, equipaje: "carry_on", rutaScreenshot, asistido: { avisar, esperaMaxMs: 5_000 } });
 
 describe("adaptador asistido genérico", () => {
@@ -28,7 +27,8 @@ describe("adaptador asistido genérico", () => {
     expect(new Set(SITIOS.map((s) => s.iata)).size).toBe(SITIOS.length);
     expect(adaptadorPorIata("AR")?.generico).toBe(false);
     expect(adaptadorPorIata("IB")?.generico).toBe(false);
-    expect(adaptadorPorIata("TP")).toMatchObject({ nombre: "TAP Air Portugal", modo: "asistido", generico: true, dominios: ["www.flytap.com"] });
+    expect(adaptadorPorIata("TP")).toMatchObject({ nombre: "TAP Air Portugal", modo: "automatico", generico: false }); // lector propio (Fase 7.1)
+    expect(adaptadorPorIata("G3")).toMatchObject({ modo: "asistido", generico: true, dominios: ["www.voegol.com.br"] });
     expect(REGISTRO.filter((a) => a.iata === "IB")).toHaveLength(1);
   });
 

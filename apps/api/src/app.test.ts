@@ -86,9 +86,9 @@ describe("API", () => {
     const { app } = armar();
     expect((await app.inject({ method: "GET", url: "/salud" })).json()).toEqual({ ok: true });
     const adaptadores = (await app.inject({ method: "GET", url: "/adaptadores" })).json() as { iata: string; modo: string; ultimaVerificacion: unknown; ultimoBloqueo: unknown }[];
-    expect(adaptadores.slice(0, 3).map((a) => a.iata)).toEqual(["AR", "JA", "IB"]);
+    expect(adaptadores.slice(0, 4).map((a) => a.iata)).toEqual(["AR", "JA", "IB", "TP"]);
     expect(adaptadores.length).toBeGreaterThan(40); // + asistidos genéricos
-    expect(adaptadores.find((a) => a.iata === "TP")).toMatchObject({ modo: "asistido", generico: true, nombre: "TAP Air Portugal" });
+    expect(adaptadores.find((a) => a.iata === "G3")).toMatchObject({ modo: "asistido", generico: true, nombre: "GOL Linhas Aéreas" });
     expect(adaptadores.find((a) => a.iata === "IB")?.modo).toBe("asistido");
     expect(adaptadores[0]).toMatchObject({ ultimaVerificacion: null, ultimoBloqueo: null });
     await app.close();
@@ -164,10 +164,10 @@ describe("API", () => {
     const creada = await app.inject({ method: "POST", url: "/exploraciones", payload: { modo: "comparar", parametros } });
     expect(creada.statusCode).toBe(201);
     const e = creada.json() as { id: string; busquedaIds: string[] };
-    expect(e.busquedaIds).toHaveLength(3);
-    expect(ejecutar).toHaveBeenCalledTimes(3);
+    expect(e.busquedaIds).toHaveLength(4);
+    expect(ejecutar).toHaveBeenCalledTimes(4);
     const hijas = e.busquedaIds.map((id) => repoBusquedas(db).obtener(id));
-    expect(hijas.map((b) => b?.aerolineaIata)).toEqual(["AR", "JA", "IB"]);
+    expect(hijas.map((b) => b?.aerolineaIata)).toEqual(["AR", "JA", "IB", "TP"]);
     expect((await app.inject({ method: "GET", url: `/exploraciones/${e.id}` })).json()).toEqual(creada.json());
 
     const direccion = await app.listen({ port: 0, host: "127.0.0.1" });
@@ -182,14 +182,14 @@ describe("API", () => {
       const ultimo = trozos[trozos.length - 1];
       return ultimo ? (JSON.parse(ultimo.slice(6)) as { busquedas: { estado: string }[] }) : null;
     };
-    expect((await ultimoEvento())?.busquedas.map((b) => b.estado)).toEqual(["pendiente", "pendiente", "pendiente"]);
+    expect((await ultimoEvento())?.busquedas.map((b) => b.estado)).toEqual(["pendiente", "pendiente", "pendiente", "pendiente"]);
     for (const id of e.busquedaIds) {
       repoBusquedas(db).cambiarEstado(id, "completa");
       eventos.notificar(id);
     }
     let evento = await ultimoEvento();
     while (evento && !evento.busquedas.every((b) => b.estado === "completa")) evento = await ultimoEvento();
-    expect(evento?.busquedas.map((b) => b.estado)).toEqual(["completa", "completa", "completa"]);
+    expect(evento?.busquedas.map((b) => b.estado)).toEqual(["completa", "completa", "completa", "completa"]);
     expect((await lector?.read())?.done).toBe(true);
     await app.close();
   });

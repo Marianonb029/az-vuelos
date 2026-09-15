@@ -25,7 +25,6 @@ export const SITIOS: readonly SitioAerolinea[] = [
   { iata: "AV", nombre: "Avianca", dominio: "www.avianca.com", busqueda: null },
   { iata: "G3", nombre: "GOL Linhas Aéreas", dominio: "www.voegol.com.br", busqueda: null },
   { iata: "H2", nombre: "Sky Airline", dominio: "www.skyairline.com", busqueda: null },
-  { iata: "TP", nombre: "TAP Air Portugal", dominio: "www.flytap.com", busqueda: null },
   // Europa
   { iata: "LH", nombre: "Lufthansa", dominio: "www.lufthansa.com", busqueda: null },
   { iata: "FR", nombre: "Ryanair", dominio: "www.ryanair.com", busqueda: null },
