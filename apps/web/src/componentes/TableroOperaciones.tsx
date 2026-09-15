@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { fechaHoraCorta } from "@az/core";
-import type { EstadoBusqueda, EstadoCotizacion, ResumenOperaciones } from "@az/core";
+import type { EstadoBusqueda, EstadoCotizacion, FuenteDato, ResumenOperaciones } from "@az/core";
 import { obtenerOperaciones } from "../lib/api";
 import { Bloque } from "./Bloque";
 
@@ -28,6 +28,8 @@ const ESTADO_LECTURA: Record<EstadoCotizacion, string> = {
   bloqueado: "bloqueadas",
   error_lectura: "con error de lectura",
 };
+
+const EXACTITUD: Record<FuenteDato["exactitud"], string> = { exacta: "bg-emerald-100 text-emerald-800", vigente: "bg-sky-100 text-sky-800", aproximada: "bg-amber-100 text-amber-800", supuesto: "bg-slate-200 text-slate-700" };
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 const porcentaje = (v: number | null) => (v === null ? "—" : `${Math.round(v * 100)} %`);
@@ -99,7 +101,41 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
       )}
       {resumen && (
         <>
-          <Bloque orden={1} titulo="Ahora mismo: qué está leyendo el sistema" objetivo="Saber si hay lecturas en curso o en espera antes de lanzar más búsquedas. Como máximo corren 2 navegadores y nunca dos sobre el mismo sitio.">
+          <Bloque orden={1} titulo="Datos que usan las rutas priorizadas: fuente, última actualización y exactitud" objetivo="Cada variable del índice con de dónde sale, cuándo se actualizó y qué tan precisa es. Lo vencido se marca en rojo con el comando para refrescarlo; una búsqueda a meses vista vale lo que valgan estas fechas.">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <th className="py-1 pr-3">Variable</th>
+                    <th className="py-1 pr-3">Fuente</th>
+                    <th className="py-1 pr-3">Última actualización</th>
+                    <th className="py-1 pr-3">Exactitud</th>
+                    <th className="py-1 pr-3">Refresco</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {resumen.datos.map((d) => (
+                    <tr key={d.variable} className={`border-b border-slate-100 align-top ${d.vencida ? "bg-red-50" : ""}`}>
+                      <td className="py-1 pr-3 font-medium text-slate-900">{d.variable}</td>
+                      <td className="py-1 pr-3 text-slate-700">
+                        {d.fuente}
+                        <span className="block text-xs text-slate-500">{d.detalle}</span>
+                      </td>
+                      <td className="py-1 pr-3 whitespace-nowrap tabular-nums text-slate-700">{d.actualizadoEn ? fechaHoraCorta(d.actualizadoEn) : d.cadenciaDias === null && d.comando === null ? "en vivo / config" : "—"}</td>
+                      <td className="py-1 pr-3"><span className={`rounded px-1.5 py-0.5 text-xs font-medium ${EXACTITUD[d.exactitud]}`}>{d.exactitud}</span></td>
+                      <td className="py-1 pr-3 text-xs text-slate-700">
+                        {d.cadenciaDias === null ? "no vence" : `cada ${d.cadenciaDias} días`}
+                        {d.comando && <code className="ml-1 rounded bg-slate-100 px-1">{d.comando}</code>}
+                        {d.vencida && <span className="ml-1 font-semibold text-red-700">vencido</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Bloque>
+
+          <Bloque orden={2} titulo="Ahora mismo: qué está leyendo el sistema" objetivo="Saber si hay lecturas en curso o en espera antes de lanzar más búsquedas. Como máximo corren 2 navegadores y nunca dos sobre el mismo sitio.">
             <div className="grid gap-2 sm:grid-cols-3">
               <Cifra etiqueta="lecturas corriendo" valor={`${resumen.cola.corriendo} / ${resumen.cola.maxSimultaneos}`} detalle={resumen.cola.dominiosActivos.join(", ") || "ningún sitio abierto"} />
               <Cifra etiqueta="en cola" valor={resumen.cola.pendientes} />
@@ -107,7 +143,7 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
             </div>
           </Bloque>
 
-          <Bloque orden={2} titulo="Lecturas en sitios oficiales" objetivo="Cuántos precios reales se obtuvieron y cuántos quedaron sin precio. Una lectura es una fecha consultada en el sitio de una aerolínea; sólo las verificadas valen como precio.">
+          <Bloque orden={3} titulo="Lecturas en sitios oficiales" objetivo="Cuántos precios reales se obtuvieron y cuántos quedaron sin precio. Una lectura es una fecha consultada en el sitio de una aerolínea; sólo las verificadas valen como precio.">
             <div className="grid gap-2 sm:grid-cols-4">
               <Cifra etiqueta="lecturas" valor={resumen.lecturas.total} />
               <Cifra etiqueta="con precio verificado" valor={porcentaje(resumen.lecturas.tasaVerificacion)} detalle="automáticas + manuales" />
@@ -118,7 +154,7 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
             {resumen.lecturas.manualesPendientes > 0 && <p className="text-sm text-violet-800">{resumen.lecturas.manualesPendientes} búsquedas esperan un precio cargado a mano (últimos 30 días).</p>}
           </Bloque>
 
-          <Bloque orden={3} titulo="Búsquedas lanzadas y su duración" objetivo="Cuánto tarda conseguir un precio: de crear la búsqueda a su última lectura. Sirve para dimensionar cuántas combinaciones verificar por vez.">
+          <Bloque orden={4} titulo="Búsquedas lanzadas y su duración" objetivo="Cuánto tarda conseguir un precio: de crear la búsqueda a su última lectura. Sirve para dimensionar cuántas combinaciones verificar por vez.">
             <div className="grid gap-2 sm:grid-cols-3">
               <Cifra etiqueta="búsquedas" valor={resumen.busquedas.total} />
               <Cifra etiqueta="duración mediana" valor={segundos(resumen.busquedas.duracionMedianaSeg)} detalle="completas y parciales" />
@@ -127,7 +163,7 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
             <Desglose cuentas={resumen.busquedas.porEstado} etiquetas={ESTADO_BUSQUEDA} />
           </Bloque>
 
-          <Bloque orden={4} titulo="Tasa de cambio aplicada" objetivo="Con qué tasa se pasó cada precio a USD: una llamada por búsqueda, congelada y fechada. Si la fecha es vieja, los USD de esa búsqueda son de ese día.">
+          <Bloque orden={5} titulo="Tasa de cambio aplicada" objetivo="Con qué tasa se pasó cada precio a USD: una llamada por búsqueda, congelada y fechada. Si la fecha es vieja, los USD de esa búsqueda son de ese día.">
             {resumen.fx.ultima === null ? (
               <p className="text-sm text-slate-500">Ninguna lectura necesitó conversión en esta ventana{resumen.fx.monedasLeidas.length > 0 ? ` (monedas leídas: ${resumen.fx.monedasLeidas.join(", ")})` : ""}.</p>
             ) : (
@@ -138,7 +174,7 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
             )}
           </Bloque>
 
-          <Bloque orden={5} titulo="Metabuscadores consultados" objetivo="Cuántas referencias de terceros se leyeron y cuántas ofertas se guardaron. Son comparación, nunca cotización.">
+          <Bloque orden={6} titulo="Metabuscadores consultados" objetivo="Cuántas referencias de terceros se leyeron y cuántas ofertas se guardaron. Son comparación, nunca cotización.">
             {resumen.metabuscadores.length === 0 ? (
               <p className="text-sm text-slate-500">No hay metabuscadores registrados.</p>
             ) : (
@@ -173,7 +209,7 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
             )}
           </Bloque>
 
-          <Bloque orden={6} titulo="robots.txt y bloqueos" objetivo="Qué sitios prohíben la consulta a robots (se registra, no se elude) y dónde falló la lectura. Explica por qué una aerolínea queda para carga manual.">
+          <Bloque orden={7} titulo="robots.txt y bloqueos" objetivo="Qué sitios prohíben la consulta a robots (se registra, no se elude) y dónde falló la lectura. Explica por qué una aerolínea queda para carga manual.">
             <div className="grid gap-2 sm:grid-cols-3">
               <Cifra etiqueta="consultas a robots.txt" valor={resumen.robots.consultas} />
               <Cifra etiqueta="caen en un Disallow" valor={resumen.robots.prohibidas} detalle="registradas como con las aerolíneas" />
@@ -199,7 +235,7 @@ export const TableroOperaciones = ({ visible }: { visible: boolean }) => {
             )}
           </Bloque>
 
-          <Bloque orden={7} titulo="Cobertura de lectura" objetivo="Con cuántas fuentes cuenta el sistema: lectores propios (se leen solos), asistidos (la persona navega y la app captura) y metabuscadores de referencia.">
+          <Bloque orden={8} titulo="Cobertura de lectura" objetivo="Con cuántas fuentes cuenta el sistema: lectores propios (se leen solos), asistidos (la persona navega y la app captura) y metabuscadores de referencia.">
             <div className="grid gap-2 sm:grid-cols-3">
               <Cifra etiqueta="aerolíneas con lector propio" valor={resumen.adaptadores.propios} />
               <Cifra etiqueta="aerolíneas asistidas" valor={resumen.adaptadores.asistidos} />

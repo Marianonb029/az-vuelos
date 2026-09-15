@@ -24,6 +24,8 @@ pnpm test        # vitest en todos los paquetes
 pnpm build       # typecheck + vite build
 pnpm typecheck
 pnpm lint
+pnpm catalogos  # rutas (VRS) y aeropuertos: mensual
+pnpm eventos    # eventos masivos (Wikidata): mensual
 ```
 
 Requisitos de máquina: Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`; ver `docs/DECISIONES.md`).

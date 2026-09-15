@@ -4,6 +4,10 @@ import type { ResumenOperaciones } from "@az/core";
 import { TableroOperaciones } from "./TableroOperaciones";
 
 const resumen: ResumenOperaciones = {
+  datos: [
+    { variable: "Competencia: aerolíneas por tramo", fuente: "Virtual Radar Server", actualizadoEn: "2026-08-01T00:00:00.000Z", exactitud: "vigente", detalle: "155433 rutas", cadenciaDias: 30, comando: "pnpm catalogos", vencida: true },
+    { variable: "Feriados y fines de semana largos", fuente: "Nager.Date", actualizadoEn: null, exactitud: "exacta", detalle: "en vivo", cadenciaDias: null, comando: null, vencida: false },
+  ],
   generadoEn: "2026-09-15T12:00:00.000Z",
   desde: "2026-09-14T12:00:00.000Z",
   cola: { corriendo: 1, pendientes: 3, dominiosActivos: ["www.iberia.com"], maxSimultaneos: 2 },
@@ -26,6 +30,7 @@ describe("TableroOperaciones", () => {
     expect(url).toMatch(/^\/api\/operaciones\?desde=/);
 
     expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "Datos que usan las rutas priorizadas: fuente, última actualización y exactitud",
       "Ahora mismo: qué está leyendo el sistema",
       "Lecturas en sitios oficiales",
       "Búsquedas lanzadas y su duración",
@@ -35,6 +40,11 @@ describe("TableroOperaciones", () => {
       "Cobertura de lectura",
     ]);
     expect(screen.getByText("80 %")).toBeTruthy();
+    const datos = screen.getByRole("region", { name: /Datos que usan las rutas priorizadas/ });
+    expect(datos.textContent).toContain("Virtual Radar Server");
+    expect(datos.textContent).toContain("vencido");
+    expect(datos.textContent).toContain("pnpm catalogos");
+    expect(datos.textContent).toContain("en vivo / config");
     expect(screen.getByRole("region", { name: "Lecturas en sitios oficiales" }).textContent).toContain("21 verificadas (leídas del sitio oficial)");
     expect(screen.getByText(/EUR\/USD 1.0794/)).toBeTruthy();
     expect(screen.getByText(/LA hasta/)).toBeTruthy();

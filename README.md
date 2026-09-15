@@ -59,6 +59,18 @@ Debajo de los resultados de una búsqueda hay una sección por metabuscador: cad
 
 En la pestaña Espacio de búsqueda, después de generar combinaciones: `combinations.xlsx` (una hoja por fase, calendario coloreado) y `result.json` (la misma corrida completa). También por API: `GET /espacio/exportar?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15&formato=xlsx`.
 
+## Mantenimiento de los datos (qué envejece)
+
+| Dato | Cadencia | Comando |
+|---|---|---|
+| Rutas y competencia por tramo (Virtual Radar Server) | 30 días | `pnpm catalogos` |
+| Eventos masivos (Wikidata) | 30 días | `pnpm eventos` |
+| Aeropuertos (OurAirports) | 180 días | `pnpm catalogos` |
+| Feriados (Nager.Date) | en vivo | — |
+| Temporadas por región, corredores, perfil bajo costo, factores del índice | a mano, anual/trimestral | `config/espacio.json` |
+
+La pestaña **Operaciones** (bloque 1) muestra cada variable con su fuente, última actualización, exactitud y si venció; la priorización avisa cuando una fuente está vencida o la fecha pedida cae fuera de la ventana de eventos. Ver `docs/DECISIONES.md`, Fase 9.2.
+
 ## Requisitos
 
 Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`).

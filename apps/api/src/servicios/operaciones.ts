@@ -1,4 +1,4 @@
-import type { EstadoBusqueda, EstadoCola, EstadoCotizacion, ResumenOperaciones } from "@az/core";
+import type { EstadoBusqueda, EstadoCola, EstadoCotizacion, FuenteDato, ResumenOperaciones } from "@az/core";
 import type { Db } from "../db/conexion";
 import { VIGENCIA_CACHE_MS } from "../repos/cache";
 import type { RepoBloqueos } from "../repos/bloqueos";
@@ -9,6 +9,7 @@ export interface DependenciasOperaciones {
   estadoCola: () => EstadoCola;
   adaptadores: { propios: number; asistidos: number };
   metabuscadores: readonly string[]; // ids registrados
+  fuentes: () => FuenteDato[]; // variables de la priorización con su última actualización
 }
 
 const DIAS_PENDIENTES = 30;
@@ -136,6 +137,7 @@ export const resumirOperaciones = (dep: DependenciasOperaciones, desde: string |
   const verificadas = lecturasPorEstado.filter((f) => f.estado === "verificado" || f.estado === "verificado_manual").reduce((s, f) => s + f.n, 0);
 
   return {
+    datos: dep.fuentes(),
     generadoEn: ahoraIso,
     desde,
     cola: dep.estadoCola(),

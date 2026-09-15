@@ -307,6 +307,30 @@ Esto **reemplaza las reglas 1 y 5 del brief** en su forma original: el producto 
 - **Lectura de precios**: por orden del dueño se elimina del flujo. En esta fase queda fuera de la salida principal (pestaña Rutas por defecto); el retiro del código de lectura (adaptadores, metabuscadores como lectores, cotizaciones, cola, tablero de lecturas) es la Fase 9.2, para hacerla con el dueño mirando qué se borra. Las funciones `urlBusqueda` de los metabuscadores se conservan: generan los enlaces.
 - Comprobado en vivo ASU→MAD 25/02/2027: ASU→GRU→MAD (GOL/Paranair + Air Europa/Iberia, 2 boletos) en el puesto 3; los alternativos brasileños (CWB, POA) suben por su distancia a Europa pese al traslado; ASU→GRU→LIS (TAP) en el 14. Cada fila trae 14 enlaces (7 metabuscadores × 2 boletos).
 
+## Fase 9.2 (15/09/2026) — eventos masivos desde Wikidata, y qué datos envejecen
+
+Pedido del dueño: eventos masivos 2026–2027 confirmados, actualizados mensualmente (propuso Fever o canales de noticias), un tablero con cada variable, su última verificación y su exactitud, y saber qué más hay que refrescar para una búsqueda a meses vista.
+
+- **Fuente elegida: Wikidata (SPARQL)**, no Fever ni noticias: Fever no tiene API pública y es un sitio de venta (leerlo sería otro scraper frágil); las noticias no son datos estructurados. Wikidata trae las ediciones de eventos con **fecha exacta** (precisión de día), país, sede y cuántas Wikipedias las cubren (proxy de magnitud: ≥30 muy alto, ≥14 alto, ≥6 medio). `pnpm eventos` (`scripts/actualizar-eventos.ts`) consulta los próximos 18 meses y escribe `data/eventos.json` con fecha de actualización, ventana cubierta y el ítem de Wikidata de cada evento como fuente. Sin recorrer subclases (el servidor corta a los 60 s): trae todo lo que empieza en la ventana y filtra por clase/nombre (deporte, festival, feria, congreso…); descarta ligas y temporadas (> 45 días), series, elecciones. Wikidata devuelve 502/504 seguido: 3 intentos espaciados.
+- **Cobertura real**: 30 eventos hoy (Juegos Asiáticos 2026, Copa Asiática 2027, Mundial Femenino 2027 en Brasil, Mundial de Básquet 2027 en Qatar, Mundial de Rugby 2027 en Australia, grandes premios de F1…). Sólo entra lo que tiene ítem con fecha exacta: Eurovisión 2027 quedó afuera (fecha sólo por mes), Oktoberfest/Carnaval dependen de que exista la edición. Los eventos de impacto muy alto se aplican al país entero; los demás a la ciudad de la sede (aeropuerto más cercano ≤ 80 km) o al país si hay varias sedes. Se suman a los de `config/espacio.json` (FITUR, MWC…), que siguen a mano.
+- **Verificado**: ASU→GRU el 26/06/2027 suma "evento en destino: Copa Mundial Femenina de Fútbol de 2027 +39".
+- **Tablero de datos** (`GET /operaciones` → `datos`, bloque 1 de Operaciones): cada variable con fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), detalle, cadencia y comando de refresco; **vencida** en rojo cuando supera su cadencia. La priorización (`/rutas`) también avisa cuando una fuente venció o la fecha pedida cae fuera de la ventana de eventos.
+- **Qué envejece y cada cuánto** (respuesta a "una búsqueda de acá a 5 meses"):
+
+| Dato | Cadencia | Cómo | Qué pasa si no |
+|---|---|---|---|
+| Rutas y competencia (VRS) | 30 días | `pnpm catalogos` (~40 s) | Rutas nuevas/estacionales y aerolíneas nuevas no aparecen; el tablero lo marca vencido |
+| Eventos masivos (Wikidata) | 30 días | `pnpm eventos` (~2 min, reintenta) | Eventos confirmados después no pesan; ventana de 18 meses: más allá, aviso |
+| Aeropuertos (OurAirports) | 180 días | `pnpm catalogos` | Casi no cambia |
+| Feriados (Nager.Date) | en vivo | — | Nada: se consulta por país y año en cada priorización (cubre años futuros) |
+| Temporadas por región | anual, a mano | `config/espacio.json` → `fase5.demandaRegional` | Ventanas fijas "MM-DD"; Año Nuevo Lunar y Ramadán son móviles y sólo aproximados |
+| Corredores de tarifas SA→Europa | cada temporada, a mano | `fase5.corredores` | Serie 2022–2025 del SPEC; sin datos nuevos no se recalibra |
+| Perfil bajo costo, equivalencias, cargueras | trimestral, a mano | `fase6.aerolineasPerfilBajoCosto`, `grafo.equivalencias` | Una low cost nueva no recibe el ×0.88 |
+| Factores del índice | cuando haya observaciones | `fase7` | Son supuestos: el orden vale más que el número |
+| URLs de metabuscadores | mensual, probar un enlace | — | Un enlace roto no rompe nada, pero no lleva a la búsqueda |
+
+- Escuela y recesos: sólo los de `fase5.eventos` (tipo `receso`); no hay fuente abierta y estructurada para calendarios escolares de todos los países.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

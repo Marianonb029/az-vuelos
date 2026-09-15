@@ -22,6 +22,7 @@ type ConfigCalendario = Pick<ConfigEspacio, "fase5" | "regiones">;
 
 // "20-24" dentro del mes del evento; null = sin fecha (tentativo): sólo etiqueta, sin puntos.
 const eventoCubre = (e: Evento, iso: string): boolean => {
+  if (e.desde !== null && e.hasta !== null) return iso >= e.desde && iso <= e.hasta;
   const mes = Number(iso.slice(5, 7));
   const dia = Number(iso.slice(8, 10));
   if (e.mes !== mes || e.dias === null) return false;
@@ -33,7 +34,7 @@ const eventoTentativoEnMes = (e: Evento, iso: string) => e.tentativo && e.dias =
 
 const enCiudad = (e: Evento, a: AeropuertoGeo) => e.pais === a.pais && (e.ciudad === null || e.ciudad.toLowerCase() === a.ciudad.toLowerCase().split(" (")[0]);
 
-const factorImpacto = (impacto: Evento["impacto"]) => (impacto === "medio" ? 0.5 : 1);
+const factorImpacto = (impacto: Evento["impacto"]) => (impacto === "medio" ? 0.5 : impacto === "alto" ? 1 : 1.3);
 
 // Corredor aplicable: país de origen listado y país de destino dentro de alguna de sus regiones.
 const corredorDe = (cfg: ConfigCalendario, origen: AeropuertoGeo, destino: AeropuertoGeo): Corredor | null =>

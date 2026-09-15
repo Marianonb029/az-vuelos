@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IataAerolinea, IataAeropuerto } from "@az/core";
+import { FechaIso, IataAerolinea, IataAeropuerto } from "@az/core";
 
 // Todo número del SPEC vive en config/espacio.json; acá sólo se valida su forma.
 
@@ -18,15 +18,27 @@ export const ReglaHub = z.object({
   requiereBoletosSeparados: z.boolean(),
 });
 
+// Evento con fecha: los de config van por mes y días ("20-24"); los del dataset (`pnpm eventos`, Wikidata)
+// traen fechas completas `desde`/`hasta` y su fuente.
 export const Evento = z.object({
   pais: z.string().length(2),
   ciudad: z.string().nullable(),
   nombre: z.string().min(1),
   mes: z.number().int().min(1).max(12),
   dias: z.string().nullable(), // "20-24"
+  desde: FechaIso.nullable().default(null),
+  hasta: FechaIso.nullable().default(null),
+  fuente: z.string().nullable().default(null),
   tentativo: z.boolean(),
   impacto: z.enum(["medio", "alto", "muy_alto"]),
   tipo: z.enum(["feria", "receso", "evento"]),
+});
+
+export const DatasetEventos = z.object({
+  actualizadoEn: z.iso.datetime(),
+  fuente: z.string().min(1),
+  ventana: z.object({ desde: FechaIso, hasta: FechaIso }),
+  eventos: z.array(Evento),
 });
 
 export const VentanaEstacional = z.object({
@@ -120,5 +132,6 @@ export const ConfigEspacio = z.object({
 export type ConfigEspacio = z.infer<typeof ConfigEspacio>;
 export type ReglaHub = z.infer<typeof ReglaHub>;
 export type Evento = z.infer<typeof Evento>;
+export type DatasetEventos = z.infer<typeof DatasetEventos>;
 export type Corredor = z.infer<typeof Corredor>;
 export type TemporadaRegional = z.infer<typeof TemporadaRegional>;

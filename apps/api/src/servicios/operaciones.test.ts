@@ -53,7 +53,7 @@ describe("resumen de operaciones", () => {
   it("cuenta búsquedas, lecturas, tasa de cambio, robots.txt, bloqueos y metabuscadores", () => {
     const { db, bloqueos } = armar();
     const resumen = resumirOperaciones(
-      { db, bloqueos, estadoCola: () => ({ corriendo: 1, pendientes: 2, dominiosActivos: ["www.iberia.com"], maxSimultaneos: 2 }), adaptadores: { propios: 4, asistidos: 39 }, metabuscadores: ["kayak", "kiwi"] },
+      { db, bloqueos, estadoCola: () => ({ corriendo: 1, pendientes: 2, dominiosActivos: ["www.iberia.com"], maxSimultaneos: 2 }), adaptadores: { propios: 4, asistidos: 39 }, metabuscadores: ["kayak", "kiwi"], fuentes: () => [] },
       null,
       AHORA,
     );
@@ -78,7 +78,7 @@ describe("resumen de operaciones", () => {
 
   it("con `desde` sólo cuenta lo posterior", () => {
     const { db, bloqueos } = armar();
-    const resumen = resumirOperaciones({ db, bloqueos, estadoCola: () => ({ corriendo: 0, pendientes: 0, dominiosActivos: [], maxSimultaneos: 2 }), adaptadores: { propios: 0, asistidos: 0 }, metabuscadores: [] }, "2026-09-14T11:00:00.000Z", AHORA);
+    const resumen = resumirOperaciones({ db, bloqueos, estadoCola: () => ({ corriendo: 0, pendientes: 0, dominiosActivos: [], maxSimultaneos: 2 }), adaptadores: { propios: 0, asistidos: 0 }, metabuscadores: [], fuentes: () => [] }, "2026-09-14T11:00:00.000Z", AHORA);
     expect(resumen.desde).toBe("2026-09-14T11:00:00.000Z");
     expect(resumen.busquedas.total).toBe(0);
     expect(resumen.lecturas.total).toBe(0);

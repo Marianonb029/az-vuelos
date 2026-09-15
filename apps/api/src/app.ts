@@ -57,6 +57,7 @@ export const crearApp = (op: OpcionesApp) => {
     estadoCola: op.estadoCola,
     adaptadores: { propios: REGISTRO.filter((a) => !a.generico).length, asistidos: REGISTRO.filter((a) => a.generico).length },
     metabuscadores: op.metabuscadores.map((m) => m.ref.id),
+    fuentes: op.espacio.fuentes,
   });
 
   return app;

@@ -13,7 +13,21 @@ export const EstadoCola = z.object({
   maxSimultaneos: Contador,
 });
 
+// Cada variable de la priorización: de dónde sale, cuándo se actualizó por última vez, qué exactitud tiene
+// y cada cuánto hay que refrescarla. La app avisa cuando una fuente envejece más que su cadencia.
+export const FuenteDato = z.object({
+  variable: z.string().min(1),
+  fuente: z.string().min(1),
+  actualizadoEn: FechaHoraIso.nullable(), // null = se consulta en vivo o es configuración
+  exactitud: z.enum(["exacta", "vigente", "aproximada", "supuesto"]),
+  detalle: z.string().min(1),
+  cadenciaDias: z.number().int().positive().nullable(), // null = no vence
+  comando: z.string().nullable(), // cómo refrescarla
+  vencida: z.boolean(),
+});
+
 export const ResumenOperaciones = z.object({
+  datos: z.array(FuenteDato),
   generadoEn: FechaHoraIso,
   desde: FechaHoraIso.nullable(), // null = todo lo registrado
   cola: EstadoCola,
@@ -65,3 +79,4 @@ export const ResumenOperaciones = z.object({
 
 export type EstadoCola = z.infer<typeof EstadoCola>;
 export type ResumenOperaciones = z.infer<typeof ResumenOperaciones>;
+export type FuenteDato = z.infer<typeof FuenteDato>;

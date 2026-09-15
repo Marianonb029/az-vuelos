@@ -17,6 +17,7 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "catalogos": "tsx scripts/descargar-catalogos.ts",
+    "eventos": "tsx scripts/actualizar-eventos.ts",
     "sondear": "tsx packages/scraper/src/sonda.ts"
   },
   "dependencies": {

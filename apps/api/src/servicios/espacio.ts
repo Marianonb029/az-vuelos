@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
+import type { FuenteDato } from "@az/core";
 import {
   AeropuertoGeo,
   ConfigEspacio,
+  DatasetEventos,
   Grafo,
   NombreAerolinea,
   RutaCompacta,
@@ -34,6 +36,8 @@ export interface ServicioEspacio {
   combinaciones: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCombinaciones;
   // Todo junto, para exportar: espacio + calendario del origen pedido + combinaciones.
   corrida: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCorrida;
+  // Variables de la priorización con fuente, última actualización, exactitud y vencimiento.
+  fuentes: () => FuenteDato[];
   // Fase 7: rutas ordenadas por costo estimado (km, competencia, presión de la fecha, escalas). Sin precios.
   priorizar: (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioRutas;
 }
@@ -41,8 +45,27 @@ export interface ServicioEspacio {
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
 
 // Carga los datasets una sola vez (≈2 MB) y corre las Fases 1–3 en memoria: sin I/O por consulta.
-export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string): ServicioEspacio => {
-  const config = ConfigEspacio.parse(leerJson(rutaConfig));
+const MetaDatasets = z.object({ descargadoEn: z.iso.datetime(), rutas: z.object({ registros: z.number() }) });
+
+export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string, ahora = () => new Date()): ServicioEspacio => {
+  const configBase = ConfigEspacio.parse(leerJson(rutaConfig));
+  const meta = MetaDatasets.parse(leerJson(resolve(directorioDatos, "meta.json")));
+  // Eventos masivos (`pnpm eventos`, Wikidata) se suman a los de config; si el archivo no está, sólo config.
+  const rutaEventos = resolve(directorioDatos, "eventos.json");
+  const eventosDataset = existsSync(rutaEventos) ? DatasetEventos.parse(leerJson(rutaEventos)) : null;
+  const config: ConfigEspacio = { ...configBase, fase5: { ...configBase.fase5, eventos: [...configBase.fase5.eventos, ...(eventosDataset?.eventos ?? [])] } };
+  const dias = (iso: string) => Math.floor((ahora().getTime() - Date.parse(iso)) / 86_400_000);
+  const fuente = (f: Omit<FuenteDato, "vencida">): FuenteDato => ({ ...f, vencida: f.actualizadoEn !== null && f.cadenciaDias !== null && dias(f.actualizadoEn) > f.cadenciaDias });
+  const fuentes = (): FuenteDato[] => [
+    fuente({ variable: "Distancia en km", fuente: "OurAirports (coordenadas de aeropuertos)", actualizadoEn: meta.descargadoEn, exactitud: "exacta", detalle: "Ortodrómica por tramo; el traslado a aeropuertos alternativos se pesa aparte", cadenciaDias: 180, comando: "pnpm catalogos" }),
+    fuente({ variable: "Competencia: aerolíneas por tramo", fuente: "Virtual Radar Server standing data (CC0, diario)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `${meta.rutas.registros} rutas por número de vuelo; sin horarios ni fecha de última observación (pueden quedar números discontinuados)`, cadenciaDias: 30, comando: "pnpm catalogos" }),
+    fuente({ variable: "Feriados y fines de semana largos", fuente: "Nager.Date (feriados nacionales)", actualizadoEn: null, exactitud: "exacta", detalle: "Se consulta en vivo por país y año en cada priorización; el fin de semana largo y el día de regreso se calculan", cadenciaDias: null, comando: null }),
+    fuente({ variable: "Semana Santa y día de la semana", fuente: "Calculado (algoritmo de Pascua, calendario)", actualizadoEn: null, exactitud: "exacta", detalle: "Sin hora del día: el dataset no distingue viernes por la tarde de viernes por la mañana", cadenciaDias: null, comando: null }),
+    fuente({ variable: "Eventos masivos", fuente: eventosDataset?.fuente ?? "sólo config/espacio.json", actualizadoEn: eventosDataset?.actualizadoEn ?? null, exactitud: "vigente", detalle: eventosDataset ? `${eventosDataset.eventos.length} eventos con fecha exacta entre ${eventosDataset.ventana.desde} y ${eventosDataset.ventana.hasta}, más ${configBase.fase5.eventos.length} de config; sólo los que tienen ítem en Wikidata con fecha y país` : `${configBase.fase5.eventos.length} eventos cargados a mano`, cadenciaDias: 30, comando: "pnpm eventos" }),
+    fuente({ variable: "Temporada y demanda por región", fuente: "config/espacio.json → fase5.demandaRegional (con fuente anotada por ventana)", actualizadoEn: null, exactitud: "aproximada", detalle: `${config.fase5.demandaRegional.length} regiones con ventanas de temporada; no hay fuente abierta y actual de demanda aérea por región (OAG/IATA son de pago)`, cadenciaDias: null, comando: null }),
+    fuente({ variable: "Corredores de tarifas (SA→Europa)", fuente: "config/espacio.json → fase5.corredores (serie 2022–2025 del SPEC)", actualizadoEn: null, exactitud: "aproximada", detalle: "Ventanas por quincena y efecto día de semana; revisar cada temporada", cadenciaDias: null, comando: null }),
+    fuente({ variable: "Factores del índice", fuente: "config/espacio.json → fase7", actualizadoEn: null, exactitud: "supuesto", detalle: config.fase7.nota, cadenciaDias: null, comando: null }),
+  ];
   const aeropuertos = z.array(AeropuertoGeo).parse(leerJson(resolve(directorioDatos, "aeropuertos-geo.json")));
   const rutas = z.array(RutaCompacta).parse(leerJson(resolve(directorioDatos, "rutas.json")));
   const nombres = new Map(z.array(NombreAerolinea).parse(leerJson(resolve(directorioDatos, "aerolineas-rutas.json"))).map((a) => [a.iata, a.nombre]));
@@ -128,10 +151,12 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
       return a ? puntuarDia(fechaVuelta, { desde: fechaVuelta, hasta: fechaVuelta, origen: a, destino: origenGeo, feriados, sentido: "vuelta" }, config) : null;
     };
     const lista = priorizarRutas({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, presionIda, presionVuelta }, config);
+    const vencidas = fuentes().filter((f) => f.vencida).map((f) => `${f.variable}: datos de ${f.actualizadoEn?.slice(0, 10) ?? "?"}, más de ${f.cadenciaDias} días; corré \`${f.comando}\``);
+    const fueraDeVentana = eventosDataset !== null && (fechaVuelta ?? fechaIda) > eventosDataset.ventana.hasta ? [`Eventos masivos: el dataset llega hasta ${eventosDataset.ventana.hasta}; para esa fecha no hay eventos cargados`] : [];
     const mencionadas = new Set(lista.flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? []), ...r.tramos.flatMap((t) => t.aerolineas)]));
     return {
       ok: true,
-      resultado: { origen, destino, fechaIda, fechaVuelta, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), avisos: [...avisos] },
+      resultado: { origen, destino, fechaIda, fechaVuelta, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), avisos: [...avisos, ...vencidas, ...fueraDeVentana] },
     };
   };
 
@@ -140,6 +165,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     calendario,
     combinaciones,
     priorizar,
+    fuentes,
     corrida: (origen, destino, ventanaPedida, rango, feriados, avisos) => {
       const e = explorar(origen, destino);
       if (!e.ok) return e;
