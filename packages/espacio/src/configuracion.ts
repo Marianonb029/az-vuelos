@@ -68,7 +68,13 @@ export const TemporadaRegional = z.object({
 export const ConfigEspacio = z.object({
   // Registros del dataset que no entran al grafo (cargueras: no venden pasajes) y códigos que se pliegan al
   // de la aerolínea que vende el boleto (filiales LATAM → LA, JetSMART Argentina → JA).
-  grafo: z.object({ aerolineasExcluidas: z.array(IataAerolinea), equivalencias: z.record(IataAerolinea, IataAerolinea), nota: z.string() }),
+  grafo: z.object({
+    aerolineasExcluidas: z.array(IataAerolinea),
+    equivalencias: z.record(IataAerolinea, IataAerolinea),
+    // Aerolíneas que fijan tarifas en conjunto (mismo grupo o joint venture): cuentan como una en la competencia.
+    gruposTarifarios: z.record(z.string(), z.array(IataAerolinea)),
+    nota: z.string(),
+  }),
   fase1: z.object({
     radioOrigenKm: z.number().positive(),
     radioDestinoKm: z.number().positive(),
@@ -116,6 +122,17 @@ export const ConfigEspacio = z.object({
     factorPresionMaxima: z.number().min(0), // presión 100 multiplica por (1 + este valor)
     factorPorEscala: z.number().min(0),
     pesoKmTraslado: z.number().min(0), // km hasta un aeropuerto alternativo (ida o llegada), en km equivalentes
+    trasladoAereoDesdeKm: z.number().positive(), // por encima, el traslado es otro vuelo (km equivalentes + un boleto)
+    factorBajoCostoConValija: z.number().positive(), // con valija despachada la ventaja low cost cambia
+    factorBoletosSeparados: z.number().positive(), // riesgo de conexión por cuenta propia
+    factorRestriccionVia: z.number().positive(), // vía con visa/ESTA u otra condición
+    anticipacion: z.array(z.object({ hastaDias: z.number().int().min(0).nullable(), factor: z.number().positive() })).min(1),
+    estadia: z.array(z.object({ hastaDias: z.number().int().min(0).nullable(), factor: z.number().positive() })).min(1),
+    tasasAeropuerto: z.record(IataAeropuerto, z.number().min(0)), // tasas de salida en km equivalentes
+    tasasPais: z.record(z.string().length(2), z.number().min(0)),
+    competencia: z.object({ vuelosPorAerolineaPleno: z.number().positive(), pesoMinimoAerolinea: z.number().min(0).max(1) }),
+    empateTolerancia: z.number().min(0), // filas cuyo índice difiere menos que esto se muestran como empate
+    robustezVariacion: z.number().min(0), // ±variación de cada factor para la posición mín/máx
     maxRutas: z.number().int().positive(),
     nota: z.string(),
   }),

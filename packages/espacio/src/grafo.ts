@@ -6,6 +6,7 @@ export interface Arista {
   aerolineasOperadoras: string[]; // sin codeshares
   registros: number; // números de vuelo distintos (o registros de ruta si el dataset no los trae): base de la frecuencia proxy
   operadas: number; // registros sin codeshare
+  vuelosPorAerolinea: Record<string, number>; // números de vuelo por aerolínea operadora
 }
 
 // Grafo dirigido de rutas en memoria: consultar salidas de un aeropuerto es O(1).
@@ -24,12 +25,13 @@ export class Grafo {
         porDestino = new Map();
         this.salidas.set(origen, porDestino);
       }
-      const arista = porDestino.get(destino) ?? { destino, aerolineas: [], aerolineasOperadoras: [], registros: 0, operadas: 0 };
+      const arista = porDestino.get(destino) ?? { destino, aerolineas: [], aerolineasOperadoras: [], registros: 0, operadas: 0, vuelosPorAerolinea: {} };
       if (!arista.aerolineas.includes(aerolinea)) arista.aerolineas.push(aerolinea);
       arista.registros += vuelos;
       if (!codeshare) {
         if (!arista.aerolineasOperadoras.includes(aerolinea)) arista.aerolineasOperadoras.push(aerolinea);
         arista.operadas += vuelos;
+        arista.vuelosPorAerolinea[aerolinea] = (arista.vuelosPorAerolinea[aerolinea] ?? 0) + vuelos;
       }
       porDestino.set(destino, arista);
     }

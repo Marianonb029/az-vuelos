@@ -17,7 +17,8 @@
     "typecheck": "pnpm -r --if-present typecheck",
     "lint": "eslint .",
     "catalogos": "tsx scripts/descargar-catalogos.ts",
-    "eventos": "tsx scripts/actualizar-eventos.ts"
+    "eventos": "tsx scripts/actualizar-eventos.ts",
+    "importar-observaciones": "tsx scripts/importar-observaciones.ts"
   },
   "dependencies": {
     "@az/core": "workspace:*",

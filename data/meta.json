@@ -1,5 +1,5 @@
 {
-  "descargadoEn": "2026-09-15T14:11:43.829Z",
+  "descargadoEn": "2026-09-15T18:34:54.342Z",
   "aerolineas": {
     "fuente": "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv",
     "filtro": "IATA de 2 caracteres, sin fecha de fin de validez, una por código (mayor frecuencia de vuelos)",
@@ -19,15 +19,15 @@
     "fuente": "https://raw.githubusercontent.com/vradarserver/standing-data/main/routes/schema-01/ (Virtual Radar Server standing data, CC0, se regenera a diario)",
     "aviso": "Una fila por número de vuelo con su cadena de aeropuertos, sin horarios ni fecha de última observación: la cantidad de números de vuelo por tramo es el proxy de frecuencia y pueden quedar números ya discontinuados",
     "filtro": "aerolínea llevada a IATA (catálogo vigente o airlines.csv de VRS), ambos aeropuertos en aeropuertos-geo, una por (aerolínea, origen, destino) con escalas mínimas y números de vuelo distintos",
-    "registros": 155433,
+    "registros": 152621,
     "numerosDeVuelo": 620390,
     "sinAerolineaIata": 52116,
     "tramosSinAeropuerto": 12534,
-    "rutasDescartadasPorRuido": 6420
+    "rutasDescartadasPorRuido": 9232
   },
   "aerolineasRutas": {
     "fuente": "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat",
     "aviso": "Nombres de las aerolíneas del grafo: catálogo vigente (OpenTravelData) y, para códigos ya no asignados, OpenFlights airlines.dat. Un código reasignado desde 2014 muestra a su titular actual",
-    "registros": 731
+    "registros": 669
   }
 }

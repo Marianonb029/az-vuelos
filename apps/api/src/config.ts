@@ -1,9 +1,14 @@
 import { resolve } from "node:path";
 
 const RAIZ = resolve(import.meta.dirname, "..");
+const REPO = resolve(RAIZ, "..", "..");
 
 export const config = {
   puerto: 3001,
-  directorioDatos: resolve(RAIZ, "..", "..", "data"),
-  rutaConfigEspacio: resolve(RAIZ, "..", "..", "config", "espacio.json"),
+  raizRepo: REPO,
+  directorioDatos: resolve(REPO, "data"),
+  rutaConfigEspacio: resolve(REPO, "config", "espacio.json"),
+  // Lo que escribe la app (no son datasets): observaciones de precios e historial de priorizaciones.
+  rutaObservaciones: resolve(REPO, "data", "local", "observaciones.json"),
+  rutaHistorial: resolve(REPO, "data", "local", "historial.json"),
 };

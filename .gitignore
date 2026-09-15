@@ -12,3 +12,4 @@ Diseños/
 # Restos locales de la lectura de precios retirada en la Fase 9.3 (SQLite, perfiles de Chrome, capturas)
 apps/api/datos/
 apps/api/evidencia/
+data/local/

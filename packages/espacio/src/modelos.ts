@@ -87,7 +87,7 @@ export const Banda = z.enum(["verde", "amarillo", "rojo"]);
 export const PuntajeDia = z.object({
   fecha: FechaIso,
   aeropuerto: IataAeropuerto,
-  presion: z.number().int().min(0).max(100),
+  presion: z.number().int().min(-50).max(100), // negativo = valle (los días baratos se distinguen entre sí)
   etiquetas: z.array(z.string()),
   banda: Banda,
   fundamento: z.string(),
@@ -145,6 +145,9 @@ export const TramoCompetencia = z.object({
   destino: IataAeropuerto,
   km: z.number().min(0),
   aerolineas: z.array(IataAerolinea), // todas las que operan el tramo según el dataset de rutas
+  vuelosPorAerolinea: z.record(IataAerolinea, z.number().int().min(1)), // números de vuelo vigentes por aerolínea
+  grupos: z.array(z.string()), // grupos tarifarios distintos presentes (IAG, LATAM…); una aerolínea suelta es su propio grupo
+  competenciaEfectiva: z.number().min(0), // por grupo y ponderada por frecuencia
 });
 
 export const EnlaceMetabuscador = z.object({ id: z.string().min(1), nombre: z.string().min(1), tramo: z.string().min(1), url: z.url() });
@@ -164,14 +167,22 @@ export const RutaPriorizada = z.object({
   trasladoDestinoKm: z.number().min(0),
   desvioPct: z.number().min(0),
   tramos: z.array(TramoCompetencia).min(1),
-  competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado (la que manda en el índice)
+  competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado
   competenciaTotal: z.number().int().min(1), // aerolíneas distintas que operan algún tramo de la ruta
+  competenciaEfectiva: z.number().min(0), // la que manda en el índice: por grupo tarifario y ponderada por frecuencia, en el tramo más cerrado
   bajoCosto: z.boolean(),
+  restriccion: z.string().nullable(), // vía con condición para la persona (p. ej. requiere_visa_eeuu_o_esta)
   presionIda: PuntajeDia,
   presionVuelta: PuntajeDia.nullable(),
+  anticipacionDias: z.number().int().min(0),
+  estadiaDias: z.number().int().min(0).nullable(),
   indice: z.number().min(0), // menor = mayor chance de tarifa baja; no es un precio
   desglose: z.record(z.string(), z.number()),
   fundamento: z.string(),
+  familia: z.string().min(1), // misma estrategia (hub o directo + destino + boletos) con distinto origen
+  empate: z.number().int().min(1), // grupo de filas cuyo índice difiere menos que la tolerancia
+  posicionMin: z.number().int().min(1), // robustez: mejor y peor puesto al mover cada factor ±variación
+  posicionMax: z.number().int().min(1),
   enlaces: z.array(EnlaceMetabuscador), // búsquedas en metabuscadores para esa ruta (la API las completa)
 });
 
@@ -180,6 +191,7 @@ export const ResultadoRutas = z.object({
   destino: IataAeropuerto,
   fechaIda: FechaIso,
   fechaVuelta: FechaIso.nullable(),
+  equipaje: z.enum(["mano", "valija"]),
   calculadoEn: z.iso.datetime(),
   rutas: z.array(RutaPriorizada),
   nombres: z.array(NombreAerolinea),

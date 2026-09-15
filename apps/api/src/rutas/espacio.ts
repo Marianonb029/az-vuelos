@@ -28,9 +28,10 @@ const aniosDe = (desde: string, hasta: string) => {
 };
 
 // Espacio de búsqueda (Fases 1–3, 5 y 6 del SPEC) para un par origen/destino. Puro cálculo sobre datasets: no abre Chrome.
-export const rutasEspacio = (app: FastifyInstance, espacio: ServicioEspacio, feriados: ServicioFeriados) => {
+export const rutasEspacio = (app: FastifyInstance, servicio: () => ServicioEspacio, feriados: ServicioFeriados) => {
   // Corrida completa para exportar (SPEC, sección 8): result.json o combinations.xlsx.
   app.get("/espacio/exportar", async (req, reply) => {
+    const espacio = servicio();
     const consulta = ConsultaExportar.safeParse(req.query);
     if (!consulta.success) return reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
     const { origen, destino, desde, hasta, formato } = consulta.data;
@@ -51,6 +52,7 @@ export const rutasEspacio = (app: FastifyInstance, espacio: ServicioEspacio, fer
   });
 
   app.get("/espacio/combinaciones", async (req, reply) => {
+    const espacio = servicio();
     const consulta = ConsultaCalendario.safeParse(req.query);
     if (!consulta.success) return reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
     const { origen, destino, desde, hasta } = consulta.data;
@@ -64,6 +66,7 @@ export const rutasEspacio = (app: FastifyInstance, espacio: ServicioEspacio, fer
   });
 
   app.get("/espacio/calendario", async (req, reply) => {
+    const espacio = servicio();
     const consulta = ConsultaCalendario.safeParse(req.query);
     if (!consulta.success) return reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
     const { origen, destino, desde, hasta } = consulta.data;
@@ -76,6 +79,7 @@ export const rutasEspacio = (app: FastifyInstance, espacio: ServicioEspacio, fer
   });
 
   app.get("/espacio", async (req, reply) => {
+    const espacio = servicio();
     const consulta = Consulta.safeParse(req.query);
     if (!consulta.success) return reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
     const r = espacio.explorar(consulta.data.origen, consulta.data.destino);

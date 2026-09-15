@@ -43,7 +43,7 @@ describe("CalendarioPresion", () => {
     fireEvent.click(screen.getByRole("button", { name: "Calcular presión" }));
 
     await waitFor(() => expect(screen.getByTestId("ventanas-verdes")).toBeTruthy());
-    expect(fetchMock).toHaveBeenCalledWith("/api/espacio/calendario?origen=EZE&destino=MAD&desde=2027-01-30&hasta=2027-02-05");
+    expect(fetchMock).toHaveBeenCalledWith("/api/espacio/calendario?origen=EZE&destino=MAD&desde=2027-01-30&hasta=2027-02-05", undefined);
     expect(screen.getByTestId("ventanas-verdes").textContent).toBe("Ventanas verdes: 31/01/2027 – 03/02/2027");
     expect(screen.getByRole("status").textContent).toContain("Sin feriados de ES 2027");
     expect(screen.getByText("enero 2027")).toBeTruthy();

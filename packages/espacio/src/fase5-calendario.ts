@@ -115,14 +115,14 @@ export const puntuarDia = (iso: string, entrada: EntradaCalendario, cfg: ConfigC
     sumar(pesos["salidaEntreSemana"] ?? 0, "salida entre semana");
   }
 
-  const presion = Math.max(0, Math.min(100, Math.round(total)));
+  const presion = Math.max(-50, Math.min(100, Math.round(total))); // negativo = valle: los días baratos se distinguen
   return {
     fecha: iso,
     aeropuerto: origen.iata,
     presion,
     etiquetas,
     banda: bandaDe(presion, cfg.fase5.bandas),
-    fundamento: partes.length === 0 ? "Sin factores de presión conocidos" : `${partes.join(" · ")} = ${Math.round(total)} (0–100: ${presion})`,
+    fundamento: partes.length === 0 ? "Sin factores de presión conocidos" : `${partes.join(" · ")} = ${Math.round(total)} (−50…100: ${presion})`,
   };
 };
 

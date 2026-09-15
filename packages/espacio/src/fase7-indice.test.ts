@@ -5,7 +5,8 @@ import { z } from "zod";
 import { ConfigEspacio } from "./configuracion";
 import { calcularCalendario, puntuarDia } from "./fase5-calendario";
 import { domingoDePascua, enSemanaSanta, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
-import { factorCompetencia, kmEquivalentes, priorizarRutas } from "./fase7-indice";
+import { competenciaEfectivaDe, factorCompetencia, factorPorDias, kmEquivalentes } from "./fase7-indice";
+import { priorizarRutas } from "./fase7-ranking";
 import { expandirAeropuertos } from "./fase1-aeropuertos";
 import { generarRutas } from "./fase2-rutas";
 import { generarSplitTickets } from "./fase2-split";
@@ -88,48 +89,72 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
   const separadas = generarSplitTickets(o.candidatos, d.candidatos, grafo, cfg);
   const madrid = geo("MAD");
   const presionIda = (origen: string) => puntuarDia("2027-02-16", { desde: "2027-02-16", hasta: "2027-02-16", origen: geo(origen), destino: madrid, feriados }, cfg);
-  const rutas = priorizarRutas({ solicitado: { origen: "ASU", destino: "MAD" }, rutas: [...generadas.conservadas, ...separadas].filter((r) => r.destino === "MAD"), grafo, presionIda, presionVuelta: null }, cfg);
+  const entrada = { solicitado: { origen: "ASU", destino: "MAD" }, rutas: [...generadas.conservadas, ...separadas].filter((r) => r.destino === "MAD"), grafo, hoy: "2026-09-15", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano" as const, presionIda, presionVuelta: null };
+  const rutas = priorizarRutas(entrada, cfg);
 
-  it("km equivalentes y factor de competencia salen de la config", () => {
+  it("km equivalentes, competencia (interpolada) y factores por días salen de la config", () => {
     expect(kmEquivalentes(1000, cfg.fase7.kmEquivalentes)).toBe(1000);
     expect(kmEquivalentes(2000, cfg.fase7.kmEquivalentes)).toBe(1500 + 500 * 0.7);
     expect(kmEquivalentes(9000, cfg.fase7.kmEquivalentes)).toBe(1500 + 2500 * 0.7 + 5000 * 0.5);
     expect(factorCompetencia(1, cfg.fase7.factorCompetencia)).toBe(1);
     expect(factorCompetencia(3, cfg.fase7.factorCompetencia)).toBe(0.83);
     expect(factorCompetencia(7, cfg.fase7.factorCompetencia)).toBe(0.75);
+    expect(factorCompetencia(0.5, cfg.fase7.factorCompetencia)).toBe(1);
+    expect(factorCompetencia(1.5, cfg.fase7.factorCompetencia)).toBeCloseTo(0.95);
+    expect(factorPorDias(10, cfg.fase7.anticipacion)).toBe(1.3);
+    expect(factorPorDias(200, cfg.fase7.anticipacion)).toBe(1.0);
+    expect(factorPorDias(1, cfg.fase7.estadia)).toBe(1.2);
   });
 
-  it("produce rutas válidas, ordenadas por índice, con tramos, competencia y fundamento", () => {
+  it("competencia efectiva: una unidad por grupo tarifario, ponderada por números de vuelo", () => {
+    expect(competenciaEfectivaDe({ IB: 10, VY: 3, UX: 8 }, cfg)).toBe(2); // IB y VY son IAG
+    expect(competenciaEfectivaDe({ CA: 1 }, cfg)).toBe(0.5); // un vuelo aislado pesa el mínimo
+    expect(competenciaEfectivaDe({ CA: 2, LA: 4 }, cfg)).toBe(1.5);
+  });
+
+  it("produce rutas válidas, ordenadas por índice, con tramos, competencia, empates, familias y robustez", () => {
     expect(rutas.length).toBeGreaterThan(5);
     for (const r of rutas) expect(() => RutaPriorizada.parse(r)).not.toThrow();
     expect(rutas.map((r) => r.indice)).toEqual([...rutas.map((r) => r.indice)].sort((a, b) => a - b));
     expect(rutas.map((r) => r.posicion)).toEqual(rutas.map((_, i) => i + 1));
+    for (const r of rutas) {
+      expect(r.posicionMin).toBeLessThanOrEqual(r.posicion);
+      expect(r.posicionMax).toBeGreaterThanOrEqual(r.posicion);
+      expect(r.anticipacionDias).toBe(154);
+      expect(r.estadiaDias).toBeNull();
+    }
+    expect(rutas.map((r) => r.empate)).toEqual([...rutas.map((r) => r.empate)].sort((a, b) => a - b)); // grupos de empate crecientes
     const directa = rutas.find((r) => r.origen === "ASU" && r.via === null);
-    expect(directa).toMatchObject({ aerolineas: ["UX"], escalas: 0, boletos: 1, competenciaMinima: 1, desvioPct: 0 });
-    expect(directa?.distanciaKm).toBeGreaterThan(8500);
+    expect(directa).toMatchObject({ aerolineas: ["UX"], escalas: 0, boletos: 1, competenciaMinima: 1, competenciaTotal: 1, desvioPct: 0, familia: "directo→MAD", restriccion: null, trasladoOrigenKm: 0, trasladoDestinoKm: 0 });
     expect(directa?.distanciaKm).toBe(directa?.distanciaDirectaKm);
     expect(directa?.fundamento).toContain("1 aerolínea operan la ruta, 1 en el tramo más cerrado");
-    expect(directa?.competenciaTotal).toBe(1);
-    const separada2 = rutas.find((r) => r.boletos === 2 && r.tramos.length === 2);
-    expect(separada2?.competenciaTotal).toBeGreaterThanOrEqual(separada2?.competenciaMinima ?? 0);
-    expect(directa).toMatchObject({ trasladoOrigenKm: 0, trasladoDestinoKm: 0 });
-    const alternativa = rutas.find((r) => r.origen !== "ASU");
-    expect(alternativa?.trasladoOrigenKm).toBeGreaterThan(0);
-    expect(alternativa?.fundamento).toContain(`traslado ASU→${alternativa?.origen}`);
-    expect(alternativa?.desglose.kmTraslado).toBe(Math.round((alternativa?.trasladoOrigenKm ?? 0) * cfg.fase7.pesoKmTraslado));
-    const separada = rutas.find((r) => r.origen === "ASU" && r.boletos === 2);
+    expect(directa?.desglose.kmTasas).toBe(cfg.fase7.tasasAeropuerto["ASU"]);
+    const separada = rutas.find((r) => r.origen === "ASU" && r.boletos === 2 && r.via === "GRU");
     expect(separada?.tramos).toHaveLength(2);
-    expect(separada?.desvioPct).toBeGreaterThan(0);
-    expect(separada?.desglose.factorEscalas).toBe(1.05);
-    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
+    expect(separada?.familia).toBe("GRU→MAD (2 boletos)");
+    expect(separada?.desglose).toMatchObject({ factorEscalas: 1.05, factorBoletosSeparados: cfg.fase7.factorBoletosSeparados });
+    expect(separada?.tramos[0]?.grupos).toContain("Abra"); // GOL es Abra
+    const alternativa = rutas.find((r) => r.origen !== "ASU" && r.trasladoOrigenKm > cfg.fase7.trasladoAereoDesdeKm);
+    expect(alternativa?.fundamento).toContain("(aéreo)");
+    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano", calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
   });
 
-  it("a igual distancia, más competencia y menos presión bajan el índice", () => {
-    const base = rutas[0];
-    if (!base) throw new Error("sin rutas");
-    const conMasPresion = priorizarRutas({ solicitado: { origen: "ASU", destino: "MAD" }, rutas: [...generadas.conservadas, ...separadas].filter((r) => r.destino === "MAD"), grafo, presionIda: (origen) => ({ ...presionIda(origen), presion: 100, banda: "rojo" }), presionVuelta: null }, cfg);
-    const misma = conMasPresion.find((r) => r.origen === base.origen && r.via === base.via && r.boletos === base.boletos);
-    expect(misma?.indice).toBeGreaterThan(base.indice);
-    expect(misma?.desglose.factorPresion).toBe(1.6);
+  it("a igual ruta: más presión, menos anticipación, valija en low cost o vía con restricción suben el índice", () => {
+    const base = rutas.find((r) => r.bajoCosto);
+    if (!base) throw new Error("sin rutas low cost");
+    const mismo = (lista: readonly RutaPriorizada[]) => lista.find((r) => r.origen === base.origen && r.via === base.via && r.boletos === base.boletos);
+    const conPresion = mismo(priorizarRutas({ ...entrada, presionIda: (origen) => ({ ...presionIda(origen), presion: 100, banda: "rojo" }) }, cfg));
+    expect(conPresion?.indice).toBeGreaterThan(base.indice);
+    expect(conPresion?.desglose.factorPresion).toBe(1.6);
+    const tarde = mismo(priorizarRutas({ ...entrada, hoy: "2027-02-10" }, cfg));
+    expect(tarde?.desglose.factorAnticipacion).toBe(1.45);
+    expect(tarde?.indice).toBeGreaterThan(base.indice);
+    const conValija = mismo(priorizarRutas({ ...entrada, equipaje: "valija" }, cfg));
+    expect(conValija?.desglose.factorBajoCosto).toBe(cfg.fase7.factorBajoCostoConValija);
+    const conVuelta = mismo(priorizarRutas({ ...entrada, fechaVuelta: "2027-02-18", presionVuelta: () => presionIda("ASU") }, cfg));
+    expect(conVuelta?.estadiaDias).toBe(2);
+    expect(conVuelta?.desglose.factorEstadia).toBe(1.2);
+    const viaMiami = rutas.find((r) => r.via === "MIA" || r.tramoPrevio?.hub === "MIA");
+    if (viaMiami) expect(viaMiami.restriccion).toBe("requiere_visa_eeuu_o_esta");
   });
 });

@@ -27,6 +27,14 @@ export type ResultadoServicioCombinaciones = { ok: true; resultado: ResultadoCom
 export type ResultadoServicioCorrida = { ok: true; resultado: CorridaEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioRutas = { ok: true; resultado: ResultadoRutas } | { ok: false; motivo: string };
 
+export interface PedidoRutas {
+  origen: string;
+  destino: string;
+  fechaIda: string;
+  fechaVuelta: string | null;
+  equipaje: "mano" | "valija";
+}
+
 export interface ServicioEspacio {
   explorar: (origen: string, destino: string) => ResultadoServicioEspacio;
   paisesDe: (origen: string, destino: string) => string[] | null; // para pedir feriados antes del calendario
@@ -39,7 +47,7 @@ export interface ServicioEspacio {
   // Variables de la priorización con fuente, última actualización, exactitud y vencimiento.
   fuentes: () => FuenteDato[];
   // Fase 7: rutas ordenadas por costo estimado (km, competencia, presión de la fecha, escalas). Sin precios.
-  priorizar: (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioRutas;
+  priorizar: (pedido: PedidoRutas, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioRutas;
 }
 
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
@@ -134,7 +142,8 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     };
   };
 
-  const priorizar = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, feriados: readonly Feriado[], avisos: readonly string[]): ResultadoServicioRutas => {
+  const priorizar = (pedido: PedidoRutas, feriados: readonly Feriado[], avisos: readonly string[]): ResultadoServicioRutas => {
+    const { origen, destino, fechaIda, fechaVuelta, equipaje } = pedido;
     const e = explorar(origen, destino);
     if (!e.ok) return e;
     const destinoGeo = aeropuerto(destino);
@@ -150,13 +159,13 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
       const a = aeropuerto(d);
       return a ? puntuarDia(fechaVuelta, { desde: fechaVuelta, hasta: fechaVuelta, origen: a, destino: origenGeo, feriados, sentido: "vuelta" }, config) : null;
     };
-    const lista = priorizarRutas({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, presionIda, presionVuelta }, config);
+    const lista = priorizarRutas({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, hoy: ahora().toISOString().slice(0, 10), fechaIda, fechaVuelta, equipaje, presionIda, presionVuelta }, config);
     const vencidas = fuentes().filter((f) => f.vencida).map((f) => `${f.variable}: datos de ${f.actualizadoEn?.slice(0, 10) ?? "?"}, más de ${f.cadenciaDias} días; corré \`${f.comando}\``);
     const fueraDeVentana = eventosDataset !== null && (fechaVuelta ?? fechaIda) > eventosDataset.ventana.hasta ? [`Eventos masivos: el dataset llega hasta ${eventosDataset.ventana.hasta}; para esa fecha no hay eventos cargados`] : [];
     const mencionadas = new Set(lista.flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? []), ...r.tramos.flatMap((t) => t.aerolineas)]));
     return {
       ok: true,
-      resultado: { origen, destino, fechaIda, fechaVuelta, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, avisos: [...avisos, ...vencidas, ...fueraDeVentana] },
+      resultado: { origen, destino, fechaIda, fechaVuelta, equipaje, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, avisos: [...avisos, ...vencidas, ...fueraDeVentana] },
     };
   };
 

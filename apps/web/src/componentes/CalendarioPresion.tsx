@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
 import type { Banda, PuntajeDia, ResultadoCalendario } from "@az/espacio";
@@ -9,6 +9,7 @@ interface Props {
   origen: string;
   destino: string;
   hoy: string;
+  inicial?: { desde: string; hasta: string }; // rango con el que arranca y se calcula solo (alrededor de la fecha pedida)
 }
 
 const MAX_DIAS = 180;
@@ -63,16 +64,16 @@ const Mes = ({ mesIso, puntajes, onElegir }: { mesIso: string; puntajes: Puntaje
 };
 
 // Fase 5 del SPEC: presión de demanda por día de salida, con ventanas verdes (rachas de ≥3 días).
-export const CalendarioPresion = ({ origen, destino, hoy }: Props) => {
-  const [desde, setDesde] = useState(hoy);
-  const [hasta, setHasta] = useState(sumarDias(hoy, 89));
+export const CalendarioPresion = ({ origen, destino, hoy, inicial }: Props) => {
+  const [desde, setDesde] = useState(inicial?.desde ?? hoy);
+  const [hasta, setHasta] = useState(inicial?.hasta ?? sumarDias(hoy, 89));
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoCalendario | null>(null);
   const [elegido, setElegido] = useState<PuntajeDia | null>(null);
 
-  const calcular = async (e: FormEvent) => {
-    e.preventDefault();
+  const calcular = async (e: FormEvent | null) => {
+    e?.preventDefault();
     setCargando(true);
     setError(null);
     setElegido(null);
@@ -85,6 +86,11 @@ export const CalendarioPresion = ({ origen, destino, hoy }: Props) => {
       setCargando(false);
     }
   };
+
+  // Con rango inicial (desplegable de Rutas) se calcula solo, centrado en la fecha pedida.
+  useEffect(() => {
+    if (inicial) void calcular(null);
+  }, []);
 
   const meses = resultado ? [...new Set(resultado.puntajes.map((p) => p.fecha.slice(0, 7)))] : [];
 

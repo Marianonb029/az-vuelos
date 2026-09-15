@@ -23,7 +23,86 @@
       "LP": "LA",
       "WJ": "JA"
     },
-    "nota": "US Airways ya no existe (2015). Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA"
+    "gruposTarifarios": {
+      "IAG": [
+        "IB",
+        "I2",
+        "VY",
+        "BA",
+        "EI",
+        "LV"
+      ],
+      "LATAM-Delta": [
+        "LA",
+        "DL"
+      ],
+      "Air France-KLM": [
+        "AF",
+        "KL",
+        "TO",
+        "HV"
+      ],
+      "Lufthansa Group": [
+        "LH",
+        "LX",
+        "OS",
+        "SN",
+        "EW",
+        "EN",
+        "4Y",
+        "AZ"
+      ],
+      "Abra": [
+        "AV",
+        "G3",
+        "TA"
+      ],
+      "American-JetSMART": [
+        "AA",
+        "JA"
+      ],
+      "United-Copa": [
+        "UA",
+        "CM"
+      ],
+      "Ryanair": [
+        "FR",
+        "RK"
+      ],
+      "easyJet": [
+        "U2",
+        "EC",
+        "DS"
+      ],
+      "Wizz": [
+        "W6",
+        "W4",
+        "W9"
+      ],
+      "Turkish-Air Europa": [
+        "TK",
+        "UX"
+      ],
+      "Emirates-flydubai": [
+        "EK",
+        "FZ"
+      ],
+      "Qatar-Airlink": [
+        "QR",
+        "4Z"
+      ],
+      "Aegean-Olympic": [
+        "A3",
+        "OA"
+      ],
+      "SAS-Air France-KLM": [
+        "SK"
+      ],
+      "Gol-Azul (codeshare)": [
+        "AD"
+      ]
+    },
+    "nota": "US Airways ya no existe (2015). Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA. Grupos tarifarios: participaciones y joint ventures públicas al 2026 (IAG; LATAM-Delta JV; Air France-KLM; Lufthansa Group con ITA; Abra con Avianca y GOL; American 20 % de JetSMART; Turkish 26 % de Air Europa). Revisar trimestralmente."
   },
   "fase1": {
     "radioOrigenKm": 2000,
@@ -950,7 +1029,96 @@
     "factorPresionMaxima": 0.6,
     "factorPorEscala": 0.05,
     "pesoKmTraslado": 0.6,
+    "trasladoAereoDesdeKm": 400,
+    "factorBajoCostoConValija": 1.0,
+    "factorBoletosSeparados": 1.08,
+    "factorRestriccionVia": 1.15,
+    "anticipacion": [
+      {
+        "hastaDias": 7,
+        "factor": 1.45
+      },
+      {
+        "hastaDias": 21,
+        "factor": 1.3
+      },
+      {
+        "hastaDias": 45,
+        "factor": 1.15
+      },
+      {
+        "hastaDias": 90,
+        "factor": 1.05
+      },
+      {
+        "hastaDias": null,
+        "factor": 1.0
+      }
+    ],
+    "estadia": [
+      {
+        "hastaDias": 2,
+        "factor": 1.2
+      },
+      {
+        "hastaDias": 5,
+        "factor": 1.1
+      },
+      {
+        "hastaDias": 30,
+        "factor": 1.0
+      },
+      {
+        "hastaDias": null,
+        "factor": 1.05
+      }
+    ],
+    "tasasAeropuerto": {
+      "LHR": 250,
+      "LGW": 250,
+      "STN": 250,
+      "MAN": 250,
+      "EDI": 250,
+      "GRU": 80,
+      "GIG": 80,
+      "EZE": 90,
+      "AEP": 60,
+      "ASU": 45,
+      "MEX": 70,
+      "BOG": 60,
+      "LIM": 60,
+      "SCL": 60,
+      "PTY": 50,
+      "AMS": 40,
+      "FRA": 50,
+      "CDG": 40,
+      "MAD": 30,
+      "BCN": 30,
+      "LIS": 35,
+      "FCO": 40,
+      "MIA": 70,
+      "JFK": 70
+    },
+    "tasasPais": {
+      "GB": 250,
+      "DE": 50,
+      "FR": 40,
+      "NL": 40,
+      "US": 60,
+      "BR": 70,
+      "AR": 80,
+      "PY": 45,
+      "ES": 30,
+      "PT": 35,
+      "IT": 40
+    },
+    "competencia": {
+      "vuelosPorAerolineaPleno": 4,
+      "pesoMinimoAerolinea": 0.5
+    },
+    "empateTolerancia": 0.02,
+    "robustezVariacion": 0.2,
     "maxRutas": 60,
-    "nota": "Índice de costo estimado, no precio: km equivalentes (tarifa por km decreciente con la distancia + fijo por boleto + traslado a aeropuertos alternativos con su peso) x competencia (aerolíneas en el tramo más cerrado) x presión de la fecha (0-100 -> 1 a 1+factorPresionMaxima) x escalas. Menor índice = mayor chance de tarifa baja."
+    "nota": "Índice de costo estimado, no precio: km equivalentes (tarifa por km decreciente + fijo por boleto + traslado a alternativos, terrestre por km o aéreo con boleto extra por encima de trasladoAereoDesdeKm + tasas de salida por aeropuerto/país en km equivalentes) x competencia efectiva (grupos tarifarios ponderados por frecuencia, tramo más cerrado; tabla interpolada) x bajo costo (según equipaje) x presión (−50…100) x escalas x boletos separados x restricción de vía x anticipación x estadía. Tasas: orden de magnitud público (APD británica larga distancia ~£90–200; tasas de embarque BR/AR/PY) en km equivalentes, revisar anualmente. Menor índice = mayor chance de tarifa baja."
   }
 }

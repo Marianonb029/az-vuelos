@@ -134,10 +134,23 @@ export const compactarRutasVrs = (filas: Fila[], icaoAeropuertoAIata: ReadonlyMa
   // Ruido: un solo callsign alfanumérico (CCA12NG en Ibiza→Newcastle) suele ser un error de carga del
   // usuario, no una ruta. Con dos o más callsigns, o con un número de vuelo puro, se acepta.
   const esNumeroPuro = (callsign: string) => /^[A-Z]{2,3}\d+$/.test(callsign);
+  // Tramo aislado: un solo callsign y la aerolínea no toca ni el origen ni el destino en ninguna otra ruta
+  // (Air China Ibiza→Newcastle): chárter o carga de usuario, no red comercial.
+  const presencia = new Map<string, Set<string>>();
+  for (const [clave, g] of grupos) {
+    const [aerolinea = "", origen = "", destino = ""] = clave.split("|");
+    if (g.callsigns.size < 2) continue;
+    presencia.set(aerolinea, new Set([...(presencia.get(aerolinea) ?? []), origen, destino]));
+  }
+  const esAislado = (clave: string, g: { callsigns: Set<string> }) => {
+    const [aerolinea = "", origen = "", destino = ""] = clave.split("|");
+    const toca = presencia.get(aerolinea);
+    return g.callsigns.size === 1 && !(toca?.has(origen) || toca?.has(destino));
+  };
   let descartadasPorRuido = 0;
   const rutas = [...grupos.entries()]
-    .filter(([, g]) => {
-      const aceptada = g.callsigns.size >= 2 || [...g.callsigns].some(esNumeroPuro);
+    .filter(([clave, g]) => {
+      const aceptada = (g.callsigns.size >= 2 || [...g.callsigns].some(esNumeroPuro)) && !esAislado(clave, g);
       if (!aceptada) descartadasPorRuido++;
       return aceptada;
     })

@@ -1,14 +1,15 @@
 import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
-import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta } from "@az/core";
+import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta, sumarDias } from "@az/core";
 import type { Aeropuerto } from "@az/core";
-import type { PuntajeDia, ResultadoEspacio, ResultadoRutas, RutaPriorizada } from "@az/espacio";
+import type { ResultadoEspacio, ResultadoRutas, RutaPriorizada } from "@az/espacio";
 import { obtenerEspacio, obtenerRutas } from "../lib/api";
 import { Bloque } from "./Bloque";
 import { CalendarioPresion } from "./CalendarioPresion";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
+import { FilaRuta } from "./FilaRuta";
 import { ResultadosEspacio } from "./ResultadosEspacio";
 import { Toggle } from "./Toggle";
 
@@ -18,100 +19,21 @@ interface Props {
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const DIAS_CALENDARIO = 30; // el calendario del desplegable se abre ±30 días alrededor de la ida pedida
 
-const BANDA: Record<PuntajeDia["banda"], string> = { verde: "bg-emerald-100 text-emerald-800", amarillo: "bg-amber-100 text-amber-800", rojo: "bg-red-100 text-red-800" };
-
-const Presion = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
-  <span title={p.fundamento} className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${BANDA[p.banda]}`}>
-    {titulo} {p.presion} {p.banda}
-  </span>
-);
-
-const rutaTexto = (r: RutaPriorizada) => (r.via === null ? `${r.origen} → ${r.destino}` : `${r.origen} → ${r.via} → ${r.destino}`);
-
-// Una fila por ruta: km, competencia, presión, índice; desplegable con fundamento, tramos y enlaces.
-const Fila = ({ r, nombres, bajoCosto }: { r: RutaPriorizada; nombres: ReadonlyMap<string, string>; bajoCosto: ReadonlySet<string> }) => {
-  const [abierta, setAbierta] = useState(false);
-  const nombre = (iata: string) => nombres.get(iata) ?? iata;
-  return (
-    <>
-      <tr className="border-b border-slate-100 align-top">
-        <td className="py-1.5 pr-2 font-semibold tabular-nums text-slate-900">{r.posicion}</td>
-        <td className="py-1.5 pr-3 whitespace-nowrap font-medium text-slate-900">
-          {rutaTexto(r)}
-          {r.boletos === 2 && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 boletos</span>}
-        </td>
-        <td className="py-1.5 pr-3 tabular-nums text-slate-700">
-          {r.distanciaKm.toLocaleString("es")} {r.desvioPct > 0 && <span className="text-xs text-slate-500">(+{r.desvioPct} %)</span>}
-          {r.trasladoOrigenKm + r.trasladoDestinoKm > 0 && <span className="block text-xs text-slate-500">+ traslado {(r.trasladoOrigenKm + r.trasladoDestinoKm).toLocaleString("es")} km</span>}
-        </td>
-        <td className="py-1.5 pr-3 text-slate-700">
-          <span className="font-semibold tabular-nums">{r.competenciaTotal}</span> aerolínea{r.competenciaTotal === 1 ? "" : "s"}
-          {r.tramos.length > 1 && <span className="block text-xs text-slate-500">tramo más cerrado: {r.competenciaMinima}</span>}
-          {r.bajoCosto && <span className="mt-0.5 inline-block rounded bg-sky-100 px-1 text-[10px] uppercase text-sky-800">low cost</span>}
-        </td>
-        <td className="py-1.5 pr-3 text-xs text-slate-700">
-          {r.tramos.map((t) => (
-            <span key={`${t.origen}-${t.destino}`} className="block whitespace-nowrap">
-              <span className="text-slate-500">{t.origen}→{t.destino}:</span>{" "}
-              {t.aerolineas.length === 0
-                ? "sin datos"
-                : t.aerolineas.map((a, i) => (
-                    <span key={a} title={`${nombre(a)}${bajoCosto.has(a) ? " · bajo costo" : " · tradicional"}`} className={r.aerolineas.includes(a) || (r.tramoPrevio?.aerolineas ?? []).includes(a) ? "font-semibold text-slate-900" : ""}>
-                      {a}
-                      {bajoCosto.has(a) && <span className="ml-0.5 rounded bg-sky-100 px-0.5 text-[9px] uppercase text-sky-800">lc</span>}
-                      {i < t.aerolineas.length - 1 ? ", " : ""}
-                    </span>
-                  ))}
-            </span>
-          ))}
-        </td>
-        <td className="py-1.5 pr-3">
-          <Presion p={r.presionIda} titulo="ida" /> {r.presionVuelta && <Presion p={r.presionVuelta} titulo="vuelta" />}
-        </td>
-        <td className="py-1.5 pr-3 font-semibold tabular-nums text-slate-900">{r.indice.toLocaleString("es")}</td>
-        <td className="py-1.5">
-          <button type="button" onClick={() => setAbierta((v) => !v)} className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-100" aria-expanded={abierta}>
-            {abierta ? "Cerrar" : "Ver"}
-          </button>
-        </td>
-      </tr>
-      {abierta && (
-        <tr className="border-b border-slate-200 bg-slate-50">
-          <td colSpan={8} className="px-2 py-2 text-xs text-slate-700">
-            <p className="mb-1">
-              <span className="font-medium">Por qué:</span> {r.fundamento}
-            </p>
-            <p className="mb-1">
-              <span className="font-medium">Presión ida:</span> {r.presionIda.fundamento}
-              {r.presionVuelta && (
-                <>
-                  {" · "}
-                  <span className="font-medium">vuelta:</span> {r.presionVuelta.fundamento}
-                </>
-              )}
-            </p>
-            <p className="mb-1">
-              <span className="font-medium">Tramos:</span>{" "}
-              {r.tramos.map((t) => `${t.origen}→${t.destino} (${t.km} km): ${t.aerolineas.map(nombre).join(", ") || "sin datos"}`).join(" · ")}
-              {" · "}
-              <span className="font-medium">vende el boleto:</span> {[...(r.tramoPrevio?.aerolineas ?? []), ...r.aerolineas].map(nombre).join(", ")}
-            </p>
-            {r.enlaces.length > 0 && (
-              <p>
-                <span className="font-medium">Buscar en metabuscadores:</span>{" "}
-                {r.enlaces.map((e) => (
-                  <a key={`${e.id}-${e.tramo}`} href={e.url} target="_blank" rel="noreferrer" className="mr-2 whitespace-nowrap text-sky-700 underline">
-                    {e.nombre} {r.boletos === 2 ? e.tramo : ""}
-                  </a>
-                ))}
-              </p>
-            )}
-          </td>
-        </tr>
-      )}
-    </>
-  );
+// Familias: misma estrategia (hub o directo + destino + boletos) con distinto origen. Por defecto se
+// muestra la mejor de cada familia; las demás se despliegan a pedido.
+const agrupar = (rutas: readonly RutaPriorizada[], abiertas: ReadonlySet<string>) => {
+  const tamanos = new Map<string, number>();
+  for (const r of rutas) tamanos.set(r.familia, (tamanos.get(r.familia) ?? 0) + 1);
+  const mostradas = new Set<string>();
+  const filas: { r: RutaPriorizada; variantes: number }[] = [];
+  for (const r of rutas) {
+    const primera = !mostradas.has(r.familia);
+    if (primera || abiertas.has(r.familia)) filas.push({ r, variantes: primera && !abiertas.has(r.familia) ? (tamanos.get(r.familia) ?? 1) - 1 : 0 });
+    mostradas.add(r.familia);
+  }
+  return filas;
 };
 
 // Pestaña Rutas: la salida principal. Ordena rutas por chance de tarifa baja sin leer ningún precio.
@@ -119,12 +41,15 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [tipo, setTipo] = useState<"ida" | "ida_y_vuelta">("ida");
+  const [equipaje, setEquipaje] = useState<"mano" | "valija">("mano");
   const [fechaIda, setFechaIda] = useState("");
   const [fechaVuelta, setFechaVuelta] = useState("");
   const [intentado, setIntentado] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoRutas | null>(null);
+  const [familiasAbiertas, setFamiliasAbiertas] = useState<Set<string>>(new Set());
+  const [todas, setTodas] = useState(false);
   const [espacio, setEspacio] = useState<ResultadoEspacio | null>(null);
   const [errorEspacio, setErrorEspacio] = useState<string | null>(null);
 
@@ -145,8 +70,9 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
     setError(null);
     setEspacio(null);
     setErrorEspacio(null);
+    setFamiliasAbiertas(new Set());
     try {
-      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null));
+      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipaje));
     } catch (err: unknown) {
       setResultado(null);
       setError(`No se pudieron priorizar las rutas: ${describirError(err)}`);
@@ -157,6 +83,8 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
 
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
   const bajoCosto = new Set(resultado?.aerolineasBajoCosto ?? []);
+  const filas = resultado ? (todas ? resultado.rutas.map((r) => ({ r, variantes: 0 })) : agrupar(resultado.rutas, familiasAbiertas)) : [];
+  const empates = new Set(resultado ? resultado.rutas.filter((r) => resultado.rutas.filter((x) => x.empate === r.empate).length > 1).map((r) => r.empate) : []);
 
   // El detalle del espacio de búsqueda (alternativos, rutas, separados, gaps) se pide sólo si se abre.
   const abrirEspacio = async (e: { currentTarget: HTMLDetailsElement }) => {
@@ -183,6 +111,9 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
           <Campo id="r-tipo" etiqueta="Tipo de viaje">
             <Toggle id="r-tipo" valor={tipo} opciones={[{ valor: "ida", etiqueta: "Ida" }, { valor: "ida_y_vuelta", etiqueta: "Ida y vuelta" }]} onCambio={setTipo} />
           </Campo>
+          <Campo id="r-equipaje" etiqueta="Equipaje">
+            <Toggle id="r-equipaje" valor={equipaje} opciones={[{ valor: "mano", etiqueta: "Sólo mano" }, { valor: "valija", etiqueta: "Con valija" }]} onCambio={setEquipaje} />
+          </Campo>
           <Campo id="r-ida" etiqueta="Fecha de ida" error={errores.ida}>
             <input id="r-ida" type="date" value={fechaIda} min={hoy} onChange={(e) => setFechaIda(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" />
           </Campo>
@@ -204,16 +135,21 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
       {resultado && (
         <Bloque
           orden={1}
-          titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}`}
-          objetivo="No es un precio: es un índice de costo estimado (menor = más barato) que combina km volados, cuántas aerolíneas compiten en el tramo más cerrado, la presión de la fecha (feriados, fines de semana largos, día de la semana, temporada por región) y las escalas. Cada fila explica su cuenta y enlaza a los metabuscadores para buscarla."
+          titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}${resultado.equipaje === "valija" ? ", con valija" : ""}`}
+          objetivo="No es un precio: es un índice de costo estimado (menor = más barato) que combina km volados, tasas, competencia efectiva (grupos tarifarios y frecuencia en el tramo más cerrado), presión de la fecha, escalas, anticipación y estadía. Las filas marcadas ≈ empatan (menos de 2 % de diferencia); el rango bajo el puesto dice cuánto se movería si los factores cambiaran ±20 %. Con 'Ver' podés anotar el precio que viste para medir si el orden acierta."
         >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
               {a}
             </p>
           ))}
-          <p className="text-sm text-slate-600" data-testid="resumen-rutas">
-            {resultado.rutas.length} rutas · aeropuertos alternativos y hubs incluidos · rutas del dataset vigente por número de vuelo
+          <p className="flex flex-wrap items-center gap-3 text-sm text-slate-600" data-testid="resumen-rutas">
+            <span>
+              {resultado.rutas.length} rutas · {new Set(resultado.rutas.map((r) => r.familia)).size} familias (misma estrategia con distinto origen)
+            </span>
+            <button type="button" onClick={() => setTodas((v) => !v)} className="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100">
+              {todas ? "Mostrar la mejor de cada familia" : "Mostrar todas"}
+            </button>
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -230,8 +166,17 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {resultado.rutas.map((r) => (
-                  <Fila key={`${r.posicion}`} r={r} nombres={nombres} bajoCosto={bajoCosto} />
+                {filas.map(({ r, variantes }) => (
+                  <FilaRuta
+                    key={`${r.posicion}`}
+                    r={r}
+                    resultado={resultado}
+                    nombres={nombres}
+                    bajoCosto={bajoCosto}
+                    variantes={variantes}
+                    onVerFamilia={variantes > 0 ? () => setFamiliasAbiertas((s) => new Set([...s, r.familia])) : null}
+                    empate={empates.has(r.empate) ? r.empate : null}
+                  />
                 ))}
               </tbody>
             </table>
@@ -250,7 +195,13 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
             {espacio === null && errorEspacio === null && <p className="text-sm text-slate-500">Calculando…</p>}
             {espacio && (
               <>
-                <CalendarioPresion key={`c-${espacio.origen}-${espacio.destino}`} origen={espacio.origen} destino={espacio.destino} hoy={hoy} />
+                <CalendarioPresion
+                  key={`c-${espacio.origen}-${espacio.destino}-${resultado.fechaIda}`}
+                  origen={espacio.origen}
+                  destino={espacio.destino}
+                  hoy={hoy}
+                  inicial={{ desde: sumarDias(resultado.fechaIda, -DIAS_CALENDARIO) < hoy ? hoy : sumarDias(resultado.fechaIda, -DIAS_CALENDARIO), hasta: sumarDias(resultado.fechaVuelta ?? resultado.fechaIda, DIAS_CALENDARIO) }}
+                />
                 <ResultadosEspacio resultado={espacio} />
               </>
             )}
