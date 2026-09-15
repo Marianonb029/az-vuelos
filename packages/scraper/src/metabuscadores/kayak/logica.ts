@@ -6,10 +6,21 @@ import type { TarjetaCruda, TramoCrudo } from "./dom";
 export const DOMINIO = "www.kayak.com"; // sitio en USD: sin conversión, el precio se compara tal cual
 export const MAX_OFERTAS = 8;
 
+// Momondo es la misma plataforma (Kayak Software): mismo DOM, otro dominio y otro segmento de URL.
+export interface SitioKayak {
+  id: "kayak" | "momondo";
+  nombre: string;
+  dominio: string;
+  segmento: string; // "flights" | "flight-search"
+}
+
+export const KAYAK: SitioKayak = { id: "kayak", nombre: "Kayak", dominio: DOMINIO, segmento: "flights" };
+export const MOMONDO: SitioKayak = { id: "momondo", nombre: "Momondo", dominio: "www.momondo.com", segmento: "flight-search" };
+
 // https://www.kayak.com/flights/EZE-MAD/2027-01-25[/2027-02-07]?sort=bestflight_a
-export const construirUrl = (p: ParamsMetabuscador): string => {
+export const construirUrl = (p: ParamsMetabuscador, sitio: SitioKayak = KAYAK): string => {
   const fechas = p.tipo === "ida_y_vuelta" && p.fechaVuelta !== null ? `${p.fechaIda}/${p.fechaVuelta}` : p.fechaIda;
-  return `https://${DOMINIO}/flights/${p.origenIata}-${p.destinoIata}/${fechas}?sort=bestflight_a`;
+  return `https://${sitio.dominio}/${sitio.segmento}/${p.origenIata}-${p.destinoIata}/${fechas}?sort=bestflight_a`;
 };
 
 // "12:45 pm" → "12:45" · "1:50 pm" → "13:50" · "12:10 am" → "00:10" · "23:55" → "23:55"

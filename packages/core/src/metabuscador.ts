@@ -6,7 +6,7 @@ import { Evidencia, EvidenciaParcial, FechaIso, HoraLocal, IataAeropuerto, Preci
 // Nunca se mezclan con `Cotizacion`; la regla 5 se relajó sólo para esta sección (DECISIONES, 6.0).
 // ---------------------------------------------------------------------------
 
-export const MetabuscadorRef = z.object({ id: z.enum(["kayak"]), nombre: z.string().min(1) });
+export const MetabuscadorRef = z.object({ id: z.enum(["kayak", "momondo", "trip", "google", "kiwi", "turismocity", "viajala"]), nombre: z.string().min(1) });
 
 export const TramoMetabuscador = z.object({
   origenIata: IataAeropuerto,

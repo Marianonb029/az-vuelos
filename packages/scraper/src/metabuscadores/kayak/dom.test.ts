@@ -63,6 +63,15 @@ describe("leerTarjetasKayak sobre HTML fijado de kayak.com", () => {
     expect(totalDe(foto.totalTexto, ofertas.length)).toBe(486);
   });
 
+  it("Momondo (misma plataforma): ASU→MAD 19/01/2027 se lee con el mismo lector", async () => {
+    const foto = await leer("momondo-ida-asu-mad.html");
+    const ofertas = parsearTarjetas(foto.tarjetas, "ida");
+    expect(ofertas.length).toBeGreaterThanOrEqual(5);
+    expect(ofertas.every((o) => o.tramos[0]?.origenIata === "ASU" && o.tramos[0]?.destinoIata === "MAD" && o.precio.monedaOriginal === "USD")).toBe(true);
+    expect(Math.min(...ofertas.map((o) => o.precio.montoUsd))).toBeLessThan(1000);
+    expect(ofertas.some((o) => o.transbordoPorCuentaPropia)).toBe(true);
+  });
+
   it("ida y vuelta EZE→MAD 25/01 – 07/02/2027: dos tramos por oferta", async () => {
     const foto = await leer("ida-y-vuelta-eze-mad.html");
     expect(foto.totalTexto).toBe("337 of 1768 flights");

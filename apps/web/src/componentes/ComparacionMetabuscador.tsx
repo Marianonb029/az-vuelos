@@ -107,28 +107,24 @@ const Lectura = ({ l, cotizaciones }: { l: LecturaMetabuscadorLeida; cotizacione
   );
 };
 
-// Sección separada "vía metabuscador": precios de terceros como referencia, nunca cotizaciones
-// verificadas. Se pide a demanda y se sondea cada 3 s hasta que la corrida termina.
-export const ComparacionMetabuscador = ({ busquedaId, metabuscadores, cotizaciones }: Props) => {
+// Una sección por metabuscador: precios de terceros como referencia, nunca cotizaciones verificadas.
+// Se pide a demanda y se sondea cada 3 s hasta que la corrida termina.
+const SeccionMetabuscador = ({ busquedaId, meta, cotizaciones }: { busquedaId: string; meta: MetabuscadorRef; cotizaciones: Cotizacion[] }) => {
   const [estado, setEstado] = useState<EstadoMetabuscador | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const meta = metabuscadores[0];
 
   // Al abrir una búsqueda se muestran las lecturas que ya tenga (valen 6 h); luego se sondea sólo mientras corre.
   useEffect(() => {
-    if (!meta) return;
     obtenerEstadoMetabuscador(busquedaId, meta.id).then(setEstado).catch(() => setEstado(null));
-  }, [busquedaId, meta]);
+  }, [busquedaId, meta.id]);
 
   useEffect(() => {
-    if (!meta || !estado?.enCurso) return;
+    if (!estado?.enCurso) return;
     const t = setInterval(() => {
       obtenerEstadoMetabuscador(busquedaId, meta.id).then(setEstado).catch((e: unknown) => setError(describirError(e)));
     }, SONDEO_MS);
     return () => clearInterval(t);
-  }, [busquedaId, meta, estado?.enCurso]);
-
-  if (!meta) return null;
+  }, [busquedaId, meta.id, estado?.enCurso]);
 
   const pedir = async () => {
     setError(null);
@@ -143,7 +139,7 @@ export const ComparacionMetabuscador = ({ busquedaId, metabuscadores, cotizacion
   const fallidas = estado?.lecturas.filter((l): l is Exclude<LecturaMetabuscador, LecturaMetabuscadorLeida> => !esLecturaLeida(l)) ?? [];
 
   return (
-    <section aria-label="Vía metabuscador" className="rounded-md border border-orange-200 bg-orange-50 p-3">
+    <section aria-label={`Vía metabuscador ${meta.nombre}`} className="rounded-md border border-orange-200 bg-orange-50 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-medium text-orange-900">Vía metabuscador: {meta.nombre} (referencia, no verificado en el sitio oficial)</h3>
         <button type="button" onClick={() => void pedir()} disabled={estado?.enCurso ?? false} className="rounded-md border border-orange-500 bg-white px-3 py-1 text-xs font-medium text-orange-900 hover:bg-orange-100 disabled:opacity-50">
@@ -176,9 +172,20 @@ export const ComparacionMetabuscador = ({ busquedaId, metabuscadores, cotizacion
           ))}
         </ul>
       )}
-      <p className="mt-2 text-xs text-orange-800">
-        Los precios del metabuscador vienen de terceros y pueden diferir del sitio oficial (tasas, equipaje, agencias). Se leen tal cual, en USD, con captura como evidencia.
-      </p>
     </section>
+  );
+};
+
+export const ComparacionMetabuscador = ({ busquedaId, metabuscadores, cotizaciones }: Props) => {
+  if (metabuscadores.length === 0) return null;
+  return (
+    <div className="grid gap-3">
+      {metabuscadores.map((meta) => (
+        <SeccionMetabuscador key={meta.id} busquedaId={busquedaId} meta={meta} cotizaciones={cotizaciones} />
+      ))}
+      <p className="text-xs text-orange-800">
+        Los precios de los metabuscadores vienen de terceros y pueden diferir del sitio oficial (tasas, equipaje, agencias). Se leen tal cual, en USD, con captura como evidencia.
+      </p>
+    </div>
   );
 };

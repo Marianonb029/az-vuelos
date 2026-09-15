@@ -44,6 +44,15 @@ describe("ComparacionMetabuscador", () => {
     expect(container.innerHTML).toBe("");
   });
 
+  it("una sección por metabuscador, cada una con su estado inicial", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(respuesta({ metabuscador: kayak, enCurso: false, lecturas: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<ComparacionMetabuscador busquedaId={busquedaId} metabuscadores={[kayak, { id: "trip", nombre: "Trip.com" }]} cotizaciones={[]} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Comparar con Trip.com" })).toBeTruthy());
+    expect(screen.getByRole("button", { name: "Comparar con Kayak" })).toBeTruthy();
+    expect(fetchMock).toHaveBeenCalledWith(`/api/busquedas/${busquedaId}/metabuscadores/trip`, undefined);
+  });
+
   it("pide la lectura, sondea hasta que termina y muestra ofertas con el delta contra el precio oficial", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const fetchMock = vi

@@ -11,7 +11,7 @@ pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquem
 - `apps/web` — React 18 + Vite + Tailwind v4
 - `apps/api` — Node 24 + Fastify 5, SQLite (better-sqlite3), migraciones SQL planas
 - `packages/core` — esquema Zod + lógica de dominio, sin I/O
-- `packages/scraper` — Playwright + un adaptador por aerolínea en `src/adapters/` (con lector propio) y el asistido genérico `src/adapters/generico/` para el resto del registro; metabuscadores (Kayak) en `src/metabuscadores/`, sección aparte
+- `packages/scraper` — Playwright + un adaptador por aerolínea en `src/adapters/` (con lector propio) y el asistido genérico `src/adapters/generico/` para el resto del registro; metabuscadores (Kayak, Momondo, Trip.com, Google Flights, Kiwi.com, Turismocity, Viajala) en `src/metabuscadores/`, sección aparte
 - `packages/espacio` — motor del espacio de búsqueda (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas, gaps, calendario, combinaciones. Sin I/O; la configuración vive en `config/espacio.json`
 - `config/espacio.json` — todos los números del SPEC del espacio de búsqueda
 - `data` — catálogos IATA y datasets del espacio de búsqueda (JSON generado por `pnpm catalogos`, no editar a mano)
@@ -36,7 +36,7 @@ Datos en tiempo de ejecución (ignorados por git): `apps/api/datos/` (SQLite, pe
 2. Toda cotización verificada lleva evidencia completa (URL, screenshot, timestamp, selector, texto crudo).
 3. USD siempre explícito y fechado: una llamada FX por búsqueda, tasa congelada, sin caché > 24 h ni tasas hardcodeadas.
 4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en `__fixtures__/`.
-5. El precio sale del sitio oficial de la aerolínea, no de agregadores ni OTAs. Excepción acordada: los metabuscadores (Kayak) se leen en una sección separada como referencia, nunca como cotización.
+5. El precio sale del sitio oficial de la aerolínea, no de agregadores ni OTAs. Excepción acordada: los metabuscadores (Kayak, Momondo, Trip.com, Google Flights, Kiwi.com, Turismocity, Viajala) se leen en una sección separada como referencia, nunca como cotización.
 
 ## Guardarraíles
 

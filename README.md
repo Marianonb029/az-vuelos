@@ -38,9 +38,9 @@ Origen, destino, fechas y equipaje → el sistema arma el espacio de búsqueda (
 
 Cualquier aerolínea del catálogo se puede buscar. Si no tiene adaptador, la búsqueda queda en `manual_pendiente`; si el adaptador fue bloqueado o falló, también se ofrece la carga manual. Una persona busca el precio en el sitio oficial y lo registra con **URL, captura de pantalla (PNG/JPEG), monto con moneda y hora**: sin los cuatro datos no se guarda nada. El monto se convierte a USD con la tasa del momento y la cotización queda como `verificado_manual`, siempre separada de las leídas por el scraper y con su evidencia enlazada. La lista "Pendientes de carga manual" (últimos 30 días) está debajo del estado de adaptadores.
 
-## Vía metabuscador (Kayak)
+## Vía metabuscadores (Kayak, Momondo, Trip.com, Google Flights, Kiwi.com, Turismocity, Viajala)
 
-Debajo de los resultados de una búsqueda, "Comparar con Kayak" lee kayak.com (USD) para cada fecha y muestra las primeras ofertas con aerolíneas, itinerario, transbordo por cuenta propia y captura como evidencia, más el delta contra el precio oficial de la misma fecha. Es **referencia de terceros, nunca una cotización verificada**: vive en su tabla y su sección propias. Kayak prohíbe `/flights/` en su robots.txt: la consulta queda registrada, y si aparece un captcha se le avisa a la persona. Skyscanner (PerimeterX), Momondo (redirige a Kayak) y Google Flights (sin precios por URL) se sondearon y quedaron afuera; ver `docs/DECISIONES.md`, Fase 6.8.
+Debajo de los resultados de una búsqueda hay una sección por metabuscador: cada una lee el sitio (siempre en USD, sin conversión propia) para cada fecha y muestra las primeras ofertas con aerolíneas, itinerario, transbordo por cuenta propia y captura como evidencia, más el delta contra el precio oficial de la misma fecha. Son **referencia de terceros, nunca una cotización verificada**: viven en su tabla y su sección propias. Varios prohíben la búsqueda en su robots.txt (Kayak, Momondo, Kiwi `/deep`, Turismocity): la consulta queda registrada; si aparece un captcha se le avisa a la persona; los banners de cookies se rechazan, nunca se aceptan. Skyscanner (PerimeterX), Wego (Cloudflare), Webjet (bloquea la búsqueda) y Omio (403) quedaron afuera; Hopper no tiene web. Ver `docs/DECISIONES.md`, Fases 6.8 y 7.3.
 
 ## Exportar una corrida del espacio de búsqueda
 

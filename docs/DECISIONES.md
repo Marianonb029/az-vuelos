@@ -250,6 +250,27 @@ Resultado del sondeo con sesión automatizada (sin evasión, regla del brief), p
 
 - Regla mantenida: ningún adaptador simula huellas, usa proxies ni resuelve desafíos. Lo que bloquea, bloquea; se documenta y se ofrece carga manual.
 
+## Fase 7.3 (15/09/2026) — más metabuscadores (lista por región del dueño)
+
+Pedido: Turismocity, Viajala, Kayak, Google Flights, Skyscanner, Momondo, Hopper, Omio, Kiwi.com, Trip.com, Wego y Webjet. Todos sondeados con sesión automatizada y sin evasión. Cada lector nuevo sigue el molde de Kayak: `dom.ts` (corre en el navegador), `logica.ts` (parseo puro, con test sobre HTML fijado en `__fixtures__/`), `index.ts` (navegación y evidencia). Todos se leen **en USD sin conversión propia** (`fx: null`), primeras 8 ofertas, captura como evidencia, y la UI arma una sección por metabuscador.
+
+| Metabuscador | Cómo se lee | Estado |
+|---|---|---|
+| Momondo | Mismo motor que Kayak (`momondo.com/flight-search/…`, DOM idéntico): variante del lector de Kayak (`SitioKayak`). robots Disallow, registrado. | **Leído en vivo** |
+| Trip.com | Deep link `showfarefirst?…&locale=en-XX&curr=USD`; `data-testid` estables (`u-flight-card-N`, `flight-time-AAAA-MM-DD HH:MM:SS`, `flight_price_*` con `data-price` que tiene que coincidir con el texto). Sólo ida. | **Leído en vivo** |
+| Google Flights | `travel/flights?q=Flights to MAD from ASU on 2027-01-19 one way&hl=en&curr=USD`: sí muestra precios si la consulta va en inglés y USD (la Fase 6.8 lo había descartado con otra URL). Se parsea el `aria-label` de cada fila ("From 987 US dollars. 1 stop flight with … Leaves … at 9:45 AM on Tuesday, January 19 and arrives …"), ruta y escalas del texto visible. Si aparece la pantalla de consentimiento no se acepta nada → `error_lectura`. Sólo ida. | **Leído en vivo** |
+| Kiwi.com | Enlace oficial `kiwi.com/deep?from=ASU&to=MAD&departure=…&currency=usd&sortBy=price` (redirige a `/en/search/results/<slug>/…`; los slugs son internos y no se derivan del catálogo). Modal de cookies: se hace clic en **"Reject all"**, nunca en aceptar. `data-test` estables (`ResultCardWrapper`, `TripTimestamp time[datetime]`, `StopCountBadge-N`, `ResultCardPrice`). Vende boletos separados ("Self-transfer") con garantía propia: se marca `transbordoPorCuentaPropia` y el recargo queda en etiquetas. Las escalas vienen por ciudad, no por IATA (quedan en etiquetas). robots Disallow `/deep`, registrado. | **Leído en vivo** |
+| Turismocity | Edición Paraguay (`turismocity.com.py`, USD). URL de resultados descubierta llenando el formulario: `/vuelos/resultados-a-<texto>-MAD?s=ASU-MAD.19-01-2027[.MAD-ASU.02-02-2027]&cabinClass=Economy`. Clases Vue estables (`.itinerary-wrapper`, `.segmentInfo`, `.tc-iata`, `.tc-hhmm` + `+1`, `.tc-stops-txt`, `.change-dialog` "Autotransbordo", logos `sa-XX`, `.flight-price h2`). La lista abre en "Recomendado": se hace clic en la pestaña "Más barato". Ida y vuelta soportado. robots Disallow `/vuelos/resultados*`, registrado. | **Leído en vivo** |
+| Viajala | `viajala.com.py` no resuelve y `.com.ar` muestra ARS; se usa la **edición Ecuador** (`viajala.com.ec`, país en USD). URL descubierta con el formulario: `/busqueda-vuelos/ASU-MAD/19-01-2027[/02-02-2027]`. Angular con clases estables (`app-serp-item .result-item`, `.segment`, `img.airline-logo[alt=IATA]`, `.airport` con title "Escala en …", `.currency` + `.price-value`, `.partner-label`). Los anuncios ("ver precio") se saltan. No marca boletos separados: no se infiere. Se hace clic en la tarjeta "Mejor precio". Los `mat-progress-bar` de los filtros no son "cargando" (primer intento en vivo se colgó 180 s por eso; corregido). | **Leído en vivo** |
+| Skyscanner | PerimeterX (Fase 6.8). | Bloqueado |
+| Wego | Cloudflare 403 a la sesión automatizada. | Bloqueado |
+| Webjet (AU) | Formulario de la portada funciona (react-select, `rdp-day_button[aria-label="Tue Jan 19 2027"]`, `[data-testid="search-flights"]`), pero la búsqueda va a `services.webjet.com.au/web/flights/redirect?…` que responde **"Sorry, your request has been blocked"**. Además sólo muestra AUD (haría falta conversión en la ruta de metabuscadores). | Bloqueado |
+| Omio | Trenes y buses además de vuelos; sus APIs internas responden 403 a la sesión automatizada. | Bloqueado |
+| Hopper | Sólo app móvil, no tiene búsqueda web. | No aplica |
+
+- Comprobado en vivo ASU→MAD 19/01/2027: Kiwi USD 772 (GOL+Iberia vía GIG y LIS, self-transfer), Momondo USD 707 (GOL+TAP vía GIG/LIS, boletos separados), Trip.com USD 708 (GOL+TAP), Turismocity USD 782 (G3+IB vía Kissandfly), Viajala USD 814 (G3+TP vía Kiwi), Google USD 987 (AR vía AEP/EZE con cambio de aeropuerto). Es exactamente el camino vía Lisboa que el dueño señaló como faltante en la Fase 6.10: ahora aparece en seis fuentes de referencia.
+- Regla mantenida: ninguna oferta de metabuscador es cotización; el precio válido sigue saliendo del sitio oficial.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

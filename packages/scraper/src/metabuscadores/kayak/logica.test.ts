@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aHora24, construirUrl, escalasKayak, parsearTarjetas, parsearTramo } from "./logica";
+import { MOMONDO, aHora24, construirUrl, escalasKayak, parsearTarjetas, parsearTramo } from "./logica";
 import type { TarjetaCruda } from "./dom";
 
 const tramo = { horas: "11:55 pm – 4:10 pm+1", desfase: "+1", aerolineas: "Iberia", escalas: "1 stop", viaTexto: "LIS 2h 05m layover, Lisbon Humberto Delgado", duracion: "14h 15m", aeropuertos: ["EZE", "MAD"] };
@@ -10,6 +10,7 @@ describe("Kayak — lógica", () => {
     const base = { origenIata: "EZE", destinoIata: "MAD", fechaIda: "2027-01-25", rutaScreenshot: "x.png", asistido: null };
     expect(construirUrl({ ...base, tipo: "ida", fechaVuelta: null })).toBe("https://www.kayak.com/flights/EZE-MAD/2027-01-25?sort=bestflight_a");
     expect(construirUrl({ ...base, tipo: "ida_y_vuelta", fechaVuelta: "2027-02-07" })).toBe("https://www.kayak.com/flights/EZE-MAD/2027-01-25/2027-02-07?sort=bestflight_a");
+    expect(construirUrl({ ...base, tipo: "ida", fechaVuelta: null }, MOMONDO)).toBe("https://www.momondo.com/flight-search/EZE-MAD/2027-01-25?sort=bestflight_a");
   });
 
   it("convierte horas am/pm y respeta las de 24 h", () => {
