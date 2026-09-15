@@ -1,11 +1,11 @@
 {
   "fase1": {
     "radioOrigenKm": 2000,
-    "radioDestinoKm": 800,
+    "radioDestinoKm": 2000,
     "tipoMinimo": "mediano",
     "requiereInternacional": true,
     "maxCandidatosOrigen": 12,
-    "maxCandidatosDestino": 40
+    "maxCandidatosDestino": 250
   },
   "fase2": {
     "niveles": {

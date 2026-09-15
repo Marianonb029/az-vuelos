@@ -192,6 +192,12 @@ El monto original también se redondea hacia arriba.
 - `ResultadosComparacion` gana `modo: "verificar"` (rutas y fechas distintas por fila) en lugar de un componente nuevo casi igual.
 - Comprobado en vivo: EZE→MAD ida 15/01/2027 → 120 combinaciones; verificadas AR (USD 1.870, ARS 2.823.080 a 0,0006621) y TK (pendiente de carga manual).
 
+## Corrección (15/09/2026) — radio de destino 2000 km
+
+- El dueño corrigió el radio de destino: **2000 km, igual que el de origen** (no 800). Con ese radio el tope de 40 destinos cortaba a 660 km de MAD y dejaba afuera CDG, LHR, FCO; se sube `maxCandidatosDestino` a **250**, que cubre el radio completo (el último candidato queda a 1.996 km).
+- Efecto en EZE→MAD ida 15/01/2027: 250 destinos, 50 rutas N1–2 (41 pares), **245 combinaciones** (EZE 92, SCL 57, MVD 33, POA 33, ASU 30): ahora sí dentro del rango 250–330 del proceso manual, y con una distribución por origen parecida. Queda resuelta la pendiente "radio o región" de 6.2.
+- Gap 1 de EZE pasa a TK, ET, LX, EK: BA ya no es gap porque EZE→LHR es una ruta Nivel 2 con LHR dentro del radio (el fixture lo documenta). Gap 2 se filtra a aerolíneas que conectan ≥ 3 destinos candidatos (`MIN_DESTINOS_FEEDER`): con 250 destinos aparecían Air China o Etihad por un solo tramo entre hubs europeos, que no son feeders.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

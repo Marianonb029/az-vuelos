@@ -8,7 +8,8 @@
     "combinaciones": { "min": 250, "max": 330, "manual": 290 },
     "combinacionesPorOrigen": { "EZE": 134, "SCL": 65, "COR": 28, "MVD": 28, "ASU": 26, "ROS": 9 },
     "niveles": { "EZE-MAD": 1, "EZE-MXP": 2, "EZE-AJA": "excluida" },
-    "gap1EZE": ["TK", "ET", "LX", "BA", "EK"],
+    "gap1EZE": ["TK", "ET", "LX", "EK"],
+    "notaGap1": "BA cubre EZE→LHR (Nivel 2) con LHR dentro del radio de destino de 2000 km: no es gap, es ruta",
     "gap2": ["VY"],
     "calendario": { "fechaPedida": "2027-01-15", "bandaEsperada": ["rojo", "amarillo"], "ventanaVerde": { "desde": "2027-02-15", "hasta": "2027-02-25" } }
   }

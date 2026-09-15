@@ -28,15 +28,16 @@ describe("Fase 1 — expandirAeropuertos (datasets reales)", () => {
     expect(r.candidatos.map((c) => c.posicion)).toEqual(r.candidatos.map((_, i) => i + 1));
   });
 
-  it("MAD como destino con radio 800 km trae alternativas españolas y portuguesas", () => {
+  it("MAD como destino con radio 2000 km trae la península, Francia, Italia, Reino Unido y Benelux", () => {
     const r = expandirAeropuertos("MAD", "destino", aeropuertos, grafo, cfg.fase1);
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     const iatas = r.candidatos.map((c) => c.aeropuerto.iata);
     expect(iatas[0]).toBe("MAD");
-    for (const esperado of ["BCN", "LIS", "VLC", "AGP", "SVQ", "BIO"]) expect(iatas).toContain(esperado);
-    expect(iatas).not.toContain("CDG");
+    for (const esperado of ["BCN", "LIS", "VLC", "AGP", "CDG", "LHR", "FCO", "MXP", "FRA", "AMS"]) expect(iatas).toContain(esperado);
+    expect(iatas).not.toContain("IST"); // 2.735 km
     expect(r.candidatos.length).toBeLessThanOrEqual(cfg.fase1.maxCandidatosDestino);
+    expect(r.candidatos.every((c) => c.distanciaKm <= cfg.fase1.radioDestinoKm)).toBe(true);
   });
 
   it("aeropuerto fuera del dataset: error explícito", () => {

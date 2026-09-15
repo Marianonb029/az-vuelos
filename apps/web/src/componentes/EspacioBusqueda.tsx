@@ -68,7 +68,7 @@ export const EspacioBusqueda = ({ aeropuertos, adaptadores, hoy, onVerificar }: 
         </button>
       </form>
       <p className="text-xs text-slate-500">
-        Aeropuertos alternativos (2000 km origen / 800 km destino), rutas directas y con 1 escala por nivel de frecuencia y gaps de aerolíneas. Sale de datasets
+        Aeropuertos alternativos (2000 km origen / 2000 km destino), rutas directas y con 1 escala por nivel de frecuencia y gaps de aerolíneas. Sale de datasets
         abiertos (OurAirports, OpenFlights 2014): son rutas posibles, no precios ni malla vigente.
       </p>
       {error && (

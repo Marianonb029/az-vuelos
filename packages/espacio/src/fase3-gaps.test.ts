@@ -74,11 +74,19 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
   });
 
   it("sin regla de hub, sólo entran aerolíneas con una conexión Nivel 3–4 en el dataset", () => {
-    const af = porIata.get("AF");
-    expect(af?.prioridad).toBe("media");
-    expect(af?.hub).toBe("CDG");
-    expect(af?.hipotesis).toContain("Nivel 3");
+    const av = porIata.get("AV");
+    expect(av?.prioridad).toBe("media");
+    expect(av?.hub).toBe("BOG");
+    expect(av?.hipotesis).toContain("Nivel 3");
+    expect(porIata.has("AF")).toBe(false); // con CDG como destino candidato, AF ya cubre una ruta Nivel 2: no es gap
     expect(porIata.has("4M")).toBe(false); // opera en EZE pero no llega a ningún destino candidato
+  });
+
+  it("los feeders de destino conectan varios destinos; una aerolínea de largo radio con un solo tramo europeo no cuenta", () => {
+    expect(porIata.get("FR")?.rol).toBe("feeder_destino");
+    expect(porIata.get("U2")?.rol).toBe("feeder_destino");
+    expect(porIata.has("CA")).toBe(false); // Air China: un tramo entre hubs europeos
+    expect(porIata.has("EY")).toBe(false);
   });
 
   it("Gap 2 contiene Vueling como feeder de destino, con boletos separados", () => {

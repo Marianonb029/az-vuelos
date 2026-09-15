@@ -98,6 +98,9 @@ const feederDestino = (aerolinea: string, desde: readonly string[], nombres: Ent
 });
 
 const PESO_PRIORIDAD = { alta: 0, condicional: 1, media: 2, baja: 3 } as const;
+// Un feeder de destino conecta varios destinos candidatos entre sí (Vueling, Ryanair); una aerolínea
+// de largo radio que toca un solo par europeo no lo es.
+const MIN_DESTINOS_FEEDER = 3;
 const PESO_ROL = { gap_origen: 0, feeder_destino: 1 } as const;
 
 // Fase 3: Gap 1 = aerolíneas alcanzables desde cada origen que no cubren ninguna ruta Nivel 1–2
@@ -130,17 +133,22 @@ export const analizarGaps = (entrada: EntradaFase3, grafo: Grafo, cfg: ConfigFas
   // Gap 2: operadoras de tramos entre aeropuertos alcanzados (destinos de rutas N1–2) y destinos candidatos.
   const alcanzados = [...new Set(conservadas.map((r) => r.destino))];
   const candidatos = new Set(destinos.map((d) => d.aeropuerto.iata));
-  const feeders = new Map<string, Set<string>>();
+  const feeders = new Map<string, { desde: Set<string>; destinos: Set<string> }>();
   for (const desde of alcanzados) {
     for (const arista of grafo.salidasDe(desde)) {
       if (!candidatos.has(arista.destino)) continue;
       for (const a of arista.aerolineasOperadoras) {
         if (setB.has(a) || enAlgunOrigen.has(a) || gaps.has(a)) continue;
-        feeders.set(a, (feeders.get(a) ?? new Set()).add(desde));
+        const f = feeders.get(a) ?? { desde: new Set<string>(), destinos: new Set<string>() };
+        f.desde.add(desde);
+        f.destinos.add(arista.destino);
+        feeders.set(a, f);
       }
     }
   }
-  for (const [aerolinea, desde] of feeders) gaps.set(aerolinea, feederDestino(aerolinea, [...desde].sort(), nombres));
+  for (const [aerolinea, f] of feeders) {
+    if (f.destinos.size >= MIN_DESTINOS_FEEDER) gaps.set(aerolinea, feederDestino(aerolinea, [...f.desde].sort(), nombres));
+  }
 
   return [...gaps.values()].sort(
     (a, b) => PESO_ROL[a.rol] - PESO_ROL[b.rol] || PESO_PRIORIDAD[a.prioridad] - PESO_PRIORIDAD[b.prioridad] || a.aerolinea.localeCompare(b.aerolinea),
