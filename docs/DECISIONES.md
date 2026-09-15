@@ -185,6 +185,13 @@ El monto original también se redondea hacia arriba.
 - Hojas: Resumen (parámetros, totales, fuentes, avisos), Aeropuertos, Rutas N1-N2 (incluye las N3–4 persistidas marcadas como no conservadas), Aerolíneas y Gaps, Calendario (relleno verde/amarillo/rojo por banda), Combinaciones (ordenadas por puntaje, con fundamento). Todo lo que hay en la planilla está también en el JSON: la planilla es formato, no datos nuevos.
 - Sin conversión de fechas a tipo fecha de Excel: se exportan como texto ISO para que no cambien con la zona horaria.
 
+## Fase 6.9 (15/09/2026) — búsqueda guiada (pestaña "Buscar")
+
+- Una sola pantalla para el proceso completo, ahora la pestaña por defecto: **Paso 1** origen, destino, ida (fecha o rango ≤ 30 días), vuelta opcional, equipaje → "Buscar opciones" arma en paralelo el espacio y las combinaciones. **Paso 2** tabla de combinaciones con casillas (preseleccionadas las 10 mejores con adaptador; atajos "todas con adaptador" / "ninguna"), cada una marcada como "lectura automática" o "carga manual". **Paso 3** "Verificar N en los sitios oficiales" crea una búsqueda por combinación (ventana de ida recortada a 30 días; vuelta sólo si es posterior a la ida) y muestra el progreso de todas con un canal SSE por búsqueda, la tabla consolidada de precios, las pendientes de carga manual con "Cargar precio" y la comparación vía Kayak por búsqueda (plegada).
+- Las pestañas anteriores siguen: "Precio de una aerolínea" (búsqueda directa) y "Espacio de búsqueda" (análisis con calendario y exportación).
+- `ResultadosComparacion` gana `modo: "verificar"` (rutas y fechas distintas por fila) en lugar de un componente nuevo casi igual.
+- Comprobado en vivo: EZE→MAD ida 15/01/2027 → 120 combinaciones; verificadas AR (USD 1.870, ARS 2.823.080 a 0,0006621) y TK (pendiente de carga manual).
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

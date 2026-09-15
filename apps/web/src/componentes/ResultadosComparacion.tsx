@@ -8,6 +8,8 @@ interface Props {
   cotizaciones: Cotizacion[];
   // Nombre por código IATA (viene del estado de adaptadores).
   nombres: ReadonlyMap<string, string>;
+  // "comparar": una búsqueda por aerolínea sobre la misma ruta. "verificar": rutas y fechas distintas (búsqueda guiada).
+  modo?: "comparar" | "verificar";
 }
 
 const enCurso = (b: Busqueda) => b.estado === "pendiente" || b.estado === "corriendo";
@@ -36,9 +38,10 @@ const etiquetaCombinacion = (fechaIda: string, fechaVuelta: string | null) =>
   fechaVuelta === null ? fechaCorta(fechaIda) : `${fechaCorta(fechaIda)} → ${fechaCorta(fechaVuelta)}`;
 
 // Una fila por aerolínea: estado, progreso propio, aviso del modo asistido y motivo de fallo o bloqueo.
-const EstadoAerolinea = ({ b, hechas, nombre }: { b: Busqueda; hechas: number; nombre: string }) => (
+const EstadoAerolinea = ({ b, hechas, nombre, detalle }: { b: Busqueda; hechas: number; nombre: string; detalle: string | null }) => (
   <li className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
     <span className="w-44 font-medium text-slate-800">{nombre}</span>
+    {detalle && <span className="text-slate-600">{detalle}</span>}
     <span className={`rounded px-2 py-0.5 text-xs ${COLOR_ESTADO[b.estado]}`}>{ETIQUETA_ESTADO[b.estado]}</span>
     {enCurso(b) && (
       <span className="text-slate-600">
@@ -50,7 +53,12 @@ const EstadoAerolinea = ({ b, hechas, nombre }: { b: Busqueda; hechas: number; n
   </li>
 );
 
-export const ResultadosComparacion = ({ busquedas, cotizaciones, nombres }: Props) => {
+const rangoDe = (b: Busqueda) => {
+  const ida = b.rangoIda.desde === b.rangoIda.hasta ? fechaCorta(b.rangoIda.desde) : `${fechaCorta(b.rangoIda.desde)} – ${fechaCorta(b.rangoIda.hasta)}`;
+  return b.rangoVuelta === null ? ida : `${ida} → ${fechaCorta(b.rangoVuelta.desde)}${b.rangoVuelta.desde === b.rangoVuelta.hasta ? "" : ` – ${fechaCorta(b.rangoVuelta.hasta)}`}`;
+};
+
+export const ResultadosComparacion = ({ busquedas, cotizaciones, nombres, modo = "comparar" }: Props) => {
   const verificadas = cotizaciones.filter(esVerificada);
   const manuales = cotizaciones.filter(esManual);
   const noVerificadas = cotizaciones.filter(esNoVerificada);
@@ -62,11 +70,17 @@ export const ResultadosComparacion = ({ busquedas, cotizaciones, nombres }: Prop
     <div className="grid gap-4">
       <section aria-label="Aerolíneas comparadas" role="status" className="rounded-md border border-sky-200 bg-sky-50 p-3">
         <p className="mb-2 text-sm font-medium text-sky-900">
-          {corriendo ? `Comparando ${busquedas.length} aerolíneas: ${cotizaciones.length} de ${total} fechas verificadas…` : `Comparación de ${busquedas.length} aerolíneas terminada`}
+          {modo === "comparar"
+            ? corriendo
+              ? `Comparando ${busquedas.length} aerolíneas: ${cotizaciones.length} de ${total} fechas verificadas…`
+              : `Comparación de ${busquedas.length} aerolíneas terminada`
+            : corriendo
+              ? `Verificando ${busquedas.length} combinaciones: ${cotizaciones.length} de ${total} fechas leídas…`
+              : `Verificación de ${busquedas.length} combinaciones terminada`}
         </p>
         <ul className="grid gap-1">
           {busquedas.map((b) => (
-            <EstadoAerolinea key={b.id} b={b} nombre={nombreDe(b)} hechas={cotizaciones.filter((c) => c.busquedaId === b.id).length} />
+            <EstadoAerolinea key={b.id} b={b} nombre={nombreDe(b)} detalle={modo === "verificar" ? `${b.origenIata} → ${b.destinoIata} · ${rangoDe(b)}` : null} hechas={cotizaciones.filter((c) => c.busquedaId === b.id).length} />
           ))}
         </ul>
       </section>

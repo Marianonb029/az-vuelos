@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MAX_DIAS_RANGO, sumarDias } from "@az/core";
 import type { Busqueda, Cotizacion, CotizacionManual, EnvioFormulario, EstadoAdaptador, Exploracion, MetabuscadorRef, ValoresFormulario } from "@az/core";
+import { BusquedaGuiada } from "./componentes/BusquedaGuiada";
 import type { VerificacionPedida } from "./componentes/Combinaciones";
 import { EspacioBusqueda } from "./componentes/EspacioBusqueda";
 import { EstadoAdaptadores } from "./componentes/EstadoAdaptadores";
@@ -22,10 +23,11 @@ type Vista =
 
 const terminada = (b: Busqueda) => b.estado !== "pendiente" && b.estado !== "corriendo";
 
-type Pestana = "precios" | "espacio";
+type Pestana = "buscar" | "precios" | "espacio";
 
 const PESTANAS: { id: Pestana; titulo: string }[] = [
-  { id: "precios", titulo: "Precios" },
+  { id: "buscar", titulo: "Buscar" },
+  { id: "precios", titulo: "Precio de una aerolínea" },
   { id: "espacio", titulo: "Espacio de búsqueda" },
 ];
 
@@ -37,7 +39,7 @@ export const App = () => {
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<Vista | null>(null);
   const [ultimoEnvio, setUltimoEnvio] = useState<EnvioFormulario | null>(null);
-  const [pestana, setPestana] = useState<Pestana>("precios");
+  const [pestana, setPestana] = useState<Pestana>("buscar");
   const [prellenado, setPrellenado] = useState<{ clave: number; valores: Partial<ValoresFormulario> } | null>(null);
 
   // Una combinación del espacio de búsqueda se verifica con la búsqueda de precios: ida sola, carry on,
@@ -137,6 +139,17 @@ export const App = () => {
           ))}
         </nav>
       </header>
+
+      <section aria-label="Búsqueda guiada" hidden={pestana !== "buscar"}>
+        <BusquedaGuiada
+          aeropuertos={aeropuertos}
+          adaptadores={iatasConAdaptador}
+          nombres={new Map(aerolineas.map((a) => [a.iata, a.nombre]))}
+          metabuscadores={metabuscadores}
+          hoy={hoyIso()}
+          onAbrirBusqueda={(b) => void abrirPendiente(b)}
+        />
+      </section>
 
       {pestana === "espacio" && (
         <section aria-label="Espacio de búsqueda">
