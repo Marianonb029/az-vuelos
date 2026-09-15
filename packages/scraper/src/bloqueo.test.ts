@@ -34,6 +34,15 @@ describe("detectarBloqueo", () => {
     expect((await detectarBloqueo(page, null))?.tipo).toBe("challenge");
     await page.setContent("<html><body><h1>Access Denied</h1><p>You don't have permission to access this page.</p></body></html>");
     expect((await detectarBloqueo(page, null))?.tipo).toBe("acceso_denegado");
+    // Copa: desafío de deslizar (visto en el sondeo de la Fase 7.1)
+    await page.setContent("<html><body><h1>Verificación requerida</h1><p>Para proteger tu información y evitar accesos automatizados, necesitamos que completes la siguiente verificación.</p><p>Desliza hacia la derecha para asegurar tu acceso</p></body></html>");
+    expect((await detectarBloqueo(page, null))?.tipo).toBe("challenge");
+    // Avianca: Imperva
+    await page.setContent("<html><body><h1>Acceso denegado</h1><p>La solicitud ha sido bloqueada por las reglas de seguridad (código de error 15)</p></body></html>");
+    expect((await detectarBloqueo(page, null))?.tipo).toBe("acceso_denegado");
+    // El marco invisible de reCAPTCHA no es un captcha
+    await page.setContent('<html><body><iframe src="https://www.google.com/recaptcha/api2/aframe"></iframe><p>Vuelos USD 120</p></body></html>');
+    expect(await detectarBloqueo(page, null)).toBeNull();
   });
 
   it("HTTP 403/429 de la navegación principal", async () => {

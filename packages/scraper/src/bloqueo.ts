@@ -20,7 +20,8 @@ const inspeccionar = (): { tipo: "captcha" | "challenge" | "acceso_denegado"; de
   if (captcha) return { tipo: "captcha", detalle: `Elemento ${captcha.tagName.toLowerCase()}${captcha.id ? "#" + captcha.id : ""}` };
   const titulo = document.title;
   const cuerpo = document.body?.innerText ?? "";
-  if (/Just a moment|Verifying you are human|Checking your browser|Un momento|Pardon Our Interruption/i.test(titulo + " " + cuerpo.slice(0, 2000))) {
+  // Cloudflare, PerimeterX y el desafío de deslizar de Copa ("Verificación requerida … accesos automatizados").
+  if (/Just a moment|Verifying you are human|Checking your browser|Un momento|Pardon Our Interruption|Verificación requerida|accesos automatizados|Desliza hacia la derecha/i.test(titulo + " " + cuerpo.slice(0, 2000))) {
     return { tipo: "challenge", detalle: `Título "${titulo}"` };
   }
   if (cuerpo.length < 4000 && /Access Denied|Acceso denegado|Request blocked|has been blocked|ha sido bloqueado|Forbidden/i.test(cuerpo)) {

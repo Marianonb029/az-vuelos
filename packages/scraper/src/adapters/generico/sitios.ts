@@ -22,8 +22,10 @@ export const SITIOS: readonly SitioAerolinea[] = [
   { iata: "5U", nombre: "TAG Airlines", dominio: "www.tag.com.gt", busqueda: null },
   // América del Sur
   { iata: "LA", nombre: "LATAM Airlines", dominio: "www.latamairlines.com", busqueda: null }, // el deep link /py/es/oferta-vuelos respondió 404 al sondearlo
-  { iata: "AV", nombre: "Avianca", dominio: "www.avianca.com", busqueda: null },
-  { iata: "G3", nombre: "GOL Linhas Aéreas", dominio: "www.voegol.com.br", busqueda: null },
+  // Deep link real del buscador (sondeado el 15/09/2026); booking.avianca.com responde 403 de Imperva a sesiones automatizadas.
+  { iata: "AV", nombre: "Avianca", dominio: "www.avianca.com", busqueda: "https://booking.avianca.com/av/booking/avail?departureDate={fechaIda}&tripType=one-way&platform=WEBB2C&from={origen}&to={destino}&nbAdults=1&nbYoungs=0&nbChildren=0&nbInfants=0&language=ES&pointOfSale=CO" },
+  // Deep link real (sondeado el 15/09/2026); su API bff-flight.voegol.com.br responde 406 a sesiones automatizadas, incluso llenando el formulario.
+  { iata: "G3", nombre: "GOL Linhas Aéreas", dominio: "www.voegol.com.br", busqueda: "https://b2c.voegol.com.br/compra/busca-parceiros?tipo=DF&de={origen}&para={destino}&ida={fechaIdaDMY}&ADT=1&CHD=0&INF=0&pv=&ac=&cc=&pais=BR&lang=pt" },
   { iata: "H2", nombre: "Sky Airline", dominio: "www.skyairline.com", busqueda: null },
   // Europa
   { iata: "LH", nombre: "Lufthansa", dominio: "www.lufthansa.com", busqueda: null },

@@ -10,11 +10,14 @@ import type { SitioAerolinea } from "./sitios";
 
 const fechaCorta = (iso: string) => iso.split("-").reverse().join("/");
 
+const aDMY = (iso: string) => iso.split("-").reverse().join("-"); // 2027-01-19 → 19-01-2027
+
 export const construirUrl = (sitio: SitioAerolinea, p: ParamsBusqueda): string => {
   if (sitio.busqueda === null) return `https://${sitio.dominio}/`;
   return sitio.busqueda
     .replace("{origen}", p.origenIata)
     .replace("{destino}", p.destinoIata)
+    .replace("{fechaIdaDMY}", aDMY(p.fechaIda))
     .replace("{fechaIda}", p.fechaIda)
     .replace("{fechaVuelta}", p.fechaVuelta ?? "");
 };

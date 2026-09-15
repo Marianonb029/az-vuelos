@@ -236,6 +236,20 @@ El monto original también se redondea hacia arriba.
 - Verificado en vivo: GRU→LIS 19/01/2027 con bodega = **EUR 966,70 (USD 1.116,68)**, TP4076 + TP0058 vía BSB, 09:05 → 06:40+1; la Basic directa (TP0084) costaba 989,50. Fixture real en `__fixtures__/vuelos-gru-lis.html` (primera tarjeta expandida) y `detalles-gru-lis.html`.
 - Incidente de infraestructura: `tsx watch` reiniciaba la API antes de que el proceso viejo soltara el puerto (EADDRINUSE) y quedaba corriendo código viejo. Ante cambios en el scraper conviene reiniciar `pnpm dev` a mano.
 
+## Fase 7.2 (15/09/2026) — sondeo de GOL, LATAM, Air Europa, Copa y Avianca
+
+Resultado del sondeo con sesión automatizada (sin evasión, regla del brief), pedido por el dueño para lectores propios:
+
+| Aerolínea | Qué pasó | Decisión |
+|---|---|---|
+| GOL (G3) | Deep link `b2c.voegol.com.br/compra/busca-parceiros?…` llega a "selecao-de-voo2/ida", pero la API `bff-flight.voegol.com.br/flights/search` responde **406** a la sesión automatizada; llenando el formulario de la portada (autocompletar `#input-saindo-de`/`#input-indo-para`, calendario en shadow DOM) pasa lo mismo. | Sin lector. Queda en asistido genérico con el deep link real; si la API también rechaza al humano en ese Chrome, carga manual desde su navegador. |
+| LATAM (LA) | `/py/es/ofertas-vuelos?…` existe pero termina en `error/tiempo-resultados-busqueda` con un captcha propio (`web-air-offers-captcha`). | Sin lector. Asistido genérico. |
+| Copa (CM) | Portada con "Verificación requerida … accesos automatizados", desafío de deslizar. `detectarBloqueo` ahora lo reconoce como `challenge` (modo asistido: la persona desliza). | Sin lector por ahora; asistido. |
+| Avianca (AV) | Formulario de la portada funciona (`#Origen-input`, `#Destino-input`, celdas `data-date`) y lleva a `booking.avianca.com/av/booking/avail?…`, que responde **403 de Imperva** ("Acceso denegado, código 15"). Deep link registrado en el genérico. | Sin lector. Asistido genérico; probablemente también bloquee al humano en el Chrome automatizado. |
+| Air Europa (UX) | No bloquea. Formulario Angular Material (`#flight-searcher-departure`, `#flight-searcher-arrival`, fecha `#mat-input-1`), banner de cookies `#ensRejectAll` y selector de país que recarga la página. No se llegó a resultados en el tiempo dedicado. | **Siguiente lector propio a construir**; nada lo impide. |
+
+- Regla mantenida: ningún adaptador simula huellas, usa proxies ni resuelve desafíos. Lo que bloquea, bloquea; se documenta y se ofrece carga manual.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

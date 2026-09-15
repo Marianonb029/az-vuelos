@@ -36,6 +36,8 @@ describe("adaptador asistido genérico", () => {
     expect(construirUrl(tap, params("x.png"))).toBe("https://www.flytap.com/");
     const conDeepLink = { ...tap, busqueda: "https://x.test/buscar?o={origen}&d={destino}&f={fechaIda}&v={fechaVuelta}" };
     expect(construirUrl(conDeepLink, params("x.png"))).toBe("https://x.test/buscar?o=GRU&d=LIS&f=2027-01-19&v=");
+    const gol = SITIOS.find((s) => s.iata === "G3");
+    expect(gol && construirUrl(gol, params("x.png"))).toContain("de=GRU&para=LIS&ida=19-01-2027");
     expect(instruccion(tap, params("x.png"))).toBe("TAP Air Portugal: buscá en la ventana de Chrome GRU → LIS, ida el 19/01/2027 (solo ida), 1 adulto. Cuando veas los precios, la app guarda la captura y te pide el monto.");
   });
 
