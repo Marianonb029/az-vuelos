@@ -121,7 +121,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(separada?.tramos).toHaveLength(2);
     expect(separada?.desvioPct).toBeGreaterThan(0);
     expect(separada?.desglose.factorEscalas).toBe(1.05);
-    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, calculadoEn: new Date().toISOString(), rutas, nombres: [], avisos: [] })).not.toThrow();
+    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
   });
 
   it("a igual distancia, más competencia y menos presión bajan el índice", () => {

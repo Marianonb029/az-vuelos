@@ -156,7 +156,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     const mencionadas = new Set(lista.flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? []), ...r.tramos.flatMap((t) => t.aerolineas)]));
     return {
       ok: true,
-      resultado: { origen, destino, fechaIda, fechaVuelta, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), avisos: [...avisos, ...vencidas, ...fueraDeVentana] },
+      resultado: { origen, destino, fechaIda, fechaVuelta, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, avisos: [...avisos, ...vencidas, ...fueraDeVentana] },
     };
   };
 

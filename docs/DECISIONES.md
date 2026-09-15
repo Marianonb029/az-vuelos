@@ -292,7 +292,7 @@ Pedido del dueño: reemplazar las rutas de OpenFlights (2014) probando OurAirpor
 - **Motor**: `RutaCompacta` admite un sexto valor (números de vuelo); el grafo lo suma como `registros`, así que la frecuencia proxy pasa de "1 registro por aerolínea-ruta" a "números de vuelo × 7". Con eso Nivel 1 ya distingue rutas de verdad frecuentes (TAP LIS→MAD: 38 números). `config.grafo.equivalencias` pliega filiales al código que vende el boleto (LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA, JetSMART Argentina → JA) y `aerolineasExcluidas` suma cargueras (VRS trae sus vuelos). Fase 1 exige `minSalidasSemanales` (21) a los alternativos: con datos reales cualquier aeródromo tiene un vuelo internacional y desplazaba a ASU/SCL del tope; el tope de orígenes sube a 15.
 - **Boletos separados**: un boleto único de la misma aerolínea sólo anula el separado si esa conexión es Nivel 1–2. Con rutas reales LATAM vende ASU→GRU→LIS pero en Nivel 3; el separado GOL/Paranair + TAP vía GRU (y vía GIG) vuelve a aparecer, que es la oferta real de Kiwi/Momondo.
 - **Calibración nueva** (tests con datos reales): EZE→Europa pasa de ~25 a ~170 rutas Nivel 1–2 (más aerolíneas y más conexiones vigentes); el seed acepta 100–250.
-- **Ruido conocido**: quedan tramos intraeuropeos sueltos de aerolíneas de largo radio (Air China ALC→NCL con 2 callsigns, Etihad AMS→MXP) y números de vuelo discontinuados (Plus Ultra MAD→EZE). Sin fecha de última observación no se puede podar más; el puntaje no es precio y todo se verifica antes de comprar.
+- **Ruido conocido**: quedan tramos intraeuropeos sueltos de aerolíneas de largo radio (Air China ALC→NCL con 2 callsigns, Etihad AMS→MXP) y posibles números de vuelo discontinuados. Sin fecha de última observación no se puede podar más; el puntaje no es precio y todo se verifica antes de comprar.
 
 ## Fase 9.1 (15/09/2026) — CAMBIO DE PRODUCTO: rutas priorizadas por costo estimado, sin leer precios
 
@@ -345,6 +345,22 @@ Aprobado por el dueño ("avanza así") tras la propuesta de la 9.2.
 ## Ajuste (15/09/2026) — competencia total y aerolíneas por tramo
 
 El dueño pidió el total de aerolíneas que operan cada ruta, no sólo la del tramo más cerrado. `RutaPriorizada` suma `competenciaTotal` (aerolíneas distintas en algún tramo); la columna Competencia muestra ese total, debajo "tramo más cerrado: N" (que es lo que pesa en el índice, porque el tramo con menos oferta marca el precio) y la marca low cost. La columna de aerolíneas ahora lista los operadores de cada tramo, con las que venden el boleto en negrita. Nota operativa: Vite cachea los paquetes del workspace; tras cambiar un esquema Zod de `@az/espacio` hay que borrar `apps/web/node_modules/.vite` y reiniciar la web, o los campos nuevos se pierden en el `parse` (Zod descarta claves desconocidas).
+
+## Ajuste (15/09/2026) — marca "lc" por aerolínea y corroboración de la competencia contra Kiwi.com
+
+- La lista de aerolíneas por tramo marca con `lc` las de perfil bajo costo (`fase6.aerolineasPerfilBajoCosto`); `ResultadoRutas.aerolineasBajoCosto` lleva esa lista a la UI.
+- **Corroboración pedida por el dueño** ("¿hay más aerolíneas en cada ruta?"): se abrió Kiwi.com para el 25/02/2027 con el filtro "Direct" y se leyeron las operadoras de las tarjetas, contra el dataset VRS con equivalencias:
+
+| Tramo | Dataset (VRS) | Kiwi.com directos | Diferencia |
+|---|---|---|---|
+| ASU→MAD | UX | Air Europa | ninguna |
+| ASU→GRU | G3, LA, ZP | GOL, LATAM | Paranair (ZP) no aparece en Kiwi ese día; vuela la ruta |
+| GRU→MAD | CA, IB, LA, UX | Air China, Air Europa, Iberia | LATAM no aparece en Kiwi ese día; vuela la ruta |
+| GRU→LIS | LA, TP | TAP, LATAM | ninguna |
+| EZE→MAD | AR, IB, PU, UX | Plus Ultra, Aerolíneas Argentinas, Air Europa, Iberia | ninguna — Plus Ultra sí opera EZE→MAD (se corrige la duda de la Fase 7.4) |
+
+  Conclusión: en los cinco tramos el dataset no tiene aerolíneas de menos; en dos tiene una de más que Kiwi no vendía ese día concreto (no es que no exista la ruta). No se agregan overrides manuales.
+- La lista "Carriers" del filtro de Kiwi es global (todas las aerolíneas que Kiwi conoce), no sirve para contar competencia; sólo valen los logos de las tarjetas con el filtro de directos.
 
 ## Conversión a USD
 

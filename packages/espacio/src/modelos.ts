@@ -183,6 +183,7 @@ export const ResultadoRutas = z.object({
   calculadoEn: z.iso.datetime(),
   rutas: z.array(RutaPriorizada),
   nombres: z.array(NombreAerolinea),
+  aerolineasBajoCosto: z.array(IataAerolinea), // perfil bajo costo según config (para marcar cada código en la UI)
   avisos: z.array(z.string()),
 });
 

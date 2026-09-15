@@ -30,7 +30,7 @@ const Presion = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
 const rutaTexto = (r: RutaPriorizada) => (r.via === null ? `${r.origen} → ${r.destino}` : `${r.origen} → ${r.via} → ${r.destino}`);
 
 // Una fila por ruta: km, competencia, presión, índice; desplegable con fundamento, tramos y enlaces.
-const Fila = ({ r, nombres }: { r: RutaPriorizada; nombres: ReadonlyMap<string, string> }) => {
+const Fila = ({ r, nombres, bajoCosto }: { r: RutaPriorizada; nombres: ReadonlyMap<string, string>; bajoCosto: ReadonlySet<string> }) => {
   const [abierta, setAbierta] = useState(false);
   const nombre = (iata: string) => nombres.get(iata) ?? iata;
   return (
@@ -57,8 +57,9 @@ const Fila = ({ r, nombres }: { r: RutaPriorizada; nombres: ReadonlyMap<string, 
               {t.aerolineas.length === 0
                 ? "sin datos"
                 : t.aerolineas.map((a, i) => (
-                    <span key={a} title={nombre(a)} className={r.aerolineas.includes(a) || (r.tramoPrevio?.aerolineas ?? []).includes(a) ? "font-semibold text-slate-900" : ""}>
+                    <span key={a} title={`${nombre(a)}${bajoCosto.has(a) ? " · bajo costo" : " · tradicional"}`} className={r.aerolineas.includes(a) || (r.tramoPrevio?.aerolineas ?? []).includes(a) ? "font-semibold text-slate-900" : ""}>
                       {a}
+                      {bajoCosto.has(a) && <span className="ml-0.5 rounded bg-sky-100 px-0.5 text-[9px] uppercase text-sky-800">lc</span>}
                       {i < t.aerolineas.length - 1 ? ", " : ""}
                     </span>
                   ))}
@@ -155,6 +156,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
   };
 
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
+  const bajoCosto = new Set(resultado?.aerolineasBajoCosto ?? []);
 
   // El detalle del espacio de búsqueda (alternativos, rutas, separados, gaps) se pide sólo si se abre.
   const abrirEspacio = async (e: { currentTarget: HTMLDetailsElement }) => {
@@ -221,7 +223,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                   <th className="py-1 pr-3">Ruta</th>
                   <th className="py-1 pr-3">km volados</th>
                   <th className="py-1 pr-3">Competencia</th>
-                  <th className="py-1 pr-3">Aerolíneas que operan cada tramo</th>
+                  <th className="py-1 pr-3">Aerolíneas que operan cada tramo (lc = bajo costo)</th>
                   <th className="py-1 pr-3">Presión</th>
                   <th className="py-1 pr-3">Índice</th>
                   <th className="py-1" />
@@ -229,7 +231,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
               </thead>
               <tbody>
                 {resultado.rutas.map((r) => (
-                  <Fila key={`${r.posicion}`} r={r} nombres={nombres} />
+                  <Fila key={`${r.posicion}`} r={r} nombres={nombres} bajoCosto={bajoCosto} />
                 ))}
               </tbody>
             </table>
