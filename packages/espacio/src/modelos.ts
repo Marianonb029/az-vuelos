@@ -150,8 +150,17 @@ export const ResultadoCombinaciones = z.object({
   avisos: z.array(z.string()),
 });
 
+// Corrida completa (entregable del SPEC, sección 8): lo que exportan result.json y combinations.xlsx.
+export const CorridaEspacio = z.object({
+  calculadoEn: z.iso.datetime(),
+  espacio: ResultadoEspacio,
+  calendario: ResultadoCalendario, // del origen pedido
+  combinaciones: ResultadoCombinaciones,
+});
+
 export type AeropuertoGeo = z.infer<typeof AeropuertoGeo>;
 export type ResultadoEspacio = z.infer<typeof ResultadoEspacio>;
+export type CorridaEspacio = z.infer<typeof CorridaEspacio>;
 export type ResultadoCalendario = z.infer<typeof ResultadoCalendario>;
 export type ResultadoCombinaciones = z.infer<typeof ResultadoCombinaciones>;
 export type RutaCompacta = z.infer<typeof RutaCompacta>;

@@ -2,7 +2,8 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
+import ExcelJS from "exceljs";
+import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
 import { crearApp } from "../app";
 import { config } from "../config";
 import { abrirDb } from "../db/conexion";
@@ -52,6 +53,48 @@ describe("GET /espacio/combinaciones", () => {
     expect(r.combinaciones.some((c) => c.ventanaIda.desde === "2027-01-15" && c.aerolinea === "AR")).toBe(true); // la fecha pedida no se reemplaza
     expect(r.combinaciones.some((c) => c.aerolinea === "TK" && c.confianza === "baja")).toBe(true);
     expect(r.nombres.some((n) => n.iata === "TK")).toBe(true);
+  });
+});
+
+describe("GET /espacio/exportar", () => {
+  it("devuelve la corrida completa como JSON descargable", async () => {
+    const res = await app.inject({ method: "GET", url: "/espacio/exportar?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15" });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-disposition"]).toBe('attachment; filename="az-EZE-MAD-2027-01-15.json"');
+    const c = CorridaEspacio.parse(res.json());
+    expect(c.espacio.origen).toBe("EZE");
+    expect(c.calendario.puntajes).toHaveLength(29);
+    expect(c.combinaciones.combinaciones.length).toBeGreaterThan(50);
+  });
+
+  it("devuelve combinations.xlsx con una hoja por fase y el calendario coloreado", async () => {
+    const res = await app.inject({ method: "GET", url: "/espacio/exportar?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15&formato=xlsx" });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toContain("spreadsheetml");
+    expect(res.headers["content-disposition"]).toContain(".xlsx");
+    const libro = new ExcelJS.Workbook();
+    await libro.xlsx.load(res.rawPayload as unknown as ExcelJS.Buffer);
+    expect(libro.worksheets.map((h) => h.name)).toEqual(["Resumen", "Aeropuertos", "Rutas N1-N2", "Aerolíneas y Gaps", "Calendario", "Combinaciones"]);
+    // Las claves de columna no viajan en el archivo: se ubica cada columna por su encabezado.
+    const celda = (hoja: ExcelJS.Worksheet | undefined, fila: number, encabezado: string) => {
+      const indice = (hoja?.getRow(1).values as unknown[]).indexOf(encabezado);
+      return hoja?.getRow(fila).getCell(indice);
+    };
+    const resumen = libro.getWorksheet("Resumen");
+    expect(resumen?.getCell("A2").value).toBe("Origen pedido");
+    expect(resumen?.getCell("B2").value).toBe("EZE");
+    const rutas = libro.getWorksheet("Rutas N1-N2");
+    expect(celda(rutas, 2, "Origen")?.value).toBe("EZE");
+    expect(celda(rutas, 2, "Destino")?.value).toBe("MAD");
+    expect(celda(rutas, 2, "Nivel")?.value).toBe(1);
+    const calendario = libro.getWorksheet("Calendario");
+    const fila15 = [...Array(calendario?.rowCount ?? 0).keys()].map((i) => i + 1).find((i) => celda(calendario, i, "Fecha")?.value === "2027-01-15");
+    expect(fila15).toBeDefined();
+    expect(celda(calendario, fila15 ?? 0, "Banda")?.value).toBe("amarillo");
+    expect((celda(calendario, fila15 ?? 0, "Banda")?.fill as { fgColor?: { argb?: string } } | undefined)?.fgColor?.argb).toBe("FFFFEB9C");
+    const combinaciones = libro.getWorksheet("Combinaciones");
+    expect(combinaciones?.rowCount).toBeGreaterThan(50);
+    expect(celda(combinaciones, 2, "Puntaje")?.value).toBeGreaterThanOrEqual(celda(combinaciones, 3, "Puntaje")?.value as number);
   });
 });
 

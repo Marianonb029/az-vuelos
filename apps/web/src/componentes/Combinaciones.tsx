@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
 import type { Combinacion, ResultadoCombinaciones } from "@az/espacio";
-import { obtenerCombinaciones } from "../lib/api";
+import { obtenerCombinaciones, urlExportarEspacio } from "../lib/api";
 
 export interface VerificacionPedida {
   aerolineaIata: string;
@@ -119,6 +119,15 @@ export const Combinaciones = ({ origen, destino, hoy, adaptadores, onVerificar }
           <p className="text-sm text-slate-600" data-testid="resumen-combinaciones">
             {resultado.combinaciones.length} combinaciones · ventanas verdes buscadas entre {fechaCorta(resultado.calendario.desde)} y {fechaCorta(resultado.calendario.hasta)} ·{" "}
             {[...porOrigen].map(([o, cs]) => `${o} ${cs.length}`).join(" · ")}
+          </p>
+          <p className="flex flex-wrap gap-3 text-sm">
+            <span className="text-slate-600">Exportar la corrida completa (aeropuertos, rutas, gaps, calendario, combinaciones):</span>
+            <a href={urlExportarEspacio(origen, destino, resultado.ventanaPedida.desde, resultado.ventanaPedida.hasta, "xlsx")} className="text-sky-700 underline">
+              combinations.xlsx
+            </a>
+            <a href={urlExportarEspacio(origen, destino, resultado.ventanaPedida.desde, resultado.ventanaPedida.hasta, "json")} className="text-sky-700 underline">
+              result.json
+            </a>
           </p>
           {[...porOrigen].map(([o, cs]) => (
             <div key={o} className="overflow-x-auto">

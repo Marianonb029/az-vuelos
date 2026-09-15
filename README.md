@@ -35,6 +35,10 @@ Cualquier aerolínea del catálogo se puede buscar. Si no tiene adaptador, la b�
 
 Debajo de los resultados de una búsqueda, "Comparar con Kayak" lee kayak.com (USD) para cada fecha y muestra las primeras ofertas con aerolíneas, itinerario, transbordo por cuenta propia y captura como evidencia, más el delta contra el precio oficial de la misma fecha. Es **referencia de terceros, nunca una cotización verificada**: vive en su tabla y su sección propias. Kayak prohíbe `/flights/` en su robots.txt: la consulta queda registrada, y si aparece un captcha se le avisa a la persona. Skyscanner (PerimeterX), Momondo (redirige a Kayak) y Google Flights (sin precios por URL) se sondearon y quedaron afuera; ver `docs/DECISIONES.md`, Fase 6.8.
 
+## Exportar una corrida del espacio de búsqueda
+
+En la pestaña Espacio de búsqueda, después de generar combinaciones: `combinations.xlsx` (una hoja por fase, calendario coloreado) y `result.json` (la misma corrida completa). También por API: `GET /espacio/exportar?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15&formato=xlsx`.
+
 ## Requisitos
 
 Node ≥ 22, pnpm ≥ 10 y **Google Chrome instalado** (el scraper y los tests de adaptadores usan `channel: "chrome"`).

@@ -54,6 +54,8 @@ describe("Combinaciones", () => {
     expect(fetchMock).toHaveBeenCalledWith("/api/espacio/combinaciones?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15", undefined);
     expect(screen.getByTestId("resumen-combinaciones").textContent).toContain("4 combinaciones · ventanas verdes buscadas entre 01/01/2027 y 29/01/2027 · EZE 3 · MVD 1");
     expect(screen.getByText("Desde EZE (3)")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "combinations.xlsx" }).getAttribute("href")).toBe("/api/espacio/exportar?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15&formato=xlsx");
+    expect(screen.getByRole("link", { name: "result.json" }).getAttribute("href")).toContain("formato=json");
     expect(screen.getByText("Desde MVD (1)")).toBeTruthy();
     expect(screen.getByText("25/01/2027 – 28/01/2027")).toBeTruthy();
     expect(screen.getByText("vía IST · hipótesis de gap")).toBeTruthy();

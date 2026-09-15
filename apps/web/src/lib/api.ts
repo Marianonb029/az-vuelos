@@ -55,4 +55,8 @@ export const obtenerCalendario = (origen: string, destino: string, desde: string
 export const obtenerCombinaciones = (origen: string, destino: string, desde: string, hasta: string) =>
   pedir(ResultadoCombinaciones, `/espacio/combinaciones?origen=${origen}&destino=${destino}&desde=${desde}&hasta=${hasta}`);
 
+// Descarga de la corrida completa del espacio de búsqueda (result.json / combinations.xlsx del SPEC).
+export const urlExportarEspacio = (origen: string, destino: string, desde: string, hasta: string, formato: "json" | "xlsx") =>
+  `${BASE}/espacio/exportar?origen=${origen}&destino=${destino}&desde=${desde}&hasta=${hasta}&formato=${formato}`;
+
 export const urlEvidencia = (screenshotPath: string) => `${BASE}/evidencia/${screenshotPath}`;

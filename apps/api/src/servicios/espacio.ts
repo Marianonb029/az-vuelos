@@ -14,11 +14,12 @@ import {
   generarRutas,
   ventanasVerdes,
 } from "@az/espacio";
-import type { Feriado, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, Ventana } from "@az/espacio";
+import type { CorridaEspacio, Feriado, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, Ventana } from "@az/espacio";
 
 export type ResultadoServicioEspacio = { ok: true; resultado: ResultadoEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioCalendario = { ok: true; resultado: ResultadoCalendario } | { ok: false; motivo: string };
 export type ResultadoServicioCombinaciones = { ok: true; resultado: ResultadoCombinaciones } | { ok: false; motivo: string };
+export type ResultadoServicioCorrida = { ok: true; resultado: CorridaEspacio } | { ok: false; motivo: string };
 
 export interface ServicioEspacio {
   explorar: (origen: string, destino: string) => ResultadoServicioEspacio;
@@ -27,6 +28,8 @@ export interface ServicioEspacio {
   // Países de todos los orígenes candidatos más el destino: las combinaciones puntúan cada origen con su propio calendario.
   paisesDelEspacio: (origen: string, destino: string) => string[] | null;
   combinaciones: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCombinaciones;
+  // Todo junto, para exportar: espacio + calendario del origen pedido + combinaciones.
+  corrida: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCorrida;
 }
 
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
@@ -64,51 +67,64 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     };
   };
 
+  const calendario = (origen: string, destino: string, desde: string, hasta: string, feriados: readonly Feriado[], avisos: readonly string[]): ResultadoServicioCalendario => {
+    const o = aeropuerto(origen);
+    const d = aeropuerto(destino);
+    if (!o) return { ok: false, motivo: noEsta(origen) };
+    if (!d) return { ok: false, motivo: noEsta(destino) };
+    const puntajes = calcularCalendario({ desde, hasta, origen: o, destino: d, feriados }, config);
+    return {
+      ok: true,
+      resultado: { origen, destino, desde, hasta, calculadoEn: new Date().toISOString(), puntajes, ventanasVerdes: ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde), avisos: [...avisos] },
+    };
+  };
+
+  const combinaciones = (origen: string, destino: string, ventanaPedida: Ventana, rango: Ventana, feriados: readonly Feriado[], avisos: readonly string[]): ResultadoServicioCombinaciones => {
+    const e = explorar(origen, destino);
+    if (!e.ok) return e;
+    const { origenes, destinos, rutas, gaps } = e.resultado;
+    const destinoGeo = aeropuerto(destino);
+    if (!destinoGeo) return { ok: false, motivo: noEsta(destino) };
+    const calendarios = new Map(origenes.map((o) => [o.aeropuerto.iata, calcularCalendario({ desde: rango.desde, hasta: rango.hasta, origen: o.aeropuerto, destino: destinoGeo, feriados }, config)]));
+    const verdes = new Map([...calendarios].map(([iata, puntajes]) => [iata, ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde)]));
+    const lista = generarCombinaciones({ origenes, destinos, rutas: rutas.conservadas, gaps, ventanaPedida, calendarios, ventanasVerdes: verdes }, config.fase6);
+    const mencionadas = new Set(lista.map((c) => c.aerolinea));
+    return {
+      ok: true,
+      resultado: {
+        origen,
+        destino,
+        ventanaPedida,
+        calendario: rango,
+        calculadoEn: new Date().toISOString(),
+        combinaciones: lista,
+        nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
+        avisos: [...avisos],
+      },
+    };
+  };
+
   return {
     explorar,
+    calendario,
+    combinaciones,
+    corrida: (origen, destino, ventanaPedida, rango, feriados, avisos) => {
+      const e = explorar(origen, destino);
+      if (!e.ok) return e;
+      const c = calendario(origen, destino, rango.desde, rango.hasta, feriados, avisos);
+      if (!c.ok) return c;
+      const x = combinaciones(origen, destino, ventanaPedida, rango, feriados, avisos);
+      if (!x.ok) return x;
+      return { ok: true, resultado: { calculadoEn: new Date().toISOString(), espacio: e.resultado, calendario: c.resultado, combinaciones: x.resultado } };
+    },
     paisesDelEspacio: (origen, destino) => {
       const e = explorar(origen, destino);
       return e.ok ? [...new Set([...e.resultado.origenes, ...e.resultado.destinos].map((c) => c.aeropuerto.pais))] : null;
-    },
-    combinaciones: (origen, destino, ventanaPedida, rango, feriados, avisos) => {
-      const e = explorar(origen, destino);
-      if (!e.ok) return e;
-      const { origenes, destinos, rutas, gaps } = e.resultado;
-      const destinoGeo = aeropuerto(destino);
-      if (!destinoGeo) return { ok: false, motivo: noEsta(destino) };
-      const calendarios = new Map(origenes.map((o) => [o.aeropuerto.iata, calcularCalendario({ desde: rango.desde, hasta: rango.hasta, origen: o.aeropuerto, destino: destinoGeo, feriados }, config)]));
-      const verdes = new Map([...calendarios].map(([iata, puntajes]) => [iata, ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde)]));
-      const combinaciones = generarCombinaciones({ origenes, destinos, rutas: rutas.conservadas, gaps, ventanaPedida, calendarios, ventanasVerdes: verdes }, config.fase6);
-      const mencionadas = new Set(combinaciones.map((c) => c.aerolinea));
-      return {
-        ok: true,
-        resultado: {
-          origen,
-          destino,
-          ventanaPedida,
-          calendario: rango,
-          calculadoEn: new Date().toISOString(),
-          combinaciones,
-          nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
-          avisos: [...avisos],
-        },
-      };
     },
     paisesDe: (origen, destino) => {
       const o = aeropuerto(origen);
       const d = aeropuerto(destino);
       return o && d ? [...new Set([o.pais, d.pais])] : null;
-    },
-    calendario: (origen, destino, desde, hasta, feriados, avisos) => {
-      const o = aeropuerto(origen);
-      const d = aeropuerto(destino);
-      if (!o) return { ok: false, motivo: noEsta(origen) };
-      if (!d) return { ok: false, motivo: noEsta(destino) };
-      const puntajes = calcularCalendario({ desde, hasta, origen: o, destino: d, feriados }, config);
-      return {
-        ok: true,
-        resultado: { origen, destino, desde, hasta, calculadoEn: new Date().toISOString(), puntajes, ventanasVerdes: ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde), avisos: [...avisos] },
-      };
     },
   };
 };

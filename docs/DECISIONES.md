@@ -178,6 +178,13 @@ El monto original también se redondea hacia arriba.
 - La UI muestra la sección naranja "Vía metabuscador" debajo de los resultados con el **delta contra el precio oficial más bajo de la misma fecha** (verificado o manual).
 - Comprobado en vivo, EZE→MAD 28/09/2026: sitio oficial de AR = USD 1.105 (ARS 1.668.129 a 0,0006623); Kayak = USD 797 para el mismo vuelo AR 15:05 y USD 759 la más barata (3 escalas, transbordo por cuenta propia). El delta de −31 % es real y es exactamente lo que esta sección tiene que mostrar: precio en ARS al tipo oficial vs. precio en USD de terceros.
 
+## Fase 6.6 (14/09/2026) — exportación de la corrida
+
+- `GET /espacio/exportar?origen&destino&desde&hasta&formato=json|xlsx` arma la **corrida completa** (`CorridaEspacio`: espacio + calendario del origen pedido + combinaciones) y la devuelve como descarga: `result.json` o `combinations.xlsx`. Enlaces en la sección Combinaciones.
+- **Dependencia nueva justificada: `exceljs`** (sólo en `apps/api`). Es el entregable 1 del SPEC (planilla con una hoja por fase y formato condicional en el calendario); escribir XLSX a mano no tiene sentido. Instalado con `--ignore-scripts` porque la API en ejecución bloquea la recompilación de better-sqlite3; el binario existente sigue válido.
+- Hojas: Resumen (parámetros, totales, fuentes, avisos), Aeropuertos, Rutas N1-N2 (incluye las N3–4 persistidas marcadas como no conservadas), Aerolíneas y Gaps, Calendario (relleno verde/amarillo/rojo por banda), Combinaciones (ordenadas por puntaje, con fundamento). Todo lo que hay en la planilla está también en el JSON: la planilla es formato, no datos nuevos.
+- Sin conversión de fechas a tipo fecha de Excel: se exportan como texto ISO para que no cambien con la zona horaria.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
@@ -192,4 +199,4 @@ Amadeus for Developers (Self-Service, `Flight Offers Search`) como **fuente secu
 
 ## Dependencias fuera del punto 3
 
-eslint + typescript-eslint (linting), @testing-library/react + jsdom (tests de componentes), tsx (correr TS en Node). Node 24 LTS en lugar de 20 (fin de vida en abril de 2026). Tailwind v4 vía `@tailwindcss/vite`.
+eslint + typescript-eslint (linting), @testing-library/react + jsdom (tests de componentes), tsx (correr TS en Node), exceljs (combinations.xlsx, Fase 6.6). Node 24 LTS en lugar de 20 (fin de vida en abril de 2026). Tailwind v4 vía `@tailwindcss/vite`.
