@@ -80,7 +80,8 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(av?.prioridad).toBe("media");
     expect(av?.hub).toBe("BOG");
     expect(av?.hipotesis).toContain("Nivel 3");
-    expect(porIata.has("AF")).toBe(false); // con CDG como destino candidato, AF ya cubre una ruta Nivel 2: no es gap
+    // Con CDG como destino candidato, AF cubre EZE→CDG (Nivel 2): no es gap desde EZE; sí puede serlo desde MVD (vía EZE, Nivel 3).
+    expect(porIata.get("AF")?.operaEn ?? []).not.toContain("EZE");
     expect(porIata.has("4M")).toBe(false); // opera en EZE pero no llega a ningún destino candidato
   });
 
