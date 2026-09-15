@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import ExcelJS from "exceljs";
-import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
+import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
 import { crearApp } from "../app";
 import { config } from "../config";
 import { abrirDb } from "../db/conexion";
@@ -116,5 +116,21 @@ describe("GET /espacio", () => {
     const res = await app.inject({ method: "GET", url: "/espacio?origen=EZE&destino=ZZZ" });
     expect(res.statusCode).toBe(404);
     expect((res.json() as { error: string }).error).toContain("ZZZ");
+  });
+});
+
+describe("GET /rutas (Fase 7)", () => {
+  it("ordena rutas por costo estimado con presión de ida y vuelta, y arma enlaces por boleto y metabuscador", async () => {
+    const res = await app.inject({ method: "GET", url: "/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&fechaVuelta=2027-03-01" });
+    expect(res.statusCode).toBe(200);
+    const r = res.json() as ResultadoRutas;
+    expect(() => ResultadoRutas.parse(r)).not.toThrow();
+    expect(r.rutas.length).toBeGreaterThan(5);
+    expect(r.rutas.map((x) => x.indice)).toEqual([...r.rutas.map((x) => x.indice)].sort((a, b) => a - b));
+    expect(r.rutas[0]?.presionVuelta?.fecha).toBe("2027-03-01");
+    expect(r.rutas[0]?.enlaces.length).toBe(0); // sin metabuscadores registrados en el test no hay enlaces
+    expect(feriados.obtener).toHaveBeenCalledWith(expect.arrayContaining(["PY", "ES"]), [2027]);
+    const invalida = await app.inject({ method: "GET", url: "/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&fechaVuelta=2027-02-01" });
+    expect(invalida.statusCode).toBe(400);
   });
 });

@@ -136,6 +136,55 @@ export const ResultadoEspacio = z.object({
   nombres: z.array(NombreAerolinea), // aerolíneas mencionadas en rutas y gaps
 });
 
+// ---------------------------------------------------------------------------
+// Fase 7 — rutas priorizadas por costo estimado (sin leer precios)
+// ---------------------------------------------------------------------------
+
+export const TramoCompetencia = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  km: z.number().min(0),
+  aerolineas: z.array(IataAerolinea), // todas las que operan el tramo según el dataset de rutas
+});
+
+export const EnlaceMetabuscador = z.object({ id: z.string().min(1), nombre: z.string().min(1), tramo: z.string().min(1), url: z.url() });
+
+export const RutaPriorizada = z.object({
+  posicion: z.number().int().min(1),
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  via: IataAeropuerto.nullable(),
+  escalas: z.number().int().min(0),
+  boletos: z.number().int().min(1).max(2), // 2 = boletos separados (tramo previo comprado aparte)
+  aerolineas: z.array(IataAerolinea).min(1), // las que venden el boleto principal
+  tramoPrevio: TramoPrevio.nullable(),
+  distanciaKm: z.number().min(0), // suma de tramos volados
+  distanciaDirectaKm: z.number().min(0), // ortodrómica origen → destino
+  trasladoOrigenKm: z.number().min(0), // del aeropuerto pedido al alternativo (0 si es el pedido)
+  trasladoDestinoKm: z.number().min(0),
+  desvioPct: z.number().min(0),
+  tramos: z.array(TramoCompetencia).min(1),
+  competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado
+  bajoCosto: z.boolean(),
+  presionIda: PuntajeDia,
+  presionVuelta: PuntajeDia.nullable(),
+  indice: z.number().min(0), // menor = mayor chance de tarifa baja; no es un precio
+  desglose: z.record(z.string(), z.number()),
+  fundamento: z.string(),
+  enlaces: z.array(EnlaceMetabuscador), // búsquedas en metabuscadores para esa ruta (la API las completa)
+});
+
+export const ResultadoRutas = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  fechaIda: FechaIso,
+  fechaVuelta: FechaIso.nullable(),
+  calculadoEn: z.iso.datetime(),
+  rutas: z.array(RutaPriorizada),
+  nombres: z.array(NombreAerolinea),
+  avisos: z.array(z.string()),
+});
+
 export const ResultadoCalendario = z.object({
   origen: IataAeropuerto,
   destino: IataAeropuerto,
@@ -170,6 +219,10 @@ export type AeropuertoGeo = z.infer<typeof AeropuertoGeo>;
 export type ResultadoEspacio = z.infer<typeof ResultadoEspacio>;
 export type CorridaEspacio = z.infer<typeof CorridaEspacio>;
 export type ResultadoCalendario = z.infer<typeof ResultadoCalendario>;
+export type TramoCompetencia = z.infer<typeof TramoCompetencia>;
+export type EnlaceMetabuscador = z.infer<typeof EnlaceMetabuscador>;
+export type RutaPriorizada = z.infer<typeof RutaPriorizada>;
+export type ResultadoRutas = z.infer<typeof ResultadoRutas>;
 export type ResultadoCombinaciones = z.infer<typeof ResultadoCombinaciones>;
 export type RutaCompacta = z.infer<typeof RutaCompacta>;
 export type Rol = z.infer<typeof Rol>;

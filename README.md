@@ -1,5 +1,7 @@
 # AZ Vuelos
 
+> **Desde la Fase 9.1 el producto no lee precios.** La salida principal (pestaña **Rutas**) ordena rutas por chance de tarifa baja con un índice de costo estimado —km volados, competencia de aerolíneas por tramo, presión de la fecha (feriados, fines de semana largos, día de la semana, temporada por región) y escalas— y enlaza a los metabuscadores para buscarlas. Las pestañas de lectura de precios siguen visibles hasta la Fase 9.2 (retiro). Ver `docs/DECISIONES.md`.
+
 Dada una aerolínea, un origen, un destino y un rango de fechas, AZ Vuelos abre el **sitio oficial de la aerolínea** en un Chrome visible, lee el precio publicado y lo muestra en USD con la evidencia de dónde salió: URL, captura de página completa, selector del DOM, texto crudo y hora. Ningún precio es estimado: si no se pudo leer, la fecha aparece como no verificada.
 
 Brief completo en [`docs/BRIEF.md`](docs/BRIEF.md); ajustes acordados en [`docs/DECISIONES.md`](docs/DECISIONES.md).

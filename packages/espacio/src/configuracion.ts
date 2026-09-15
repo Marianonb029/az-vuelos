@@ -46,6 +46,13 @@ export const Corredor = z.object({
   efectoEscalas: z.object({ penalizacionDirecto: z.number(), bonoUnaEscala: z.number(), nota: z.string() }),
 });
 
+export const TemporadaRegional = z.object({
+  region: z.string().min(1), // clave de `regiones`
+  fuente: z.string().min(1),
+  semanaSanta: z.boolean(), // Jueves Santo a Lunes de Pascua como pico (fecha móvil, se calcula)
+  ventanas: z.array(z.object({ desde: z.string().regex(/^\d{2}-\d{2}$/), hasta: z.string().regex(/^\d{2}-\d{2}$/), presion: z.enum(["pico", "media", "baja", "minima"]), nota: z.string() })),
+});
+
 export const ConfigEspacio = z.object({
   // Registros del dataset que no entran al grafo (cargueras: no venden pasajes) y códigos que se pliegan al
   // de la aerolínea que vende el boleto (filiales LATAM → LA, JetSMART Argentina → JA).
@@ -82,7 +89,23 @@ export const ConfigEspacio = z.object({
     presionEstacional: z.record(z.enum(["pico", "media", "baja", "minima"]), z.number()),
     eventos: z.array(Evento),
     corredores: z.array(Corredor),
+    // Comportamiento de la demanda por región/continente: ventanas de temporada con su fuente anotada.
+    demandaRegional: z.array(TemporadaRegional),
     minDiasRachaVerde: z.number().int().positive(),
+  }),
+  // Índice de costo estimado por ruta (Fase 7): distancia, competencia, presión de la fecha y escalas.
+  fase7: z.object({
+    kmEquivalentes: z.object({
+      fijoPorBoleto: z.number().min(0), // tasas y costo fijo por boleto emitido, en km equivalentes
+      tramos: z.array(z.object({ hastaKm: z.number().positive().nullable(), pesoPorKm: z.number().positive() })).min(1),
+    }),
+    factorCompetencia: z.record(z.string(), z.number().positive()), // por cantidad de aerolíneas en el tramo más cerrado ("4" = 4 o más)
+    factorBajoCosto: z.number().positive(),
+    factorPresionMaxima: z.number().min(0), // presión 100 multiplica por (1 + este valor)
+    factorPorEscala: z.number().min(0),
+    pesoKmTraslado: z.number().min(0), // km hasta un aeropuerto alternativo (ida o llegada), en km equivalentes
+    maxRutas: z.number().int().positive(),
+    nota: z.string(),
   }),
   fase6: z.object({
     pesos: z.record(z.string(), z.number()),
@@ -98,3 +121,4 @@ export type ConfigEspacio = z.infer<typeof ConfigEspacio>;
 export type ReglaHub = z.infer<typeof ReglaHub>;
 export type Evento = z.infer<typeof Evento>;
 export type Corredor = z.infer<typeof Corredor>;
+export type TemporadaRegional = z.infer<typeof TemporadaRegional>;

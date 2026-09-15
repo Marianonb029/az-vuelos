@@ -13,14 +13,17 @@ import {
   generarCombinaciones,
   generarRutas,
   generarSplitTickets,
+  priorizarRutas,
+  puntuarDia,
   ventanasVerdes,
 } from "@az/espacio";
-import type { CorridaEspacio, Feriado, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, Ventana } from "@az/espacio";
+import type { CorridaEspacio, Feriado, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, Ventana } from "@az/espacio";
 
 export type ResultadoServicioEspacio = { ok: true; resultado: ResultadoEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioCalendario = { ok: true; resultado: ResultadoCalendario } | { ok: false; motivo: string };
 export type ResultadoServicioCombinaciones = { ok: true; resultado: ResultadoCombinaciones } | { ok: false; motivo: string };
 export type ResultadoServicioCorrida = { ok: true; resultado: CorridaEspacio } | { ok: false; motivo: string };
+export type ResultadoServicioRutas = { ok: true; resultado: ResultadoRutas } | { ok: false; motivo: string };
 
 export interface ServicioEspacio {
   explorar: (origen: string, destino: string) => ResultadoServicioEspacio;
@@ -31,6 +34,8 @@ export interface ServicioEspacio {
   combinaciones: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCombinaciones;
   // Todo junto, para exportar: espacio + calendario del origen pedido + combinaciones.
   corrida: (origen: string, destino: string, ventanaPedida: Ventana, calendario: Ventana, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCorrida;
+  // Fase 7: rutas ordenadas por costo estimado (km, competencia, presión de la fecha, escalas). Sin precios.
+  priorizar: (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioRutas;
 }
 
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
@@ -106,10 +111,35 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     };
   };
 
+  const priorizar = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, feriados: readonly Feriado[], avisos: readonly string[]): ResultadoServicioRutas => {
+    const e = explorar(origen, destino);
+    if (!e.ok) return e;
+    const destinoGeo = aeropuerto(destino);
+    const origenGeo = aeropuerto(origen);
+    if (!destinoGeo || !origenGeo) return { ok: false, motivo: noEsta(destino) };
+    // La presión de ida se puntúa saliendo de cada origen candidato hacia el destino pedido; la de vuelta,
+    // saliendo de cada destino candidato hacia el origen pedido (día de regreso).
+    const presionIda = (o: string) => {
+      const a = aeropuerto(o);
+      return a ? puntuarDia(fechaIda, { desde: fechaIda, hasta: fechaIda, origen: a, destino: destinoGeo, feriados, sentido: "ida" }, config) : null;
+    };
+    const presionVuelta = fechaVuelta === null ? null : (d: string) => {
+      const a = aeropuerto(d);
+      return a ? puntuarDia(fechaVuelta, { desde: fechaVuelta, hasta: fechaVuelta, origen: a, destino: origenGeo, feriados, sentido: "vuelta" }, config) : null;
+    };
+    const lista = priorizarRutas({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, presionIda, presionVuelta }, config);
+    const mencionadas = new Set(lista.flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? []), ...r.tramos.flatMap((t) => t.aerolineas)]));
+    return {
+      ok: true,
+      resultado: { origen, destino, fechaIda, fechaVuelta, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), avisos: [...avisos] },
+    };
+  };
+
   return {
     explorar,
     calendario,
     combinaciones,
+    priorizar,
     corrida: (origen, destino, ventanaPedida, rango, feriados, avisos) => {
       const e = explorar(origen, destino);
       if (!e.ok) return e;

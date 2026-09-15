@@ -1,5 +1,6 @@
 import { expandirRango, sumarDias } from "@az/core";
 import type { ConfigEspacio, Corredor, Evento } from "./configuracion";
+import { diaSemana, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
 import type { AeropuertoGeo, Banda, PuntajeDia, Ventana } from "./modelos";
 
 export interface Feriado {
@@ -11,16 +12,13 @@ export interface Feriado {
 export interface EntradaCalendario {
   desde: string;
   hasta: string;
-  origen: AeropuertoGeo;
+  origen: AeropuertoGeo; // de donde sale el vuelo que se puntúa (en la vuelta, el destino del viaje)
   destino: AeropuertoGeo;
   feriados: readonly Feriado[]; // ya traídos por la API (Nager.Date) para ambos países
+  sentido?: "ida" | "vuelta"; // la vuelta suma el efecto "día de regreso" (domingo, último día libre)
 }
 
 type ConfigCalendario = Pick<ConfigEspacio, "fase5" | "regiones">;
-
-const DIAS = ["dom", "lun", "mar", "mie", "jue", "vie", "sab"] as const;
-
-const diaSemana = (iso: string) => DIAS[new Date(`${iso}T00:00:00Z`).getUTCDay()] ?? "lun";
 
 // "20-24" dentro del mes del evento; null = sin fecha (tentativo): sólo etiqueta, sin puntos.
 const eventoCubre = (e: Evento, iso: string): boolean => {
@@ -54,7 +52,7 @@ const bandaDe = (presion: number, bandas: ConfigEspacio["fase5"]["bandas"]): Ban
   return "rojo";
 };
 
-const puntuarDia = (iso: string, entrada: EntradaCalendario, cfg: ConfigCalendario, corredor: Corredor | null): PuntajeDia => {
+export const puntuarDia = (iso: string, entrada: EntradaCalendario, cfg: ConfigCalendario, corredor: Corredor | null = corredorDe(cfg, entrada.origen, entrada.destino)): PuntajeDia => {
   const { pesos, eventos } = cfg.fase5;
   const { origen, destino, feriados } = entrada;
   const etiquetas: string[] = [];
@@ -74,6 +72,24 @@ const puntuarDia = (iso: string, entrada: EntradaCalendario, cfg: ConfigCalendar
   if (!fo && !fd) {
     const cerca = [-2, -1, 1, 2].map((d) => sumarDias(iso, d)).some((f) => feriados.some((x) => x.fecha === f && (x.pais === origen.pais || x.pais === destino.pais)));
     if (cerca) sumar(pesos["adyacenteAFeriado"] ?? 0, "adyacente a feriado");
+  }
+
+  // Fin de semana largo: un feriado en lunes o viernes dispara la salida desde el jueves previo.
+  const puente = finDeSemanaLargoDe(iso, feriados, [origen.pais]) ?? finDeSemanaLargoDe(iso, feriados, [destino.pais]);
+  if (puente) {
+    const enOrigen = puente.feriado.pais === origen.pais;
+    sumar(pesos[enOrigen ? "finDeSemanaLargoOrigen" : "finDeSemanaLargoDestino"] ?? 0, `fin de semana largo en ${enOrigen ? "origen" : "destino"}: ${puente.feriado.nombre} cae ${puente.diaFeriado === "lun" ? "lunes" : "viernes"}`);
+  }
+  if (entrada.sentido === "vuelta") {
+    if (esUltimoDiaLibre(iso, feriados, [origen.pais, destino.pais])) sumar(pesos["regresoUltimoDiaLibre"] ?? 0, "regreso el último día libre");
+    else if (diaSemana(iso) === "dom") sumar(pesos["regresoDomingo"] ?? 0, "regreso en domingo");
+  }
+  // Temporadas por región/continente (config con fuente): pesan más en el país de salida. Si hay un
+  // corredor específico para el par, sus ventanas mandan y la región no se suma (evita contar dos veces).
+  for (const rol of corredor ? [] : (["origen", "destino"] as const)) {
+    const a = rol === "origen" ? origen : destino;
+    const factor = pesos[rol === "origen" ? "temporadaRegionalOrigen" : "temporadaRegionalDestino"] ?? 0;
+    for (const t of temporadasDe(a.pais, iso, cfg)) sumar((cfg.fase5.presionEstacional[t.ventana.presion] ?? 0) * factor, `temporada ${t.ventana.presion} en ${rol} (${t.temporada.region}): ${t.ventana.nota}`);
   }
 
   for (const e of eventos) {

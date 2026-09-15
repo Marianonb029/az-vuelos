@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { Busqueda, Cotizacion, CotizacionManual, EstadoAdaptador, EstadoMetabuscador, Exploracion, MetabuscadorRef, ResumenOperaciones } from "@az/core";
 import type { CargaManual, NuevaBusqueda, NuevaExploracion } from "@az/core";
-import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
+import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
 
 const BASE = "/api";
 
@@ -63,3 +63,7 @@ export const urlEvidencia = (screenshotPath: string) => `${BASE}/evidencia/${scr
 
 // Tablero de operaciones: cuentas sobre lo registrado, desde una fecha y hora o todo.
 export const obtenerOperaciones = (desde: string | null) => pedir(ResumenOperaciones, `/operaciones${desde === null ? "" : `?desde=${encodeURIComponent(desde)}`}`);
+
+// Fase 7: rutas ordenadas por costo estimado (sin precios) para una fecha de ida y vuelta opcional.
+export const obtenerRutas = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null) =>
+  pedir(ResultadoRutas, `/rutas?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}${fechaVuelta === null ? "" : `&fechaVuelta=${fechaVuelta}`}`);

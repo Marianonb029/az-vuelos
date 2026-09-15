@@ -15,6 +15,7 @@ import { rutasExploraciones } from "./rutas/exploraciones";
 import { rutasMetabuscadores } from "./rutas/metabuscadores";
 import { rutasOperaciones } from "./rutas/operaciones";
 import { rutasProgreso } from "./rutas/progreso";
+import { rutasPriorizadas } from "./rutas/rutas-priorizadas";
 import type { DependenciasCargaManual } from "./servicios/carga-manual";
 import type { ServicioEspacio } from "./servicios/espacio";
 import type { ServicioFeriados } from "./servicios/feriados";
@@ -49,6 +50,7 @@ export const crearApp = (op: OpcionesApp) => {
   rutasEvidencia(app, op.directorioEvidencia);
   rutasMetabuscadores(app, { busquedas, lecturas: repoLecturasMetabuscador(op.db), metabuscadores: op.metabuscadores, encolar: op.leerMetabuscador });
   rutasEspacio(app, op.espacio, op.feriados);
+  rutasPriorizadas(app, { espacio: op.espacio, feriados: op.feriados, metabuscadores: op.metabuscadores });
   rutasOperaciones(app, {
     db: op.db,
     bloqueos,

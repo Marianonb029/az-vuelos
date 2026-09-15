@@ -1,7 +1,28 @@
 {
   "grafo": {
-    "aerolineasExcluidas": ["US", "QT", "M3", "FX", "5X", "5Y", "KZ", "CV", "CK", "K4", "3S", "PO", "GG"],
-    "equivalencias": { "PZ": "LA", "JJ": "LA", "4M": "LA", "XL": "LA", "LP": "LA", "WJ": "JA" },
+    "aerolineasExcluidas": [
+      "US",
+      "QT",
+      "M3",
+      "FX",
+      "5X",
+      "5Y",
+      "KZ",
+      "CV",
+      "CK",
+      "K4",
+      "3S",
+      "PO",
+      "GG"
+    ],
+    "equivalencias": {
+      "PZ": "LA",
+      "JJ": "LA",
+      "4M": "LA",
+      "XL": "LA",
+      "LP": "LA",
+      "WJ": "JA"
+    },
     "nota": "US Airways ya no existe (2015). Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA"
   },
   "fase1": {
@@ -15,37 +36,390 @@
   },
   "fase2": {
     "niveles": {
-      "1": { "minVuelosSemanales": 21, "etiqueta": "Máxima" },
-      "2": { "minVuelosSemanales": 7, "etiqueta": "Alta" },
-      "3": { "minVuelosSemanales": 2, "etiqueta": "Media" },
-      "4": { "minVuelosSemanales": 1, "etiqueta": "Baja" }
+      "1": {
+        "minVuelosSemanales": 21,
+        "etiqueta": "Máxima"
+      },
+      "2": {
+        "minVuelosSemanales": 7,
+        "etiqueta": "Alta"
+      },
+      "3": {
+        "minVuelosSemanales": 2,
+        "etiqueta": "Media"
+      },
+      "4": {
+        "minVuelosSemanales": 1,
+        "etiqueta": "Baja"
+      }
     },
-    "nivelesConservados": [1, 2],
+    "nivelesConservados": [
+      1,
+      2
+    ],
     "maxEscalas": 1,
     "minSalidasSemanalesHub": 100,
     "vuelosSemanalesPorRegistro": 7,
     "factorEscala": 0.5
   },
   "split": {
-    "hubs": ["GRU", "GIG", "BOG", "PTY", "LIM", "SCL", "EZE", "MEX"],
+    "hubs": [
+      "GRU",
+      "GIG",
+      "BOG",
+      "PTY",
+      "LIM",
+      "SCL",
+      "EZE",
+      "MEX"
+    ],
     "maxHubsPorPar": 3
   },
   "hubs": [
-    { "aerolineas": ["TK"], "hubs": ["IST"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "Vía IST alcanza prácticamente cualquier aeropuerto europeo, incluidos Nivel 3-4", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
-    { "aerolineas": ["ET"], "hubs": ["ADD"], "via": ["GRU"], "cubreRegiones": ["europa_principal"], "hipotesis": "EZE→GRU→ADD→Europa. Alta frecuencia de tarifas promocionales desde Buenos Aires", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
-    { "aerolineas": ["LX"], "hubs": ["ZRH"], "via": ["GRU"], "cubreRegiones": ["europa_central", "europa_sur"], "hipotesis": "Vía GRU y ZRH cubre Europa central y del sur", "prioridad": "media", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
-    { "aerolineas": ["BA"], "hubs": ["LHR"], "via": [], "cubreRegiones": ["reino_unido", "europa_toda"], "hipotesis": "Vía LHR cubre Reino Unido y toda Europa", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
-    { "aerolineas": ["EK"], "hubs": ["DXB"], "via": [], "cubreRegiones": ["europa_principal"], "hipotesis": "Vía DXB; trayecto total muy largo", "prioridad": "baja", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
-    { "aerolineas": ["TP"], "hubs": ["LIS"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "No opera en AR/CL/UY. Requiere tramo previo a Brasil. Líder Sudamérica-Europa", "prioridad": "alta", "requiereFeederA": ["GRU", "GIG"], "aerolineasFeeder": ["G3", "AD", "LA"], "restriccion": null, "requiereBoletosSeparados": true },
-    { "aerolineas": ["AA", "DL", "UA"], "hubs": ["MIA", "JFK", "ATL", "IAH"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "Vía hubs de EE.UU.; requiere visa o ESTA", "prioridad": "condicional", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": "requiere_visa_eeuu_o_esta", "requiereBoletosSeparados": false }
+    {
+      "aerolineas": [
+        "TK"
+      ],
+      "hubs": [
+        "IST"
+      ],
+      "via": [],
+      "cubreRegiones": [
+        "europa_toda"
+      ],
+      "hipotesis": "Vía IST alcanza prácticamente cualquier aeropuerto europeo, incluidos Nivel 3-4",
+      "prioridad": "alta",
+      "requiereFeederA": [],
+      "aerolineasFeeder": [],
+      "restriccion": null,
+      "requiereBoletosSeparados": false
+    },
+    {
+      "aerolineas": [
+        "ET"
+      ],
+      "hubs": [
+        "ADD"
+      ],
+      "via": [
+        "GRU"
+      ],
+      "cubreRegiones": [
+        "europa_principal"
+      ],
+      "hipotesis": "EZE→GRU→ADD→Europa. Alta frecuencia de tarifas promocionales desde Buenos Aires",
+      "prioridad": "alta",
+      "requiereFeederA": [],
+      "aerolineasFeeder": [],
+      "restriccion": null,
+      "requiereBoletosSeparados": false
+    },
+    {
+      "aerolineas": [
+        "LX"
+      ],
+      "hubs": [
+        "ZRH"
+      ],
+      "via": [
+        "GRU"
+      ],
+      "cubreRegiones": [
+        "europa_central",
+        "europa_sur"
+      ],
+      "hipotesis": "Vía GRU y ZRH cubre Europa central y del sur",
+      "prioridad": "media",
+      "requiereFeederA": [],
+      "aerolineasFeeder": [],
+      "restriccion": null,
+      "requiereBoletosSeparados": false
+    },
+    {
+      "aerolineas": [
+        "BA"
+      ],
+      "hubs": [
+        "LHR"
+      ],
+      "via": [],
+      "cubreRegiones": [
+        "reino_unido",
+        "europa_toda"
+      ],
+      "hipotesis": "Vía LHR cubre Reino Unido y toda Europa",
+      "prioridad": "alta",
+      "requiereFeederA": [],
+      "aerolineasFeeder": [],
+      "restriccion": null,
+      "requiereBoletosSeparados": false
+    },
+    {
+      "aerolineas": [
+        "EK"
+      ],
+      "hubs": [
+        "DXB"
+      ],
+      "via": [],
+      "cubreRegiones": [
+        "europa_principal"
+      ],
+      "hipotesis": "Vía DXB; trayecto total muy largo",
+      "prioridad": "baja",
+      "requiereFeederA": [],
+      "aerolineasFeeder": [],
+      "restriccion": null,
+      "requiereBoletosSeparados": false
+    },
+    {
+      "aerolineas": [
+        "TP"
+      ],
+      "hubs": [
+        "LIS"
+      ],
+      "via": [],
+      "cubreRegiones": [
+        "europa_toda"
+      ],
+      "hipotesis": "No opera en AR/CL/UY. Requiere tramo previo a Brasil. Líder Sudamérica-Europa",
+      "prioridad": "alta",
+      "requiereFeederA": [
+        "GRU",
+        "GIG"
+      ],
+      "aerolineasFeeder": [
+        "G3",
+        "AD",
+        "LA"
+      ],
+      "restriccion": null,
+      "requiereBoletosSeparados": true
+    },
+    {
+      "aerolineas": [
+        "AA",
+        "DL",
+        "UA"
+      ],
+      "hubs": [
+        "MIA",
+        "JFK",
+        "ATL",
+        "IAH"
+      ],
+      "via": [],
+      "cubreRegiones": [
+        "europa_toda"
+      ],
+      "hipotesis": "Vía hubs de EE.UU.; requiere visa o ESTA",
+      "prioridad": "condicional",
+      "requiereFeederA": [],
+      "aerolineasFeeder": [],
+      "restriccion": "requiere_visa_eeuu_o_esta",
+      "requiereBoletosSeparados": false
+    }
   ],
   "regiones": {
-    "europa_toda": ["ES", "PT", "FR", "IT", "DE", "GB", "IE", "NL", "BE", "LU", "CH", "AT", "DK", "SE", "NO", "FI", "IS", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI", "RS", "BA", "ME", "MK", "AL", "EE", "LV", "LT", "MT", "CY", "UA", "MD", "TR"],
-    "europa_principal": ["ES", "PT", "FR", "IT", "DE", "GB", "NL", "BE", "CH", "AT"],
-    "europa_central": ["DE", "CH", "AT", "CZ", "PL", "HU", "SK"],
-    "europa_sur": ["ES", "PT", "IT", "GR", "HR"],
-    "reino_unido": ["GB", "IE"],
-    "europa": ["ES", "PT", "FR", "IT", "DE", "GB", "IE", "NL", "BE", "LU", "CH", "AT", "DK", "SE", "NO", "FI", "IS", "PL", "CZ", "SK", "HU", "RO", "BG", "GR", "HR", "SI", "RS", "BA", "ME", "MK", "AL", "EE", "LV", "LT", "MT", "CY"]
+    "europa_toda": [
+      "ES",
+      "PT",
+      "FR",
+      "IT",
+      "DE",
+      "GB",
+      "IE",
+      "NL",
+      "BE",
+      "LU",
+      "CH",
+      "AT",
+      "DK",
+      "SE",
+      "NO",
+      "FI",
+      "IS",
+      "PL",
+      "CZ",
+      "SK",
+      "HU",
+      "RO",
+      "BG",
+      "GR",
+      "HR",
+      "SI",
+      "RS",
+      "BA",
+      "ME",
+      "MK",
+      "AL",
+      "EE",
+      "LV",
+      "LT",
+      "MT",
+      "CY",
+      "UA",
+      "MD",
+      "TR"
+    ],
+    "europa_principal": [
+      "ES",
+      "PT",
+      "FR",
+      "IT",
+      "DE",
+      "GB",
+      "NL",
+      "BE",
+      "CH",
+      "AT"
+    ],
+    "europa_central": [
+      "DE",
+      "CH",
+      "AT",
+      "CZ",
+      "PL",
+      "HU",
+      "SK"
+    ],
+    "europa_sur": [
+      "ES",
+      "PT",
+      "IT",
+      "GR",
+      "HR"
+    ],
+    "reino_unido": [
+      "GB",
+      "IE"
+    ],
+    "europa": [
+      "ES",
+      "PT",
+      "FR",
+      "IT",
+      "DE",
+      "GB",
+      "IE",
+      "NL",
+      "BE",
+      "LU",
+      "CH",
+      "AT",
+      "DK",
+      "SE",
+      "NO",
+      "FI",
+      "IS",
+      "PL",
+      "CZ",
+      "SK",
+      "HU",
+      "RO",
+      "BG",
+      "GR",
+      "HR",
+      "SI",
+      "RS",
+      "BA",
+      "ME",
+      "MK",
+      "AL",
+      "EE",
+      "LV",
+      "LT",
+      "MT",
+      "CY"
+    ],
+    "sudamerica": [
+      "AR",
+      "BO",
+      "BR",
+      "CL",
+      "CO",
+      "EC",
+      "GY",
+      "PY",
+      "PE",
+      "SR",
+      "UY",
+      "VE"
+    ],
+    "centroamerica_caribe": [
+      "MX",
+      "GT",
+      "BZ",
+      "HN",
+      "SV",
+      "NI",
+      "CR",
+      "PA",
+      "CU",
+      "DO",
+      "JM",
+      "PR",
+      "BS",
+      "TT",
+      "AW",
+      "CW"
+    ],
+    "norteamerica": [
+      "US",
+      "CA"
+    ],
+    "asia": [
+      "CN",
+      "HK",
+      "MO",
+      "TW",
+      "JP",
+      "KR",
+      "SG",
+      "MY",
+      "TH",
+      "VN",
+      "ID",
+      "PH",
+      "IN",
+      "KH",
+      "LA",
+      "MM",
+      "LK",
+      "NP",
+      "BD",
+      "PK"
+    ],
+    "medio_oriente": [
+      "AE",
+      "QA",
+      "SA",
+      "BH",
+      "KW",
+      "OM",
+      "IL",
+      "JO",
+      "EG",
+      "TR"
+    ],
+    "oceania": [
+      "AU",
+      "NZ",
+      "FJ"
+    ],
+    "africa": [
+      "ZA",
+      "ET",
+      "KE",
+      "MA",
+      "NG",
+      "GH",
+      "TZ",
+      "SN",
+      "CV",
+      "MU"
+    ]
   },
   "fase5": {
     "pesos": {
@@ -58,35 +432,445 @@
       "salidaFinDeSemana": 12,
       "salidaEntreSemana": -8,
       "ventanaTemporadaAlta": 25,
-      "ventanaTemporadaBaja": -30
+      "ventanaTemporadaBaja": -30,
+      "finDeSemanaLargoOrigen": 20,
+      "finDeSemanaLargoDestino": 8,
+      "regresoUltimoDiaLibre": 20,
+      "regresoDomingo": 12,
+      "temporadaRegionalOrigen": 1.0,
+      "temporadaRegionalDestino": 0.6
     },
-    "bandas": { "verde": [0, 33], "amarillo": [34, 66], "rojo": [67, 100] },
-    "presionEstacional": { "pico": 25, "media": 0, "baja": -30, "minima": -30 },
+    "bandas": {
+      "verde": [
+        0,
+        33
+      ],
+      "amarillo": [
+        34,
+        66
+      ],
+      "rojo": [
+        67,
+        100
+      ]
+    },
+    "presionEstacional": {
+      "pico": 25,
+      "media": 0,
+      "baja": -30,
+      "minima": -30
+    },
     "eventos": [
-      { "pais": "ES", "ciudad": "Madrid", "nombre": "FITUR", "mes": 1, "dias": "20-24", "tentativo": false, "impacto": "alto", "tipo": "feria" },
-      { "pais": "ES", "ciudad": "Madrid", "nombre": "C!Print / Promogift", "mes": 1, "dias": "12-14", "tentativo": false, "impacto": "medio", "tipo": "feria" },
-      { "pais": "GB", "ciudad": "London", "nombre": "ICE Gaming Expo", "mes": 1, "dias": "18-20", "tentativo": false, "impacto": "medio", "tipo": "feria" },
-      { "pais": "ES", "ciudad": "Barcelona", "nombre": "ISE", "mes": 2, "dias": null, "tentativo": true, "impacto": "alto", "tipo": "feria" },
-      { "pais": "ES", "ciudad": "Barcelona", "nombre": "Mobile World Congress", "mes": 2, "dias": null, "tentativo": true, "impacto": "muy_alto", "tipo": "feria" },
-      { "pais": "AR", "ciudad": null, "nombre": "Receso escolar de verano", "mes": 1, "dias": "1-31", "tentativo": false, "impacto": "alto", "tipo": "receso" },
-      { "pais": "ES", "ciudad": null, "nombre": "Vacaciones de Navidad", "mes": 12, "dias": "26-31", "tentativo": false, "impacto": "alto", "tipo": "receso" }
+      {
+        "pais": "ES",
+        "ciudad": "Madrid",
+        "nombre": "FITUR",
+        "mes": 1,
+        "dias": "20-24",
+        "tentativo": false,
+        "impacto": "alto",
+        "tipo": "feria"
+      },
+      {
+        "pais": "ES",
+        "ciudad": "Madrid",
+        "nombre": "C!Print / Promogift",
+        "mes": 1,
+        "dias": "12-14",
+        "tentativo": false,
+        "impacto": "medio",
+        "tipo": "feria"
+      },
+      {
+        "pais": "GB",
+        "ciudad": "London",
+        "nombre": "ICE Gaming Expo",
+        "mes": 1,
+        "dias": "18-20",
+        "tentativo": false,
+        "impacto": "medio",
+        "tipo": "feria"
+      },
+      {
+        "pais": "ES",
+        "ciudad": "Barcelona",
+        "nombre": "ISE",
+        "mes": 2,
+        "dias": null,
+        "tentativo": true,
+        "impacto": "alto",
+        "tipo": "feria"
+      },
+      {
+        "pais": "ES",
+        "ciudad": "Barcelona",
+        "nombre": "Mobile World Congress",
+        "mes": 2,
+        "dias": null,
+        "tentativo": true,
+        "impacto": "muy_alto",
+        "tipo": "feria"
+      },
+      {
+        "pais": "AR",
+        "ciudad": null,
+        "nombre": "Receso escolar de verano",
+        "mes": 1,
+        "dias": "1-31",
+        "tentativo": false,
+        "impacto": "alto",
+        "tipo": "receso"
+      },
+      {
+        "pais": "ES",
+        "ciudad": null,
+        "nombre": "Vacaciones de Navidad",
+        "mes": 12,
+        "dias": "26-31",
+        "tentativo": false,
+        "impacto": "alto",
+        "tipo": "receso"
+      }
     ],
     "corredores": [
       {
         "nombre": "SA_EU_verano_austral",
-        "paisesOrigen": ["AR", "UY", "PY", "CL"],
-        "regionesDestino": ["europa"],
-        "ventanas": [
-          { "desde": "01-01", "hasta": "01-20", "presion": "pico", "nota": "Tarifas pico máximas de la serie 2022-2025" },
-          { "desde": "01-25", "hasta": "01-31", "presion": "media", "nota": "Aflojamiento post-éxodo, ventanas de liquidación" },
-          { "desde": "02-12", "hasta": "02-28", "presion": "baja", "nota": "Piso histórico. Reducciones del 25-40% vs. primera quincena de enero" },
-          { "desde": "02-15", "hasta": "02-25", "presion": "minima", "nota": "Mínimo absoluto de la serie" }
+        "paisesOrigen": [
+          "AR",
+          "UY",
+          "PY",
+          "CL"
         ],
-        "efectoDiaSemana": { "mar": -18, "mie": -18, "vie": 15, "sab": 15, "dom": 12 },
-        "efectoEscalas": { "penalizacionDirecto": 10, "bonoUnaEscala": -12, "nota": "Los directos (IB, UX, AR) sostienen valor alto en este bimestre. El piso tarifario aparece en rutas con 1 escala vía GRU o BOG." }
+        "regionesDestino": [
+          "europa"
+        ],
+        "ventanas": [
+          {
+            "desde": "01-01",
+            "hasta": "01-20",
+            "presion": "pico",
+            "nota": "Tarifas pico máximas de la serie 2022-2025"
+          },
+          {
+            "desde": "01-25",
+            "hasta": "01-31",
+            "presion": "media",
+            "nota": "Aflojamiento post-éxodo, ventanas de liquidación"
+          },
+          {
+            "desde": "02-12",
+            "hasta": "02-28",
+            "presion": "baja",
+            "nota": "Piso histórico. Reducciones del 25-40% vs. primera quincena de enero"
+          },
+          {
+            "desde": "02-15",
+            "hasta": "02-25",
+            "presion": "minima",
+            "nota": "Mínimo absoluto de la serie"
+          }
+        ],
+        "efectoDiaSemana": {
+          "mar": -18,
+          "mie": -18,
+          "vie": 15,
+          "sab": 15,
+          "dom": 12
+        },
+        "efectoEscalas": {
+          "penalizacionDirecto": 10,
+          "bonoUnaEscala": -12,
+          "nota": "Los directos (IB, UX, AR) sostienen valor alto en este bimestre. El piso tarifario aparece en rutas con 1 escala vía GRU o BOG."
+        }
       }
     ],
-    "minDiasRachaVerde": 3
+    "minDiasRachaVerde": 3,
+    "demandaRegional": [
+      {
+        "region": "sudamerica",
+        "fuente": "Calendarios escolares oficiales (AR/PY/BR/CL/UY: verano dic-feb, receso de invierno julio) y serie de tarifas SA-Europa 2022-2025 del SPEC",
+        "semanaSanta": true,
+        "ventanas": [
+          {
+            "desde": "12-15",
+            "hasta": "01-20",
+            "presion": "pico",
+            "nota": "Verano austral y fiestas: éxodo vacacional"
+          },
+          {
+            "desde": "01-21",
+            "hasta": "02-28",
+            "presion": "media",
+            "nota": "Segunda mitad del verano austral"
+          },
+          {
+            "desde": "07-05",
+            "hasta": "07-31",
+            "presion": "media",
+            "nota": "Receso escolar de invierno"
+          },
+          {
+            "desde": "03-10",
+            "hasta": "05-31",
+            "presion": "baja",
+            "nota": "Otoño austral, fuera de recesos"
+          },
+          {
+            "desde": "08-15",
+            "hasta": "11-30",
+            "presion": "baja",
+            "nota": "Primavera austral, fuera de recesos"
+          }
+        ]
+      },
+      {
+        "region": "europa_toda",
+        "fuente": "Calendarios escolares de la UE (verano jul-ago, Navidad) y estacionalidad IATA/ACI del tráfico europeo (pico jul-ago, valle nov y ene-feb)",
+        "semanaSanta": true,
+        "ventanas": [
+          {
+            "desde": "07-01",
+            "hasta": "08-31",
+            "presion": "pico",
+            "nota": "Verano boreal: pico anual de tráfico en Europa"
+          },
+          {
+            "desde": "12-18",
+            "hasta": "01-06",
+            "presion": "pico",
+            "nota": "Navidad y Año Nuevo"
+          },
+          {
+            "desde": "06-10",
+            "hasta": "06-30",
+            "presion": "media",
+            "nota": "Inicio del verano"
+          },
+          {
+            "desde": "09-01",
+            "hasta": "09-20",
+            "presion": "media",
+            "nota": "Fin del verano"
+          },
+          {
+            "desde": "01-10",
+            "hasta": "02-28",
+            "presion": "baja",
+            "nota": "Valle de invierno"
+          },
+          {
+            "desde": "11-01",
+            "hasta": "12-10",
+            "presion": "baja",
+            "nota": "Valle de otoño"
+          }
+        ]
+      },
+      {
+        "region": "norteamerica",
+        "fuente": "Calendario escolar EE.UU./Canadá (verano jun-ago), Thanksgiving y fiestas; estacionalidad TSA/A4A",
+        "semanaSanta": false,
+        "ventanas": [
+          {
+            "desde": "06-15",
+            "hasta": "08-20",
+            "presion": "pico",
+            "nota": "Verano boreal"
+          },
+          {
+            "desde": "11-22",
+            "hasta": "11-30",
+            "presion": "pico",
+            "nota": "Thanksgiving"
+          },
+          {
+            "desde": "12-18",
+            "hasta": "01-04",
+            "presion": "pico",
+            "nota": "Navidad y Año Nuevo"
+          },
+          {
+            "desde": "03-05",
+            "hasta": "04-15",
+            "presion": "media",
+            "nota": "Spring break"
+          },
+          {
+            "desde": "01-08",
+            "hasta": "02-28",
+            "presion": "baja",
+            "nota": "Valle de invierno"
+          },
+          {
+            "desde": "09-08",
+            "hasta": "11-15",
+            "presion": "baja",
+            "nota": "Valle de otoño"
+          }
+        ]
+      },
+      {
+        "region": "centroamerica_caribe",
+        "fuente": "Temporada alta turística del Caribe (invierno boreal) y Semana Santa; calendario escolar de México",
+        "semanaSanta": true,
+        "ventanas": [
+          {
+            "desde": "12-15",
+            "hasta": "01-10",
+            "presion": "pico",
+            "nota": "Fiestas y alta turística del Caribe"
+          },
+          {
+            "desde": "01-11",
+            "hasta": "04-10",
+            "presion": "media",
+            "nota": "Alta turística de invierno boreal"
+          },
+          {
+            "desde": "07-10",
+            "hasta": "08-20",
+            "presion": "media",
+            "nota": "Vacaciones escolares"
+          },
+          {
+            "desde": "09-01",
+            "hasta": "11-30",
+            "presion": "baja",
+            "nota": "Temporada de huracanes: valle"
+          }
+        ]
+      },
+      {
+        "region": "asia",
+        "fuente": "Año Nuevo Lunar (fecha móvil, ventana aproximada), Golden Week china y vacaciones escolares de verano; estacionalidad IATA Asia-Pacífico",
+        "semanaSanta": false,
+        "ventanas": [
+          {
+            "desde": "01-20",
+            "hasta": "02-20",
+            "presion": "pico",
+            "nota": "Año Nuevo Lunar (ventana aproximada, fecha móvil)"
+          },
+          {
+            "desde": "10-01",
+            "hasta": "10-07",
+            "presion": "pico",
+            "nota": "Golden Week (China)"
+          },
+          {
+            "desde": "07-15",
+            "hasta": "08-31",
+            "presion": "pico",
+            "nota": "Vacaciones escolares de verano"
+          },
+          {
+            "desde": "12-20",
+            "hasta": "01-05",
+            "presion": "media",
+            "nota": "Fiestas de fin de año"
+          },
+          {
+            "desde": "03-01",
+            "hasta": "05-31",
+            "presion": "baja",
+            "nota": "Valle de primavera"
+          },
+          {
+            "desde": "09-01",
+            "hasta": "09-30",
+            "presion": "baja",
+            "nota": "Valle de septiembre"
+          }
+        ]
+      },
+      {
+        "region": "medio_oriente",
+        "fuente": "Calendario escolar del Golfo (verano jun-ago) y fiestas; Ramadán no se modela (fecha móvil lunar)",
+        "semanaSanta": false,
+        "ventanas": [
+          {
+            "desde": "06-20",
+            "hasta": "08-31",
+            "presion": "pico",
+            "nota": "Verano: salida masiva del Golfo"
+          },
+          {
+            "desde": "12-15",
+            "hasta": "01-05",
+            "presion": "media",
+            "nota": "Fiestas de fin de año"
+          },
+          {
+            "desde": "02-01",
+            "hasta": "03-15",
+            "presion": "baja",
+            "nota": "Valle de fin de invierno"
+          }
+        ]
+      },
+      {
+        "region": "oceania",
+        "fuente": "Calendario escolar de Australia/Nueva Zelanda (verano dic-ene, recesos abril/julio/octubre)",
+        "semanaSanta": true,
+        "ventanas": [
+          {
+            "desde": "12-15",
+            "hasta": "01-31",
+            "presion": "pico",
+            "nota": "Verano austral y fiestas"
+          },
+          {
+            "desde": "07-01",
+            "hasta": "07-20",
+            "presion": "media",
+            "nota": "Receso escolar de invierno"
+          },
+          {
+            "desde": "09-25",
+            "hasta": "10-12",
+            "presion": "media",
+            "nota": "Receso escolar de primavera"
+          },
+          {
+            "desde": "02-10",
+            "hasta": "03-31",
+            "presion": "baja",
+            "nota": "Valle de fin de verano"
+          },
+          {
+            "desde": "05-01",
+            "hasta": "06-20",
+            "presion": "baja",
+            "nota": "Valle de otoño"
+          }
+        ]
+      },
+      {
+        "region": "africa",
+        "fuente": "Temporada alta turística (jun-sep, dic) según operadores; sin fuente estadística abierta",
+        "semanaSanta": false,
+        "ventanas": [
+          {
+            "desde": "06-15",
+            "hasta": "09-15",
+            "presion": "media",
+            "nota": "Alta turística (safaris, verano boreal)"
+          },
+          {
+            "desde": "12-15",
+            "hasta": "01-05",
+            "presion": "media",
+            "nota": "Fiestas"
+          },
+          {
+            "desde": "03-01",
+            "hasta": "05-31",
+            "presion": "baja",
+            "nota": "Valle"
+          }
+        ]
+      }
+    ]
   },
   "fase6": {
     "pesos": {
@@ -101,10 +885,72 @@
       "penalizacionRestriccionVia": -20
     },
     "restriccionesVia": {
-      "requiere_visa_eeuu_o_esta": ["MIA", "JFK", "EWR", "ATL", "IAH", "DFW", "ORD", "LAX", "SFO", "IAD", "BOS", "CLT", "PHL", "FLL", "MCO", "DTW", "MSP", "SEA"]
+      "requiere_visa_eeuu_o_esta": [
+        "MIA",
+        "JFK",
+        "EWR",
+        "ATL",
+        "IAH",
+        "DFW",
+        "ORD",
+        "LAX",
+        "SFO",
+        "IAD",
+        "BOS",
+        "CLT",
+        "PHL",
+        "FLL",
+        "MCO",
+        "DTW",
+        "MSP",
+        "SEA"
+      ]
     },
     "kmPorPenalizacionTraslado": 500,
-    "aerolineasPerfilBajoCosto": ["JA", "WJ", "FO", "G3", "AD", "VY", "FR", "U2", "W6", "TK", "ET"],
+    "aerolineasPerfilBajoCosto": [
+      "JA",
+      "WJ",
+      "FO",
+      "G3",
+      "AD",
+      "VY",
+      "FR",
+      "U2",
+      "W6",
+      "TK",
+      "ET"
+    ],
     "maxCombinaciones": 300
+  },
+  "fase7": {
+    "kmEquivalentes": {
+      "fijoPorBoleto": 350,
+      "tramos": [
+        {
+          "hastaKm": 1500,
+          "pesoPorKm": 1.0
+        },
+        {
+          "hastaKm": 4000,
+          "pesoPorKm": 0.7
+        },
+        {
+          "hastaKm": null,
+          "pesoPorKm": 0.5
+        }
+      ]
+    },
+    "factorCompetencia": {
+      "1": 1.0,
+      "2": 0.9,
+      "3": 0.83,
+      "4": 0.75
+    },
+    "factorBajoCosto": 0.88,
+    "factorPresionMaxima": 0.6,
+    "factorPorEscala": 0.05,
+    "pesoKmTraslado": 0.6,
+    "maxRutas": 60,
+    "nota": "Índice de costo estimado, no precio: km equivalentes (tarifa por km decreciente con la distancia + fijo por boleto + traslado a aeropuertos alternativos con su peso) x competencia (aerolíneas en el tramo más cerrado) x presión de la fecha (0-100 -> 1 a 1+factorPresionMaxima) x escalas. Menor índice = mayor chance de tarifa baja."
   }
 }

@@ -10,6 +10,7 @@ import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
 import { PendientesManual } from "./componentes/PendientesManual";
 import { ResultadosComparacion } from "./componentes/ResultadosComparacion";
+import { RutasPriorizadas } from "./componentes/RutasPriorizadas";
 import { TableroOperaciones } from "./componentes/TableroOperaciones";
 import { crearBusqueda, crearExploracion, obtenerAdaptadores, obtenerCotizaciones, obtenerMetabuscadores, obtenerPendientesManual } from "./lib/api";
 import { aerolineas, aeropuertos } from "./lib/catalogos";
@@ -25,9 +26,10 @@ type Vista =
 
 const terminada = (b: Busqueda) => b.estado !== "pendiente" && b.estado !== "corriendo";
 
-type Pestana = "buscar" | "precios" | "espacio" | "operaciones";
+type Pestana = "rutas" | "buscar" | "precios" | "espacio" | "operaciones";
 
 const PESTANAS: { id: Pestana; titulo: string }[] = [
+  { id: "rutas", titulo: "Rutas" },
   { id: "buscar", titulo: "Buscar" },
   { id: "precios", titulo: "Precio de una aerolínea" },
   { id: "espacio", titulo: "Espacio de búsqueda" },
@@ -42,7 +44,7 @@ export const App = () => {
   const [enviando, setEnviando] = useState(false);
   const [vista, setVista] = useState<Vista | null>(null);
   const [ultimoEnvio, setUltimoEnvio] = useState<EnvioFormulario | null>(null);
-  const [pestana, setPestana] = useState<Pestana>("buscar");
+  const [pestana, setPestana] = useState<Pestana>("rutas");
   const [prellenado, setPrellenado] = useState<{ clave: number; valores: Partial<ValoresFormulario> } | null>(null);
 
   // Una combinación del espacio de búsqueda se verifica con la búsqueda de precios: ida sola, carry on,
@@ -129,7 +131,7 @@ export const App = () => {
     <main className="mx-auto max-w-6xl p-6">
       <header className="mb-6 border-b border-slate-200 pb-4">
         <h1 className="text-2xl font-semibold text-slate-900">AZ Vuelos</h1>
-        <p className="text-sm text-slate-600">Precios reales leídos del sitio oficial de cada aerolínea.</p>
+        <p className="text-sm text-slate-600">Rutas ordenadas por chance de tarifa baja: distancia, competencia, presión de la fecha y escalas. Sin leer precios.</p>
         <nav aria-label="Secciones" className="mt-4 flex gap-1">
           {PESTANAS.map((p) => (
             <button
@@ -144,6 +146,10 @@ export const App = () => {
           ))}
         </nav>
       </header>
+
+      <section aria-label="Rutas priorizadas" hidden={pestana !== "rutas"}>
+        <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} />
+      </section>
 
       <section aria-label="Búsqueda guiada" hidden={pestana !== "buscar"}>
         <BusquedaGuiada

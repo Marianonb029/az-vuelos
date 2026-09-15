@@ -1,6 +1,6 @@
 # AZ Vuelos
 
-Lee el precio publicado en el sitio oficial de una aerolínea (Playwright), lo convierte a USD con tasa fechada y lo muestra con evidencia (URL, screenshot, selector, timestamp).
+Ordena rutas aéreas por chance de tarifa baja **sin leer precios** (Fase 9.1): índice de costo estimado con km volados, competencia de aerolíneas por tramo, presión de la fecha y escalas, más enlaces a metabuscadores. La lectura de precios en sitios oficiales (Playwright) existe todavía en el código y se retira en la Fase 9.2.
 
 Brief completo: `docs/BRIEF.md`. Ajustes acordados sobre el brief: `docs/DECISIONES.md` (manda sobre el brief).
 
@@ -12,7 +12,7 @@ pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquem
 - `apps/api` — Node 24 + Fastify 5, SQLite (better-sqlite3), migraciones SQL planas
 - `packages/core` — esquema Zod + lógica de dominio, sin I/O
 - `packages/scraper` — Playwright + un adaptador por aerolínea en `src/adapters/` (con lector propio) y el asistido genérico `src/adapters/generico/` para el resto del registro; metabuscadores (Kayak, Momondo, Trip.com, Google Flights, Kiwi.com, Turismocity, Viajala) en `src/metabuscadores/`, sección aparte
-- `packages/espacio` — motor del espacio de búsqueda (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas, gaps, calendario, combinaciones. Sin I/O; la configuración vive en `config/espacio.json`
+- `packages/espacio` — motor del espacio de búsqueda (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas (VRS, vigente), gaps, calendario con señales de demanda, combinaciones y **Fase 7: índice de costo estimado por ruta**. Sin I/O; la configuración vive en `config/espacio.json`
 - `config/espacio.json` — todos los números del SPEC del espacio de búsqueda
 - `data` — catálogos IATA y datasets del espacio de búsqueda (JSON generado por `pnpm catalogos`, no editar a mano)
 
@@ -32,7 +32,7 @@ Datos en tiempo de ejecución (ignorados por git): `apps/api/datos/` (SQLite, pe
 
 ## Reglas innegociables
 
-1. Cero precios estimados: si no se leyó del DOM, `estado: "error_lectura"`, nunca un número.
+1. Nada se presenta como precio: la salida principal es un **índice de costo estimado** marcado como tal, con su cuenta a la vista. Donde todavía se lee un precio (código en retiro, Fase 9.2), sigue valiendo: si no se leyó del DOM, `estado: "error_lectura"`, nunca un número.
 2. Toda cotización verificada lleva evidencia completa (URL, screenshot, timestamp, selector, texto crudo).
 3. USD siempre explícito y fechado: una llamada FX por búsqueda, tasa congelada, sin caché > 24 h ni tasas hardcodeadas.
 4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en `__fixtures__/`.
