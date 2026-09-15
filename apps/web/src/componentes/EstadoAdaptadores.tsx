@@ -13,11 +13,14 @@ const Bloqueo = ({ b }: { b: NonNullable<EstadoAdaptador["ultimoBloqueo"]> }) =>
   </span>
 );
 
-export const EstadoAdaptadores = ({ adaptadores }: { adaptadores: EstadoAdaptador[] }) => (
+export const EstadoAdaptadores = ({ adaptadores }: { adaptadores: EstadoAdaptador[] }) => {
+  const propios = adaptadores.filter((a) => !a.generico);
+  const genericos = adaptadores.filter((a) => a.generico);
+  return (
   <section aria-label="Estado de adaptadores" className="rounded-md border border-slate-200 p-3">
     <h2 className="mb-2 text-sm font-medium text-slate-700">Estado de las aerolíneas con adaptador</h2>
     <ul className="grid gap-1 text-sm">
-      {adaptadores.map((a) => (
+      {propios.map((a) => (
         <li key={a.iata} className="flex flex-wrap gap-x-3">
           <span className="font-medium text-slate-900">
             {a.iata} — {a.nombre}
@@ -32,5 +35,14 @@ export const EstadoAdaptadores = ({ adaptadores }: { adaptadores: EstadoAdaptado
         </li>
       ))}
     </ul>
+    {genericos.length > 0 && (
+      <details className="mt-2 text-sm">
+        <summary className="cursor-pointer text-slate-600">
+          {genericos.length} aerolíneas más con lectura asistida genérica (vos navegás en su sitio oficial, la app guarda la captura y cargás el precio)
+        </summary>
+        <p className="mt-1 text-xs text-slate-500">{genericos.map((a) => `${a.iata} ${a.nombre}`).join(" · ")}</p>
+      </details>
+    )}
   </section>
-);
+  );
+};

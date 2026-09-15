@@ -4,6 +4,7 @@ import type { Combinacion, ResultadoCombinaciones } from "@az/espacio";
 interface Props {
   resultado: ResultadoCombinaciones;
   adaptadores: ReadonlySet<string>;
+  asistidas?: ReadonlySet<string>; // lectura asistida genérica
   seleccion: ReadonlySet<string>; // ids de combinación
   onCambio: (seleccion: Set<string>) => void;
 }
@@ -14,7 +15,7 @@ const colorPuntaje = (p: number) => (p >= 60 ? "bg-emerald-100 text-emerald-800"
 
 // Paso 2 de la búsqueda guiada: elegir qué combinaciones verificar. Las que tienen adaptador se leen
 // solas en el sitio oficial; las demás quedan pendientes de carga manual.
-export const SeleccionCombinaciones = ({ resultado, adaptadores, seleccion, onCambio }: Props) => {
+export const SeleccionCombinaciones = ({ resultado, adaptadores, asistidas = new Set(), seleccion, onCambio }: Props) => {
   const nombres = new Map(resultado.nombres.map((n) => [n.iata, n.nombre]));
   const porOrigen = new Map<string, Combinacion[]>();
   for (const c of resultado.combinaciones) porOrigen.set(c.origen, [...(porOrigen.get(c.origen) ?? []), c]);
@@ -88,6 +89,8 @@ export const SeleccionCombinaciones = ({ resultado, adaptadores, seleccion, onCa
                   <td className="py-1 pr-3 text-xs">
                     {adaptadores.has(c.aerolinea) ? (
                       <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-emerald-800">lectura automática del sitio oficial</span>
+                    ) : asistidas.has(c.aerolinea) ? (
+                      <span className="rounded bg-sky-100 px-1.5 py-0.5 text-sky-900">asistida: navegás en el sitio oficial, la app captura</span>
                     ) : (
                       <span className="rounded bg-violet-100 px-1.5 py-0.5 text-violet-900">carga manual</span>
                     )}

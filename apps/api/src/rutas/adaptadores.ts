@@ -19,6 +19,7 @@ export const rutasAdaptadores = (app: FastifyInstance, dep: Dependencias) => {
         iata: a.iata,
         nombre: a.nombre,
         modo: a.modo,
+        generico: a.generico,
         ultimaVerificacion:
           ultima && ultima.estado === "verificado"
             ? { capturadoEn: ultima.evidencia.capturadoEn, ruta: `${ultima.origenIata}-${ultima.destinoIata}` }

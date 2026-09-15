@@ -20,13 +20,14 @@ interface Props {
   aerolineas: readonly Aerolinea[];
   aeropuertos: readonly Aeropuerto[];
   adaptadores: ReadonlySet<string>;
+  asistidas?: ReadonlySet<string>; // lectura asistida genérica
   hoy: string;
   enviando: boolean;
   onEnviar: (envio: EnvioFormulario) => void;
   iniciales?: Partial<ValoresFormulario> | undefined; // prellenado desde el espacio de búsqueda
 }
 
-export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, enviando, onEnviar, iniciales }: Props) => {
+export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, asistidas = new Set(), hoy, enviando, onEnviar, iniciales }: Props) => {
   const [valores, setValores] = useState<ValoresFormulario>({ ...valoresIniciales, ...iniciales });
   const [errores, setErrores] = useState<ErroresFormulario>({});
   const [intentado, setIntentado] = useState(false);
@@ -61,10 +62,14 @@ export const FormularioBusqueda = ({ aerolineas, aeropuertos, adaptadores, hoy, 
           valor: a,
           etiqueta: etiquetaAerolinea(a),
           // Sin adaptador se puede elegir igual: el precio se carga a mano desde el sitio oficial.
-          ...(disponible ? { marca: "adaptador" } : { marca: "carga manual", tooltip: "sin adaptador: el precio se carga a mano" }),
+          ...(disponible
+            ? { marca: "adaptador" }
+            : asistidas.has(a.iata)
+              ? { marca: "asistido", tooltip: "lectura asistida: vos navegás en el sitio oficial, la app captura y cargás el precio" }
+              : { marca: "carga manual", tooltip: "sin adaptador: el precio se carga a mano" }),
         };
       }),
-    [aerolineas, adaptadores],
+    [aerolineas, adaptadores, asistidas],
   );
 
   const opcionesAeropuerto = useCallback(

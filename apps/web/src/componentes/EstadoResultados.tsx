@@ -84,7 +84,8 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCarga
   const manuales = cotizaciones.filter(esManual);
   const noVerificadas = cotizaciones.filter(esNoVerificada);
   const corriendo = busqueda.estado === "pendiente" || busqueda.estado === "corriendo";
-  const formulario = <CargaManual busqueda={busqueda} onCargada={onCargaManual} />;
+  const capturas = noVerificadas.filter((c) => c.evidencia.screenshotPath !== null).map((c) => ({ ruta: c.evidencia.screenshotPath ?? "", capturadoEn: c.evidencia.capturadoEn, url: c.evidencia.url }));
+  const formulario = <CargaManual busqueda={busqueda} onCargada={onCargaManual} capturas={capturas} />;
   const metabuscador = <ComparacionMetabuscador busquedaId={busqueda.id} metabuscadores={metabuscadores} cotizaciones={cotizaciones} />;
 
   if (busqueda.estado === "bloqueada" || busqueda.estado === "fallida") {

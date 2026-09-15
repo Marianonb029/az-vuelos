@@ -33,6 +33,7 @@ const armar = (buscar: AdaptadorAerolinea["buscar"], obtenerTablaFx = vi.fn(asyn
     nombre: "Iberia",
     dominios: ["www.iberia.com"],
     modo: "automatico",
+    generico: false,
     urlBusqueda: () => "https://www.iberia.com/x",
     buscar,
   };
@@ -199,6 +200,17 @@ describe("ejecutarBusqueda", () => {
     expect(presupuestoIntento({ tipo: "ida_y_vuelta" }, { modo: "automatico" }, false)).toBe(180_000);
     expect(presupuestoIntento({ tipo: "ida" }, { modo: "automatico" }, true)).toBe(90_000 + 3 * 60_000);
     expect(presupuestoIntento({ tipo: "ida" }, { modo: "asistido" }, true)).toBe(90_000 + 3 * 60_000 + 5 * 60_000);
+  });
+
+  it("adaptador asistido genérico: tras la captura, la búsqueda queda manual_pendiente (no fallida)", async () => {
+    const { dep } = armar(async (p) => ({ estado: "error_lectura", motivo: "TAP no tiene lector automático", evidencia: { url: "https://www.flytap.com/x", capturadoEn: new Date().toISOString(), screenshotPath: p.rutaScreenshot } }));
+    const generico = { ...dep.adaptadorPorIata("IB"), generico: true, nombre: "TAP Air Portugal" } as AdaptadorAerolinea;
+    dep.adaptadorPorIata = () => generico;
+    await ejecutarBusqueda(dep, busquedaIda.id);
+    const b = dep.busquedas.obtener(busquedaIda.id);
+    expect(b?.estado).toBe("manual_pendiente");
+    expect(b?.aviso).toContain("TAP Air Portugal: la captura de la pantalla de precios quedó guardada");
+    expect(dep.cotizaciones.listarPorBusqueda(busquedaIda.id).map((c) => c.estado)).toEqual(["error_lectura"]);
   });
 
   it("sin adaptador → manual_pendiente con instrucción, sin abrir Chrome", async () => {

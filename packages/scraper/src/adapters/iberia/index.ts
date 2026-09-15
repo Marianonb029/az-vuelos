@@ -45,6 +45,7 @@ export const iberia: AdaptadorAerolinea = {
   nombre: "Iberia",
   dominios: ["www.iberia.com"],
   modo: "asistido",
+  generico: false,
   urlBusqueda: construirUrl,
   buscar,
 };

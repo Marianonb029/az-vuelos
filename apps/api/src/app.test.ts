@@ -37,7 +37,7 @@ describe("carga manual", () => {
     const pendientes = (await app.inject({ method: "GET", url: "/busquedas/pendientes-manual" })).json() as { id: string }[];
     expect(pendientes.map((b) => b.id)).toEqual([busquedaIda.id]);
 
-    const carga = { fechaIda: "2027-01-01", fechaVuelta: null, monto: 780, moneda: "EUR", url: "https://www.latamairlines.com/x", capturadoEn: "2026-09-14T12:00:00.000Z", nota: "", imagen: { tipo: "image/png", base64: PNG_1X1 } };
+    const carga = { fechaIda: "2027-01-01", fechaVuelta: null, monto: 780, moneda: "EUR", url: "https://www.latamairlines.com/x", capturadoEn: "2026-09-14T12:00:00.000Z", nota: "", imagen: { tipo: "image/png", base64: PNG_1X1 }, capturaGuardada: null };
     const res = await app.inject({ method: "POST", url: `/busquedas/${busquedaIda.id}/manual`, payload: carga });
     expect(res.statusCode).toBe(201);
     const { busqueda, cotizacion } = res.json() as { busqueda: { estado: string }; cotizacion: { estado: string; evidencia: { screenshotPath: string }; precio: { montoUsd: number } } };
@@ -86,7 +86,9 @@ describe("API", () => {
     const { app } = armar();
     expect((await app.inject({ method: "GET", url: "/salud" })).json()).toEqual({ ok: true });
     const adaptadores = (await app.inject({ method: "GET", url: "/adaptadores" })).json() as { iata: string; modo: string; ultimaVerificacion: unknown; ultimoBloqueo: unknown }[];
-    expect(adaptadores.map((a) => a.iata)).toEqual(["AR", "JA", "IB"]);
+    expect(adaptadores.slice(0, 3).map((a) => a.iata)).toEqual(["AR", "JA", "IB"]);
+    expect(adaptadores.length).toBeGreaterThan(40); // + asistidos genéricos
+    expect(adaptadores.find((a) => a.iata === "TP")).toMatchObject({ modo: "asistido", generico: true, nombre: "TAP Air Portugal" });
     expect(adaptadores.find((a) => a.iata === "IB")?.modo).toBe("asistido");
     expect(adaptadores[0]).toMatchObject({ ultimaVerificacion: null, ultimoBloqueo: null });
     await app.close();

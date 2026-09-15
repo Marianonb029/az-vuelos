@@ -27,6 +27,8 @@ export interface AdaptadorAerolinea {
   dominios: string[];
   // "asistido": el sitio rechaza la automatización completa; una persona navega y el sistema lee.
   modo: ModoAdaptador;
+  // true: adaptador asistido genérico (sin lector propio): captura evidencia y la persona carga el precio.
+  generico: boolean;
   // URL que `buscar` va a abrir; se usa para consultar robots.txt antes de navegar.
   urlBusqueda(params: ParamsBusqueda): string;
   buscar(params: ParamsBusqueda, page: Page): Promise<ResultadoAdaptador>;

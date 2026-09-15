@@ -181,6 +181,7 @@ export const aerolineasArgentinas: AdaptadorAerolinea = {
   nombre: "Aerolíneas Argentinas",
   dominios: ["www.aerolineas.com.ar"],
   modo: "automatico",
+  generico: false,
   urlBusqueda: construirUrl,
   buscar,
 };

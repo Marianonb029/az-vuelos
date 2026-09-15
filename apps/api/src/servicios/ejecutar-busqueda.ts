@@ -192,7 +192,11 @@ export const ejecutarBusqueda = async (dep: Dependencias, busquedaId: string): P
       dep.notificar(b.id);
       if (cotizacion.estado === "error_lectura") fallos++;
     }
-    if (fallos === combos.length) dep.busquedas.cambiarEstado(b.id, "fallida", "Ninguna fecha pudo leerse");
+    if (fallos === combos.length && adaptador.generico) {
+      // Lectura asistida genérica: la captura ya está guardada; falta que la persona cargue el monto.
+      dep.busquedas.cambiarEstado(b.id, "manual_pendiente");
+      dep.busquedas.avisar(b.id, `${adaptador.nombre}: la captura de la pantalla de precios quedó guardada. Cargá el monto, la moneda y la URL que viste.`);
+    } else if (fallos === combos.length) dep.busquedas.cambiarEstado(b.id, "fallida", "Ninguna fecha pudo leerse");
     else dep.busquedas.cambiarEstado(b.id, fallos > 0 ? "parcial" : "completa");
   } catch (e: unknown) {
     dep.busquedas.cambiarEstado(b.id, "fallida", mensaje(e));

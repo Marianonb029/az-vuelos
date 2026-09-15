@@ -26,7 +26,8 @@ export const rutasExploraciones = (app: FastifyInstance, dep: Dependencias) => {
     const parseo = NuevaExploracion.safeParse(req.body);
     if (!parseo.success) return reply.status(400).send({ error: "Exploración inválida", detalles: parseo.error.issues });
     const creadaEn = new Date().toISOString();
-    const busquedas: Busqueda[] = REGISTRO.map((a) => ({
+    // "Comparar todas" usa sólo adaptadores con lector propio: los genéricos piden a una persona por cada sitio.
+    const busquedas: Busqueda[] = REGISTRO.filter((a) => !a.generico).map((a) => ({
       ...parseo.data.parametros,
       aerolineaIata: a.iata,
       id: randomUUID(),

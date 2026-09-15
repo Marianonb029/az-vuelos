@@ -242,6 +242,7 @@ export const EstadoAdaptador = z.object({
   iata: IataAerolinea,
   nombre: z.string().min(1),
   modo: z.enum(["automatico", "asistido"]),
+  generico: z.boolean(), // asistido genérico: sin lector, captura evidencia y la persona carga el precio
   ultimaVerificacion: z.object({ capturadoEn: FechaHoraIso, ruta: z.string() }).nullable(),
   ultimoBloqueo: z.object({ bloqueadoEn: FechaHoraIso, hasta: FechaHoraIso, motivo: z.string(), vigente: z.boolean() }).nullable(),
 });
@@ -322,17 +323,21 @@ export const Cotizacion = z.discriminatedUnion("estado", [
   CotizacionNoVerificada,
 ]);
 
-// Lo que la persona envía para registrar un precio leído a mano. La imagen viaja en base64 (PNG o JPEG).
-export const CargaManual = z.object({
-  fechaIda: FechaIso,
-  fechaVuelta: FechaIso.nullable(),
-  monto: z.number().positive("El monto debe ser mayor que cero"),
-  moneda: Moneda,
-  url: z.url("La URL del sitio oficial es obligatoria"),
-  capturadoEn: FechaHoraIso,
-  nota: z.string().max(500),
-  imagen: z.object({ tipo: z.enum(["image/png", "image/jpeg"]), base64: z.string().min(1, "La captura es obligatoria") }),
-});
+// Lo que la persona envía para registrar un precio leído a mano. La captura viaja en base64 (PNG o
+// JPEG) o se reutiliza una ya guardada por una lectura asistida (`capturaGuardada`: ruta relativa a evidencia).
+export const CargaManual = z
+  .object({
+    fechaIda: FechaIso,
+    fechaVuelta: FechaIso.nullable(),
+    monto: z.number().positive("El monto debe ser mayor que cero"),
+    moneda: Moneda,
+    url: z.url("La URL del sitio oficial es obligatoria"),
+    capturadoEn: FechaHoraIso,
+    nota: z.string().max(500),
+    imagen: z.object({ tipo: z.enum(["image/png", "image/jpeg"]), base64: z.string().min(1, "La captura es obligatoria") }).nullable(),
+    capturaGuardada: z.string().min(1).nullable(),
+  })
+  .refine((c) => c.imagen !== null || c.capturaGuardada !== null, { message: "La captura es obligatoria: subila o elegí una guardada", path: ["imagen"] });
 
 // ---------------------------------------------------------------------------
 // Tipos derivados

@@ -15,6 +15,7 @@ import { VerificacionesEnCurso } from "./VerificacionesEnCurso";
 interface Props {
   aeropuertos: readonly Aeropuerto[];
   adaptadores: ReadonlySet<string>;
+  asistidas?: ReadonlySet<string>;
   nombres: ReadonlyMap<string, string>;
   metabuscadores: MetabuscadorRef[];
   hoy: string;
@@ -47,7 +48,7 @@ export const aNuevasBusquedas = (c: Combinacion, equipaje: EquipajeSolicitado, v
 
 // Búsqueda guiada: un formulario, y de ahí el espacio de búsqueda, la selección de combinaciones y la
 // verificación en los sitios oficiales (automática o manual), con la comparación vía metabuscador al final.
-export const BusquedaGuiada = ({ aeropuertos, adaptadores, nombres, metabuscadores, hoy, onAbrirBusqueda }: Props) => {
+export const BusquedaGuiada = ({ aeropuertos, adaptadores, asistidas = new Set(), nombres, metabuscadores, hoy, onAbrirBusqueda }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [tipo, setTipo] = useState<"ida" | "ida_y_vuelta">("ida");
@@ -174,7 +175,7 @@ export const BusquedaGuiada = ({ aeropuertos, adaptadores, nombres, metabuscador
               {a}
             </p>
           ))}
-          <SeleccionCombinaciones resultado={x} adaptadores={adaptadores} seleccion={seleccion} onCambio={setSeleccion} />
+          <SeleccionCombinaciones resultado={x} adaptadores={adaptadores} asistidas={asistidas} seleccion={seleccion} onCambio={setSeleccion} />
           <div>
             <button type="button" onClick={() => void verificar()} disabled={lanzando || seleccion.size === 0} className="rounded-md bg-emerald-600 px-5 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
               {lanzando ? "Lanzando…" : `Verificar ${seleccion.size} en los sitios oficiales`}

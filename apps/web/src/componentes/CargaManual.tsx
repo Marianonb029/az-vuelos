@@ -1,23 +1,31 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { combinaciones, fechaCorta } from "@az/core";
+import { combinaciones, fechaCorta, fechaHoraCorta } from "@az/core";
 import type { Busqueda, CargaManual as DatosCarga, Cotizacion, CotizacionManual } from "@az/core";
 import { cargarManual } from "../lib/api";
+
+export interface CapturaGuardada {
+  ruta: string; // relativa a evidencia
+  capturadoEn: string;
+  url: string | null;
+}
 
 interface Props {
   busqueda: Busqueda;
   onCargada: (busqueda: Busqueda, cotizacion: CotizacionManual) => void;
+  capturas?: CapturaGuardada[]; // guardadas por una lectura asistida de esta búsqueda
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // "2026-09-14T15:30" local → ISO con zona.
 const localAIso = (local: string) => new Date(local).toISOString();
-const ahoraLocal = () => {
-  const f = new Date();
+// Instante → "AAAA-MM-DDTHH:MM" en hora local, para datetime-local.
+const aLocal = (f: Date) => {
   f.setSeconds(0, 0);
   return new Date(f.getTime() - f.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 };
+const ahoraLocal = () => aLocal(new Date());
 
 const leerImagen = (archivo: File): Promise<DatosCarga["imagen"]> =>
   new Promise((resolver, rechazar) => {
@@ -33,13 +41,14 @@ const claveFecha = (c: Pick<Cotizacion, "fechaIda" | "fechaVuelta">) => `${c.fec
 
 // Carga a mano de un precio leído en el sitio oficial. Los cuatro datos de evidencia son obligatorios:
 // URL, captura, monto y hora. Sin ellos el botón no envía nada.
-export const CargaManual = ({ busqueda, onCargada }: Props) => {
+export const CargaManual = ({ busqueda, onCargada, capturas = [] }: Props) => {
   const combos = combinaciones(busqueda);
+  const [capturaGuardada, setCapturaGuardada] = useState<string | null>(capturas[0]?.ruta ?? null);
   const [fecha, setFecha] = useState(combos[0] ? claveFecha(combos[0]) : "");
   const [monto, setMonto] = useState("");
   const [moneda, setMoneda] = useState("USD");
-  const [url, setUrl] = useState("");
-  const [capturadoEn, setCapturadoEn] = useState(ahoraLocal());
+  const [url, setUrl] = useState(capturas[0]?.url ?? "");
+  const [capturadoEn, setCapturadoEn] = useState(capturas[0] ? aLocal(new Date(capturas[0].capturadoEn)) : ahoraLocal());
   const [nota, setNota] = useState("");
   const [archivo, setArchivo] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
@@ -51,12 +60,12 @@ export const CargaManual = ({ busqueda, onCargada }: Props) => {
     !/^[A-Z]{3}$/.test(moneda) && "la moneda (3 letras)",
     !/^https?:\/\//.test(url) && "la URL del sitio oficial",
     !capturadoEn && "la hora en que viste el precio",
-    !archivo && "la captura de pantalla",
+    !archivo && capturaGuardada === null && "la captura de pantalla",
   ].filter((f): f is string => typeof f === "string");
 
   const enviar = async (e: FormEvent) => {
     e.preventDefault();
-    if (faltantes.length > 0 || !archivo) {
+    if (faltantes.length > 0) {
       setError(`Falta ${faltantes.join(", ")}`);
       return;
     }
@@ -72,7 +81,8 @@ export const CargaManual = ({ busqueda, onCargada }: Props) => {
         url,
         capturadoEn: localAIso(capturadoEn),
         nota,
-        imagen: await leerImagen(archivo),
+        imagen: archivo ? await leerImagen(archivo) : null,
+        capturaGuardada: archivo ? null : capturaGuardada,
       });
       onCargada(r.busqueda, r.cotizacion);
       setMonto("");
@@ -127,6 +137,19 @@ export const CargaManual = ({ busqueda, onCargada }: Props) => {
           Captura de pantalla (PNG o JPEG)
           <input type="file" accept="image/png,image/jpeg" onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} className="text-xs" />
         </label>
+        {capturas.length > 0 && (
+          <label className="flex flex-col gap-1 text-sm text-slate-700 md:col-span-2">
+            O usar la captura guardada por la lectura asistida
+            <select value={capturaGuardada ?? ""} onChange={(e) => setCapturaGuardada(e.target.value === "" ? null : e.target.value)} className={campo}>
+              <option value="">— subir una nueva —</option>
+              {capturas.map((c) => (
+                <option key={c.ruta} value={c.ruta}>
+                  {c.ruta} · {fechaHoraCorta(c.capturadoEn)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       {error && (
         <p role="alert" className="text-sm text-red-700">

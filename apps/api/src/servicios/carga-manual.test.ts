@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
@@ -24,6 +24,7 @@ const carga: CargaManual = {
   capturadoEn: "2026-09-14T12:00:00.000Z",
   nota: "1 escala en GRU, 18h35 total",
   imagen: { tipo: "image/png", base64: PNG_1X1 },
+  capturaGuardada: null,
 };
 
 const armar = (estado: (typeof busquedaIda)["estado"] = "manual_pendiente") => {
@@ -85,6 +86,18 @@ describe("cargarManual", () => {
     const corriendo = armar("corriendo");
     expect(await cargarManual(corriendo, busquedaIda.id, carga)).toMatchObject({ ok: false, codigo: 409 });
     expect(dep.cotizaciones.listarPorBusqueda(busquedaIda.id)).toHaveLength(0);
+  });
+
+  it("puede reutilizar una captura guardada por la lectura asistida de la misma búsqueda, y sólo de ella", async () => {
+    const dep = armar("fallida");
+    const carpeta = join(dep.directorioEvidencia, busquedaIda.id);
+    mkdirSync(carpeta, { recursive: true });
+    writeFileSync(join(carpeta, "1.png"), Buffer.from(PNG_1X1, "base64"));
+    const r = await cargarManual(dep, busquedaIda.id, { ...carga, imagen: null, capturaGuardada: `${busquedaIda.id}/1.png` });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(existsSync(join(dep.directorioEvidencia, r.cotizacion.evidencia.screenshotPath))).toBe(true);
+    expect(await cargarManual(dep, busquedaIda.id, { ...carga, imagen: null, capturaGuardada: "otra-busqueda/1.png" })).toMatchObject({ ok: false, codigo: 400, motivo: "La captura guardada no pertenece a esta búsqueda" });
+    expect(await cargarManual(dep, busquedaIda.id, { ...carga, imagen: null, capturaGuardada: `${busquedaIda.id}/no-existe.png` })).toMatchObject({ ok: false, codigo: 400, motivo: "No se encontró la captura guardada" });
   });
 
   it("sin tasa para la moneda o sin proveedor de cambio no guarda nada", async () => {

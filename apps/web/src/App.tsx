@@ -66,7 +66,9 @@ export const App = () => {
   useEffect(() => {
     obtenerMetabuscadores().then(setMetabuscadores).catch(() => setMetabuscadores([]));
   }, []);
-  const iatasConAdaptador = new Set(adaptadores.map((a) => a.iata));
+  // Con lector propio: se leen solas. Asistidas genéricas: la persona navega, la app captura y se carga el precio.
+  const iatasConAdaptador = new Set(adaptadores.filter((a) => !a.generico).map((a) => a.iata));
+  const iatasAsistidas = new Set(adaptadores.filter((a) => a.generico).map((a) => a.iata));
 
   // Progreso en vivo por SSE: la API envía la foto completa en cada cambio.
   const clave = vista === null ? null : vista.tipo === "busqueda" ? `b:${vista.busqueda.id}` : `e:${vista.exploracion.id}`;
@@ -144,6 +146,7 @@ export const App = () => {
         <BusquedaGuiada
           aeropuertos={aeropuertos}
           adaptadores={iatasConAdaptador}
+          asistidas={iatasAsistidas}
           nombres={new Map(aerolineas.map((a) => [a.iata, a.nombre]))}
           metabuscadores={metabuscadores}
           hoy={hoyIso()}
@@ -164,6 +167,7 @@ export const App = () => {
           aerolineas={aerolineas}
           aeropuertos={aeropuertos}
           adaptadores={iatasConAdaptador}
+          asistidas={iatasAsistidas}
           hoy={hoyIso()}
           enviando={enviando}
           onEnviar={(envio) => void enviar(envio)}
