@@ -417,6 +417,14 @@ Qué se vio en el video y qué se toma: Meridiano razona con patrones (fences 21
 - *Qué implica el índice*: km equivalentes (distancia, tasas y traslado en la misma unidad) multiplicados por un factor por variable (competencia, low cost, presión, escalas, boletos separados, visa, anticipación, estadía). Cada factor es un supuesto declarado en `config/espacio.json` y aparece en `desglose`; "un 12 % más caro que la primera" es lo que dice la cuenta, no una tarifa. No es una probabilidad 0–100 ni suma puntos.
 - *Aeropuertos alternativos* (Fase 1): dentro de 2.000 km del pedido, medianos o grandes, con vuelos internacionales y al menos 21 salidas semanales (proxy VRS); hasta 15 orígenes y 250 destinos, ordenados por distancia y frecuencia. El traslado hasta el alternativo se paga en el índice: por tierra ×0,6 km, y por encima de 400 km como otro vuelo con su boleto.
 
+## Fase 11.1 (15/09/2026) — orden "menos tramos y más cerca"
+
+Pedido: otra forma de ordenar, de menos tramos a más tramos, teniendo en cuenta los aeropuertos de origen y de destino más cercanos en km al pedido.
+
+- Selector **Ordenar por** en el formulario (`orden=indice|tramos` en `GET /rutas`, default `indice`). En `tramos` la salida se ordena por (1) `tramosTotales` = vuelos de la ruta más uno si el traslado al alternativo es aéreo (>400 km): un directo desde VCP no es "más simple" que ASU→GRU→MAD; (2) km de traslado hasta el origen alternativo y desde el destino alternativo (0 para los pedidos); (3) recién después el índice. Familias, empates y robustez se calculan sobre ese mismo orden.
+- No es una variable nueva del índice: el índice ya cobra escalas (×1,05), boletos separados y traslado; esto es un criterio de lectura distinto ("lo más simple primero, y entre lo simple lo más barato"), y por eso se ofrece como orden alternativo y no se mezcla en los factores, que se calibran con precios observados.
+- ASU→MAD 19/01/2027 con valija en este orden: 1) ASU→MAD directo (Air Europa), 2) ASU→GRU→MAD LATAM, 3) ASU→GRU→MAD en dos boletos, 4) vía EZE, 5) vía GIG, 6) vía SCL, 7) vía LIM; recién desde el 8 los orígenes a 307 km (IGU) y después los más lejanos.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

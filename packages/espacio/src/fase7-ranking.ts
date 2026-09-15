@@ -1,7 +1,7 @@
 import type { ConfigEspacio } from "./configuracion";
 import { factorCompetencia, factorPorDias, kmEquivalentes, medirRuta } from "./fase7-indice";
 import type { ConfigFase7, EntradaFase7, MedidaRuta } from "./fase7-indice";
-import type { RutaPriorizada } from "./modelos";
+import type { OrdenRutas, RutaPriorizada } from "./modelos";
 
 // Fase 7 (orden): índice de costo estimado por ruta, empates, familias y robustez. Menor índice = mayor
 // chance de tarifa baja. Nunca es un precio; cada factor sale de config/espacio.json y queda escrito.
@@ -68,8 +68,21 @@ const claveDe = (m: MedidaRuta) => `${m.ruta.origen}|${m.ruta.via ?? ""}|${m.rut
 // Familia: misma estrategia con distinto origen (mismo hub o directo, mismo destino, misma cantidad de boletos).
 const familiaDe = (m: MedidaRuta) => `${m.ruta.via ?? "directo"}→${m.ruta.destino}${m.boletos === 2 ? " (2 boletos)" : ""}`;
 
-const ordenar = (lista: { clave: string; indice: number; km: number; origen: string }[]) =>
-  [...lista].sort((a, b) => a.indice - b.indice || a.km - b.km || a.origen.localeCompare(b.origen));
+interface Candidata {
+  clave: string;
+  indice: number;
+  km: number;
+  origen: string;
+  tramos: number; // vuelos más traslado aéreo
+  traslado: number; // km hasta el origen alternativo y desde el destino alternativo
+}
+
+// Orden "indice": menor índice primero. Orden "tramos": menos tramos primero, entre iguales el aeropuerto
+// más cercano al pedido (menos km de traslado), y recién después el índice.
+const ordenar = (lista: Candidata[], orden: OrdenRutas) =>
+  [...lista].sort((a, b) => (orden === "tramos" ? a.tramos - b.tramos || a.traslado - b.traslado : 0) || a.indice - b.indice || a.km - b.km || a.origen.localeCompare(b.origen));
+
+const candidata = (m: MedidaRuta, idx: Indice): Candidata => ({ clave: claveDe(m), indice: idx.indice, km: m.distanciaKm, origen: m.ruta.origen, tramos: m.tramos.length + (idx.trasladoAereo ? 1 : 0), traslado: m.trasladoOrigenKm + m.trasladoDestinoKm });
 
 // Variantes de config para la robustez: cada factor ±variación; la posición mín/máx de cada ruta entre ellas.
 const variantes = (cfg: ConfigFase7): ConfigFase7[] => {
@@ -97,14 +110,14 @@ export const priorizarRutas = (entrada: EntradaFase7, cfg: ConfigFase7): RutaPri
     medidas.push(m);
   }
   const base = new Map(medidas.map((m) => [claveDe(m), calcularIndice(m, entrada, cfg)]));
-  const orden = ordenar(medidas.map((m) => ({ clave: claveDe(m), indice: base.get(claveDe(m))?.indice ?? 0, km: m.distanciaKm, origen: m.ruta.origen })));
+  const orden = ordenar(medidas.map((m) => candidata(m, base.get(claveDe(m)) ?? calcularIndice(m, entrada, cfg))), entrada.orden);
   const posicionBase = new Map(orden.map((x, i) => [x.clave, i + 1]));
 
   // Robustez: posición mínima y máxima de cada ruta cuando cada factor se mueve ±variación.
   const posMin = new Map(posicionBase);
   const posMax = new Map(posicionBase);
   for (const variante of variantes(cfg)) {
-    const ordenV = ordenar(medidas.map((m) => ({ clave: claveDe(m), indice: calcularIndice(m, entrada, variante).indice, km: m.distanciaKm, origen: m.ruta.origen })));
+    const ordenV = ordenar(medidas.map((m) => candidata(m, calcularIndice(m, entrada, variante))), entrada.orden);
     ordenV.forEach((x, i) => {
       posMin.set(x.clave, Math.min(posMin.get(x.clave) ?? i + 1, i + 1));
       posMax.set(x.clave, Math.max(posMax.get(x.clave) ?? i + 1, i + 1));
@@ -138,6 +151,7 @@ export const priorizarRutas = (entrada: EntradaFase7, cfg: ConfigFase7): RutaPri
       trasladoOrigenKm: m.trasladoOrigenKm,
       trasladoDestinoKm: m.trasladoDestinoKm,
       trasladoAereo: idx.trasladoAereo,
+      tramosTotales: m.tramos.length + (idx.trasladoAereo ? 1 : 0),
       desvioPct: m.distanciaDirectaKm === 0 ? 0 : Math.max(0, Math.round(((m.distanciaKm - m.distanciaDirectaKm) / m.distanciaDirectaKm) * 100)),
       tramos: m.tramos,
       competenciaMinima: m.competenciaMinima,

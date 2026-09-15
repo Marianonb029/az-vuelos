@@ -2,7 +2,7 @@ import { diasEntre } from "@az/core";
 import type { ConfigEspacio } from "./configuracion";
 import { distanciaKm } from "./geo";
 import type { Grafo } from "./grafo";
-import type { PuntajeDia, Ruta, TramoCompetencia } from "./modelos";
+import type { OrdenRutas, PuntajeDia, Ruta, TramoCompetencia } from "./modelos";
 
 // Fase 7 (medición): todo lo que se puede medir o inferir de una ruta antes de ponerle índice. Cada
 // cantidad sale de datos públicos (OurAirports, VRS, Nager.Date) o de la config; nada es un precio.
@@ -15,6 +15,7 @@ export interface EntradaFase7 {
   fechaIda: string;
   fechaVuelta: string | null; // para la estadía
   equipaje: "mano" | "valija"; // con valija la ventaja low cost desaparece
+  orden: OrdenRutas; // índice puro, o menos tramos y más cerca primero
   presionIda: (origen: string) => PuntajeDia | null; // presión del día de ida saliendo de ese aeropuerto
   presionVuelta: ((destino: string) => PuntajeDia | null) | null; // null: viaje sólo de ida
 }

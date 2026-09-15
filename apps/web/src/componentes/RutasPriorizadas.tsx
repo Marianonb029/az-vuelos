@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta, sumarDias } from "@az/core";
 import type { Aeropuerto } from "@az/core";
-import type { ResultadoEspacio, ResultadoRutas, RutaPriorizada } from "@az/espacio";
+import type { OrdenRutas, ResultadoEspacio, ResultadoRutas, RutaPriorizada } from "@az/espacio";
 import { obtenerEspacio, obtenerRutas } from "../lib/api";
 import { Bloque } from "./Bloque";
 import { CalendarioPresion } from "./CalendarioPresion";
@@ -42,6 +42,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [tipo, setTipo] = useState<"ida" | "ida_y_vuelta">("ida");
   const [equipaje, setEquipaje] = useState<"mano" | "valija">("mano");
+  const [orden, setOrden] = useState<OrdenRutas>("indice");
   const [fechaIda, setFechaIda] = useState("");
   const [fechaVuelta, setFechaVuelta] = useState("");
   const [intentado, setIntentado] = useState(false);
@@ -72,7 +73,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
     setErrorEspacio(null);
     setFamiliasAbiertas(new Set());
     try {
-      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipaje));
+      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipaje, orden));
     } catch (err: unknown) {
       setResultado(null);
       setError(`No se pudieron priorizar las rutas: ${describirError(err)}`);
@@ -114,6 +115,9 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
           <Campo id="r-equipaje" etiqueta="Equipaje">
             <Toggle id="r-equipaje" valor={equipaje} opciones={[{ valor: "mano", etiqueta: "Sólo mano" }, { valor: "valija", etiqueta: "Con valija" }]} onCambio={setEquipaje} />
           </Campo>
+          <Campo id="r-orden" etiqueta="Ordenar por">
+            <Toggle id="r-orden" valor={orden} opciones={[{ valor: "indice", etiqueta: "Índice de costo" }, { valor: "tramos", etiqueta: "Menos tramos y más cerca" }]} onCambio={setOrden} />
+          </Campo>
           <Campo id="r-ida" etiqueta="Fecha de ida" error={errores.ida}>
             <input id="r-ida" type="date" value={fechaIda} min={hoy} onChange={(e) => setFechaIda(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" />
           </Campo>
@@ -135,8 +139,8 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
       {resultado && (
         <Bloque
           orden={1}
-          titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}${resultado.equipaje === "valija" ? ", con valija" : ""}`}
-          objetivo="No es un precio: es un índice de costo estimado (menor = más barato) que combina km volados, tasas, competencia efectiva (grupos tarifarios y frecuencia en el tramo más cerrado), presión de la fecha, escalas, anticipación y estadía. Las filas marcadas ≈ empatan (menos de 2 % de diferencia); el rango bajo el puesto dice cuánto se movería si los factores cambiaran ±20 %. Con 'Ver' podés anotar el precio que viste para medir si el orden acierta."
+          titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}${resultado.equipaje === "valija" ? ", con valija" : ""}${resultado.orden === "tramos" ? " · menos tramos y más cerca primero" : ""}`}
+          objetivo={`${resultado.orden === "tramos" ? "Orden por simplicidad: primero menos tramos (vuelos más el traslado si es otro vuelo), entre iguales el aeropuerto más cercano al pedido, y recién después el índice. " : ""}No es un precio: es un índice de costo estimado (menor = más barato) que combina km volados, tasas, competencia efectiva (grupos tarifarios y frecuencia en el tramo más cerrado), presión de la fecha, escalas, anticipación y estadía. Las filas marcadas ≈ empatan (menos de 2 % de diferencia); el rango bajo el puesto dice cuánto se movería si los factores cambiaran ±20 %. Con 'Ver' podés anotar el precio que viste para medir si el orden acierta.`}
         >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">

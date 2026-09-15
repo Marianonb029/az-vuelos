@@ -18,6 +18,7 @@ const base: RutaPriorizada = {
   trasladoOrigenKm: 0,
   trasladoDestinoKm: 0,
   trasladoAereo: false,
+  tramosTotales: 1,
   desvioPct: 0,
   tramos: [{ origen: "ASU", destino: "MAD", km: 9190, aerolineas: ["UX"], vuelosPorAerolinea: { UX: 3 }, grupos: ["UX"], competenciaEfectiva: 0.75 }],
   competenciaMinima: 1,

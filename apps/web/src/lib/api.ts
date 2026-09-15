@@ -2,6 +2,7 @@ import { z } from "zod";
 import { EntradaHistorial, FuenteDato, Observacion, ResultadoValidacion } from "@az/core";
 import type { NuevaObservacion } from "@az/core";
 import { ResultadoCalendario, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
+import type { OrdenRutas } from "@az/espacio";
 
 const BASE = "/api";
 
@@ -17,8 +18,8 @@ const pedir = async <T>(esquema: z.ZodType<T>, ruta: string, init?: RequestInit)
 };
 
 // Fase 7: rutas ordenadas por costo estimado (sin precios) para una fecha de ida y vuelta opcional.
-export const obtenerRutas = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, equipaje: "mano" | "valija") =>
-  pedir(ResultadoRutas, `/rutas?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}${fechaVuelta === null ? "" : `&fechaVuelta=${fechaVuelta}`}&equipaje=${equipaje}`);
+export const obtenerRutas = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, equipaje: "mano" | "valija", orden: OrdenRutas) =>
+  pedir(ResultadoRutas, `/rutas?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}${fechaVuelta === null ? "" : `&fechaVuelta=${fechaVuelta}`}&equipaje=${equipaje}&orden=${orden}`);
 
 // Validación del índice: precios vistos por la persona y qué tan bien los ordena el índice.
 export const registrarObservacion = (nueva: NuevaObservacion) => pedir(Observacion, "/observaciones", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(nueva) });

@@ -23,6 +23,7 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 ## Qué es el índice y cómo leer una fila
 
 - **Índice** = km equivalentes (distancia + tasas + traslado) × un factor por variable (competencia, low cost, presión de la fecha, escalas, boletos separados, visa, anticipación, estadía). Menor = más chance de tarifa baja. No es un precio ni una probabilidad: "un 12 % más caro que la primera" es lo que dice la cuenta con supuestos declarados en `config/espacio.json`.
+- **Ordenar por**: *Índice de costo* (el orden por chance de tarifa baja) o *Menos tramos y más cerca* (primero menos vuelos —un traslado de más de 400 km cuenta como vuelo—, entre iguales el aeropuerto más cercano al pedido, y después el índice).
 - **Buscar en:** las aerolíneas que venden ese boleto (o cada uno de los dos). Ahí se compara el precio; las demás de la columna de tramos sólo operan y sirven para medir competencia.
 - **Ver** despliega la explicación en criollo (una frase por variable) y debajo la cuenta exacta.
 - **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; el traslado se cobra en el índice (tierra ×0,6 km; más de 400 km cuenta como otro vuelo).

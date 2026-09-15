@@ -20,6 +20,7 @@ const ruta = (extra: Partial<RutaPriorizada> & Pick<RutaPriorizada, "posicion" |
   trasladoOrigenKm: 0,
   trasladoDestinoKm: 0,
   trasladoAereo: false,
+  tramosTotales: 1,
   desvioPct: 7,
   tramos: [
     { origen: "ASU", destino: "GRU", km: 1100, aerolineas: ["G3", "LA"], vuelosPorAerolinea: { G3: 2, LA: 5 }, grupos: ["Abra", "LATAM-Delta"], competenciaEfectiva: 1.5 },
@@ -42,6 +43,7 @@ const resultado: ResultadoRutas = {
   fechaIda: "2027-02-16",
   fechaVuelta: null,
   equipaje: "mano",
+  orden: "indice",
   calculadoEn: "2026-09-15T12:00:00.000Z",
   avisos: [],
   nombres: [{ iata: "UX", nombre: "Air Europa" }, { iata: "TP", nombre: "TAP" }, { iata: "G3", nombre: "GOL" }],
@@ -70,7 +72,7 @@ describe("RutasPriorizadas", () => {
     fireEvent.click(screen.getByRole("button", { name: "Priorizar rutas" }));
 
     await waitFor(() => expect(screen.getByTestId("resumen-rutas")).toBeTruthy());
-    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&equipaje=valija");
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&equipaje=valija&orden=indice");
     expect(screen.getByTestId("resumen-rutas").textContent).toContain("3 rutas · 2 familias");
     let filas = screen.getAllByRole("row").slice(1);
     expect(filas).toHaveLength(2); // la mejor de cada familia

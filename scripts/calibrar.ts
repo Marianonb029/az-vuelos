@@ -34,7 +34,7 @@ const evaluar = async (fase7: Fase7): Promise<number> => {
     if (!paises) continue;
     const f = feriadosPorConsulta.get(id) ?? (await feriados.obtener(paises, [Number(c.fechaIda.slice(0, 4))]));
     feriadosPorConsulta.set(id, f);
-    const r = servicio.priorizar({ origen: c.origen, destino: c.destino, fechaIda: c.fechaIda, fechaVuelta: c.fechaVuelta, equipaje: "mano" }, f.feriados, f.avisos);
+    const r = servicio.priorizar({ origen: c.origen, destino: c.destino, fechaIda: c.fechaIda, fechaVuelta: c.fechaVuelta, equipaje: "mano", orden: "indice" }, f.feriados, f.avisos);
     if (!r.ok) continue;
     const indices = new Map(r.resultado.rutas.map((x) => [clave(x), x.indice]));
     const pares = observaciones

@@ -152,6 +152,11 @@ export const TramoCompetencia = z.object({
 
 export const EnlaceMetabuscador = z.object({ id: z.string().min(1), nombre: z.string().min(1), tramo: z.string().min(1), url: z.url() });
 
+// Cómo se ordena la salida: por índice de costo, o primero por simplicidad (menos tramos, aeropuertos más
+// cercanos al pedido) y recién después por índice.
+export const OrdenRutas = z.enum(["indice", "tramos"]);
+export type OrdenRutas = z.infer<typeof OrdenRutas>;
+
 export const RutaPriorizada = z.object({
   posicion: z.number().int().min(1),
   origen: IataAeropuerto,
@@ -166,6 +171,7 @@ export const RutaPriorizada = z.object({
   trasladoOrigenKm: z.number().min(0), // del aeropuerto pedido al alternativo (0 si es el pedido)
   trasladoDestinoKm: z.number().min(0),
   trasladoAereo: z.boolean(), // el traslado supera `trasladoAereoDesdeKm`: cuenta como otro vuelo, no como tierra
+  tramosTotales: z.number().int().min(1), // vuelos de la ruta más el traslado si es aéreo: lo que ordena en `orden: tramos`
   desvioPct: z.number().min(0),
   tramos: z.array(TramoCompetencia).min(1),
   competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado
@@ -193,6 +199,7 @@ export const ResultadoRutas = z.object({
   fechaIda: FechaIso,
   fechaVuelta: FechaIso.nullable(),
   equipaje: z.enum(["mano", "valija"]),
+  orden: OrdenRutas,
   calculadoEn: z.iso.datetime(),
   rutas: z.array(RutaPriorizada),
   nombres: z.array(NombreAerolinea),

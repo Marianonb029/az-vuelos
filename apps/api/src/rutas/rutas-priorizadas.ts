@@ -2,12 +2,13 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { FechaIso, IataAeropuerto, METABUSCADORES } from "@az/core";
 import type { Tendencia } from "@az/core";
+import { OrdenRutas } from "@az/espacio";
 import type { EnlaceMetabuscador, ResultadoRutas, RutaPriorizada } from "@az/espacio";
 import type { ServicioEspacio } from "../servicios/espacio";
 import type { ServicioFeriados } from "../servicios/feriados";
 
 const Consulta = z
-  .object({ origen: IataAeropuerto, destino: IataAeropuerto, fechaIda: FechaIso, fechaVuelta: FechaIso.optional(), equipaje: z.enum(["mano", "valija"]).default("mano") })
+  .object({ origen: IataAeropuerto, destino: IataAeropuerto, fechaIda: FechaIso, fechaVuelta: FechaIso.optional(), equipaje: z.enum(["mano", "valija"]).default("mano"), orden: OrdenRutas.default("indice") })
   .refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" })
   .refine((c) => c.fechaVuelta === undefined || c.fechaVuelta >= c.fechaIda, { message: "La vuelta no puede ser anterior a la ida" });
 
@@ -35,7 +36,7 @@ export const rutasPriorizadas = (app: FastifyInstance, dep: Dependencias) => {
       await reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
       return undefined;
     }
-    const { origen, destino, fechaIda, equipaje } = consulta.data;
+    const { origen, destino, fechaIda, equipaje, orden } = consulta.data;
     const fechaVuelta = consulta.data.fechaVuelta ?? null;
     const espacio = dep.espacio();
     const paises = espacio.paisesDelEspacio(origen, destino);
@@ -44,7 +45,7 @@ export const rutasPriorizadas = (app: FastifyInstance, dep: Dependencias) => {
       return undefined;
     }
     const f = await dep.feriados.obtener(paises, aniosDe([fechaIda, ...(fechaVuelta === null ? [] : [fechaVuelta])]));
-    const r = espacio.priorizar({ origen, destino, fechaIda, fechaVuelta, equipaje }, f.feriados, f.avisos);
+    const r = espacio.priorizar({ origen, destino, fechaIda, fechaVuelta, equipaje, orden }, f.feriados, f.avisos);
     if (!r.ok) {
       await reply.code(404).send({ error: r.motivo });
       return undefined;

@@ -73,7 +73,7 @@ for (const [clave, grupo] of porConsulta) {
   const paises = espacio.paisesDelEspacio(origen, destino);
   if (!paises) continue;
   const f = await feriados.obtener(paises, [Number(fechaIda.slice(0, 4))]);
-  const r = espacio.priorizar({ origen, destino, fechaIda, fechaVuelta: fechaVuelta === "" ? null : fechaVuelta, equipaje: "mano" }, f.feriados, f.avisos);
+  const r = espacio.priorizar({ origen, destino, fechaIda, fechaVuelta: fechaVuelta === "" ? null : fechaVuelta, equipaje: "mano", orden: "indice" }, f.feriados, f.avisos);
   if (!r.ok) continue;
   for (const o of grupo) {
     // Sólo se ubica con ruta y boletos exactos; una oferta con escala sin IATA (Kiwi nombra ciudades) queda sin posición.
