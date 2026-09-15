@@ -17,8 +17,9 @@ export const AeropuertoGeo = z.object({
   servicioRegular: z.boolean(),
 });
 
-// [aerolínea, origen, destino, escalas, codeshare] — compacto porque son ~60.000 registros.
-export const RutaCompacta = z.tuple([IataAerolinea, IataAeropuerto, IataAeropuerto, z.number().int().min(0), z.boolean()]);
+// [aerolínea, origen, destino, escalas, codeshare, númerosDeVuelo?] — compacto porque son decenas de miles.
+// El sexto valor (VRS standing data) cuenta los números de vuelo distintos del tramo; si falta vale 1.
+export const RutaCompacta = z.tuple([IataAerolinea, IataAeropuerto, IataAeropuerto, z.number().int().min(0), z.boolean()]).rest(z.number().int().min(1));
 
 // ---------------------------------------------------------------------------
 // Fase 1 — aeropuertos alternativos

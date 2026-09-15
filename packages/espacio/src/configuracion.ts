@@ -47,8 +47,9 @@ export const Corredor = z.object({
 });
 
 export const ConfigEspacio = z.object({
-  // Registros del dataset que no deben entrar al grafo (aerolíneas desaparecidas desde 2014).
-  grafo: z.object({ aerolineasExcluidas: z.array(IataAerolinea), nota: z.string() }),
+  // Registros del dataset que no entran al grafo (cargueras: no venden pasajes) y códigos que se pliegan al
+  // de la aerolínea que vende el boleto (filiales LATAM → LA, JetSMART Argentina → JA).
+  grafo: z.object({ aerolineasExcluidas: z.array(IataAerolinea), equivalencias: z.record(IataAerolinea, IataAerolinea), nota: z.string() }),
   fase1: z.object({
     radioOrigenKm: z.number().positive(),
     radioDestinoKm: z.number().positive(),
@@ -56,6 +57,7 @@ export const ConfigEspacio = z.object({
     requiereInternacional: z.boolean(),
     maxCandidatosOrigen: z.number().int().positive(),
     maxCandidatosDestino: z.number().int().positive(),
+    minSalidasSemanales: z.number().int().min(0), // un alternativo con menos salidas (proxy) no compite
   }),
   fase2: z.object({
     niveles: z.object({ 1: NivelConfig, 2: NivelConfig, 3: NivelConfig, 4: NivelConfig }),

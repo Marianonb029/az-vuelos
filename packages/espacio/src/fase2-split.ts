@@ -30,14 +30,22 @@ export const generarSplitTickets = (origenes: readonly CandidatoAeropuerto[], de
         const ida = grafo.arista(origen, hub);
         const salida = grafo.arista(hub, destino);
         if (!ida || !salida || ida.operadas === 0 || salida.operadas === 0) continue;
-        if (ida.aerolineas.some((a) => salida.aerolineasOperadoras.includes(a))) continue; // boleto único posible: ya está en Fase 2
+        // Boleto único posible (misma aerolínea en los dos tramos) y con frecuencia de Nivel 1–2: ya está en
+        // Fase 2 y no hace falta separar. Si esa conexión es Nivel 3–4 (una aerolínea con un vuelo aislado),
+        // el separado con las demás aerolíneas sigue valiendo: ASU→GRU (LATAM) + GRU→LIS (TAP).
+        const comunes = ida.aerolineas.filter((a) => salida.aerolineasOperadoras.includes(a));
+        const unicoConservado = nivelDe(Math.round(comunes.length * porRegistro * config.fase2.factorEscala), config.fase2.niveles);
+        if (comunes.length > 0 && unicoConservado !== null && config.fase2.nivelesConservados.includes(unicoConservado)) continue;
+        const operadorasSalida = salida.aerolineasOperadoras.filter((a) => !comunes.includes(a));
+        const operadorasIda = ida.aerolineasOperadoras.filter((a) => !comunes.includes(a));
+        if (operadorasSalida.length === 0 || operadorasIda.length === 0) continue;
         const vuelosSemanales = Math.min(ida.operadas, salida.operadas) * porRegistro;
         const nivel = nivelDe(vuelosSemanales, config.fase2.niveles);
         if (nivel === null || !config.fase2.nivelesConservados.includes(nivel)) continue;
         candidatas.push({
           origen,
           destino,
-          aerolineas: [...salida.aerolineasOperadoras].sort(),
+          aerolineas: [...operadorasSalida].sort(),
           vuelosSemanales,
           escalas: 1,
           via: hub,
@@ -45,7 +53,7 @@ export const generarSplitTickets = (origenes: readonly CandidatoAeropuerto[], de
           etiquetaNivel: config.fase2.niveles[nivel].etiqueta,
           fuente: "dataset",
           confianza: 0.4, // dos boletos y dos verificaciones: menos que una conexión vendida junta
-          tramoPrevio: { hub, aerolineas: [...ida.aerolineasOperadoras].sort() },
+          tramoPrevio: { hub, aerolineas: [...operadorasIda].sort() },
         });
       }
       candidatas.sort((a, b) => a.nivel - b.nivel || b.vuelosSemanales - a.vuelosSemanales);

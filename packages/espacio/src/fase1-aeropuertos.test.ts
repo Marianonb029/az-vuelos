@@ -11,7 +11,7 @@ import rutasJson from "../../../data/rutas.json";
 const cfg = ConfigEspacio.parse(config);
 const aeropuertos = z.array(AeropuertoGeo).parse(aeropuertosJson);
 const rutas = z.array(RutaCompacta).parse(rutasJson);
-const grafo = new Grafo(rutas, aeropuertos, cfg.grafo.aerolineasExcluidas);
+const grafo = new Grafo(rutas, aeropuertos, cfg.grafo.aerolineasExcluidas, cfg.grafo.equivalencias);
 
 describe("Fase 1 — expandirAeropuertos (datasets reales)", () => {
   it("EZE con radio 2000 km incluye los 6 orígenes del proceso manual, el solicitado primero", () => {

@@ -1,15 +1,17 @@
 {
   "grafo": {
-    "aerolineasExcluidas": ["US"],
-    "nota": "US Airways se fusionó con American en 2015: sus registros de 2014 duplicaban cada ruta de AA"
+    "aerolineasExcluidas": ["US", "QT", "M3", "FX", "5X", "5Y", "KZ", "CV", "CK", "K4", "3S", "PO", "GG"],
+    "equivalencias": { "PZ": "LA", "JJ": "LA", "4M": "LA", "XL": "LA", "LP": "LA", "WJ": "JA" },
+    "nota": "US Airways ya no existe (2015). Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA"
   },
   "fase1": {
     "radioOrigenKm": 2000,
     "radioDestinoKm": 2000,
     "tipoMinimo": "mediano",
     "requiereInternacional": true,
-    "maxCandidatosOrigen": 12,
-    "maxCandidatosDestino": 250
+    "maxCandidatosOrigen": 15,
+    "maxCandidatosDestino": 250,
+    "minSalidasSemanales": 21
   },
   "fase2": {
     "niveles": {

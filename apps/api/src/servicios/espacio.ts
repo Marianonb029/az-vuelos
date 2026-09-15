@@ -41,7 +41,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const aeropuertos = z.array(AeropuertoGeo).parse(leerJson(resolve(directorioDatos, "aeropuertos-geo.json")));
   const rutas = z.array(RutaCompacta).parse(leerJson(resolve(directorioDatos, "rutas.json")));
   const nombres = new Map(z.array(NombreAerolinea).parse(leerJson(resolve(directorioDatos, "aerolineas-rutas.json"))).map((a) => [a.iata, a.nombre]));
-  const grafo = new Grafo(rutas, aeropuertos, config.grafo.aerolineasExcluidas);
+  const grafo = new Grafo(rutas, aeropuertos, config.grafo.aerolineasExcluidas, config.grafo.equivalencias);
   const aeropuerto = (iata: string) => aeropuertos.find((a) => a.iata === iata);
   const noEsta = (iata: string) => `El aeropuerto ${iata} no está en el dataset de OurAirports (grandes y medianos con IATA)`;
 

@@ -1,10 +1,11 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { Aerolinea, Aeropuerto } from "@az/core";
-import { AeropuertoGeo, RutaCompacta } from "@az/espacio";
+import { AeropuertoGeo } from "@az/espacio";
+import type { RutaCompacta } from "@az/espacio";
+import { VRS_AEROLINEAS, VRS_RAW, compactarRutasVrs, descargarFilasVrs, listarArchivosRutas, parsearAerolineasVrs } from "./rutas-vrs";
 
 const OPENFLIGHTS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airports.dat";
-const OPENFLIGHTS_RUTAS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/routes.dat";
 const OPENFLIGHTS_AEROLINEAS = "https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat";
 const OURAIRPORTS = "https://davidmegginson.github.io/ourairports-data/airports.csv";
 const OPTD = "https://raw.githubusercontent.com/opentraveldata/opentraveldata/master/opentraveldata/optd_airlines.csv";
@@ -125,22 +126,6 @@ const procesarNombresOpenFlights = (lineas: string[][]) => {
   return nombres;
 };
 
-// OpenFlights routes.dat: aerolínea, id, origen, id, destino, id, codeshare, escalas, equipo.
-const procesarRutas = (lineas: string[], aeropuertos: Set<string>) => {
-  const rutas: RutaCompacta[] = [];
-  const vistas = new Set<string>();
-  for (const linea of lineas) {
-    const f = linea.split(",");
-    const [aerolinea = "", , origen = "", , destino = "", , codeshare = "", escalas = "0"] = f;
-    if (!IATA_AEROLINEA.test(aerolinea) || !aeropuertos.has(origen) || !aeropuertos.has(destino)) continue;
-    const clave = `${aerolinea}|${origen}|${destino}`;
-    if (vistas.has(clave)) continue;
-    vistas.add(clave);
-    rutas.push(RutaCompacta.parse([aerolinea, origen, destino, Number(escalas) || 0, codeshare === "Y"]));
-  }
-  return rutas;
-};
-
 // Nombre de cada aerolínea del grafo: catálogo vigente primero, OpenFlights como respaldo.
 const nombrarAerolineasRutas = (rutas: RutaCompacta[], vigentes: Aerolinea[], respaldo: Map<string, string>) => {
   const porIata = new Map(vigentes.map((a) => [a.iata, a.nombre]));
@@ -162,7 +147,26 @@ const aeropuertos = procesarAeropuertos((await descargarTexto(OPENFLIGHTS)).map(
 );
 
 const aeropuertosGeo = procesarAeropuertosGeo(await descargarTexto(OURAIRPORTS));
-const rutas = procesarRutas(await descargarTexto(OPENFLIGHTS_RUTAS), new Set(aeropuertosGeo.map((a) => a.iata)));
+// Rutas vigentes (VRS standing data). Aeropuertos ICAO → IATA con OurAirports (aeropuertos-geo); aerolíneas
+// ICAO → IATA con el catálogo vigente y, como respaldo, airlines.csv de VRS.
+const archivosRutas = await listarArchivosRutas();
+console.log(`VRS: ${archivosRutas.length} archivos de rutas`);
+const filasVrs = await descargarFilasVrs(archivosRutas, (n) => console.log(`  ${n}/${archivosRutas.length}`));
+// Los códigos IATA se reasignan (A7 fue Air Plus Comet y hoy es Aéreo Calafia): manda el ICAO del catálogo
+// vigente. airlines.csv de VRS sólo completa aerolíneas vigentes sin ICAO en el catálogo (Plus Ultra) y
+// ICAO_EXTRA las que OpenTravelData no lista. Todo lo demás (aerolíneas desaparecidas) queda afuera.
+const ICAO_EXTRA: Record<string, string> = { JES: "WJ", PUE: "PU" }; // JetSMART Argentina; Plus Ultra (PU también fue PLUNA)
+const vigentesPorIata = new Map(aerolineas.map((a) => [a.iata, a]));
+const icaoAerolinea = new Map<string, string>(Object.entries(ICAO_EXTRA));
+for (const [icao, iata] of parsearAerolineasVrs(await (await fetch(VRS_AEROLINEAS)).text())) {
+  const vigente = vigentesPorIata.get(iata);
+  if (vigente && vigente.icao === null && !icaoAerolinea.has(icao)) icaoAerolinea.set(icao, iata);
+}
+for (const a of aerolineas) if (a.icao) icaoAerolinea.set(a.icao, a.iata);
+const icaoAeropuerto = new Map(aeropuertosGeo.filter((a) => a.icao !== null).map((a) => [a.icao ?? "", a.iata]));
+const vrs = compactarRutasVrs(filasVrs, icaoAeropuerto, icaoAerolinea, new Set(vigentesPorIata.keys()));
+const rutas = vrs.rutas;
+console.log(`VRS: ${vrs.numerosDeVuelo} números de vuelo, ${vrs.sinAerolinea} sin aerolínea IATA, ${vrs.sinAeropuerto} tramos con aeropuerto fuera del catálogo, ${vrs.descartadasPorRuido} rutas descartadas por ruido`);
 const aerolineasRutas = nombrarAerolineasRutas(rutas, aerolineas, procesarNombresOpenFlights((await descargarTexto(OPENFLIGHTS_AEROLINEAS)).map(parsearLinea)));
 
 await guardar("airlines.json", aerolineas);
@@ -192,10 +196,14 @@ await writeFile(
         registros: aeropuertosGeo.length,
       },
       rutas: {
-        fuente: OPENFLIGHTS_RUTAS,
-        aviso: "OpenFlights dejó de actualizar rutas en 2014: sirve como grafo de rutas posibles, no como malla vigente ni como frecuencia",
-        filtro: "aerolínea con IATA, ambos aeropuertos en aeropuertos-geo, una por (aerolínea, origen, destino)",
+        fuente: `${VRS_RAW}routes/schema-01/ (Virtual Radar Server standing data, CC0, se regenera a diario)`,
+        aviso: "Una fila por número de vuelo con su cadena de aeropuertos, sin horarios ni fecha de última observación: la cantidad de números de vuelo por tramo es el proxy de frecuencia y pueden quedar números ya discontinuados",
+        filtro: "aerolínea llevada a IATA (catálogo vigente o airlines.csv de VRS), ambos aeropuertos en aeropuertos-geo, una por (aerolínea, origen, destino) con escalas mínimas y números de vuelo distintos",
         registros: rutas.length,
+        numerosDeVuelo: vrs.numerosDeVuelo,
+        sinAerolineaIata: vrs.sinAerolinea,
+        tramosSinAeropuerto: vrs.sinAeropuerto,
+        rutasDescartadasPorRuido: vrs.descartadasPorRuido,
       },
       aerolineasRutas: {
         fuente: OPENFLIGHTS_AEROLINEAS,

@@ -8,7 +8,7 @@ export type ResultadoFase1 = { ok: true; candidatos: CandidatoAeropuerto[] } | {
 const cumpleTipo = (a: AeropuertoGeo, minimo: "grande" | "mediano") => (minimo === "mediano" ? true : a.tipo === "grande");
 
 // Fase 1: aeropuertos alternativos dentro de un radio del solicitado (haversine sobre OurAirports),
-// con vuelos internacionales y al menos una ruta saliente en el grafo; ordenados por
+// con vuelos internacionales y un mínimo de salidas semanales (proxy) en el grafo; ordenados por
 // (distancia asc, salidas semanales proxy desc). El solicitado siempre va primero.
 export const expandirAeropuertos = (
   solicitado: string,
@@ -25,7 +25,7 @@ export const expandirAeropuertos = (
   const dentro = aeropuertos
     .map((a) => ({ aeropuerto: a, distanciaKm: distanciaKm(centro, a), salidasSemanales: grafo.registrosSalientes(a.iata) }))
     .filter((c) => c.distanciaKm <= radio)
-    .filter((c) => c.aeropuerto.iata === solicitado || (cumpleTipo(c.aeropuerto, config.tipoMinimo) && c.salidasSemanales > 0))
+    .filter((c) => c.aeropuerto.iata === solicitado || (cumpleTipo(c.aeropuerto, config.tipoMinimo) && c.salidasSemanales >= Math.max(1, config.minSalidasSemanales)))
     .filter((c) => c.aeropuerto.iata === solicitado || !config.requiereInternacional || grafo.tieneVuelosInternacionales(c.aeropuerto.iata))
     .sort((a, b) => {
       if (a.aeropuerto.iata === solicitado) return -1;

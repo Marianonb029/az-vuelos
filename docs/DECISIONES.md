@@ -281,6 +281,19 @@ Pedido del dueño: que cada salida diga para qué existe, que se ordenen por lo 
 - La pestaña Operaciones consulta sólo mientras está visible y se refresca cada 10 s; ventana 24 h (por defecto), 7 días o todo.
 - Comprobado en vivo con la base actual: 52 lecturas en 24 h con 29 % verificadas, 39 de 44 consultas a robots.txt en Disallow (metabuscadores), intentos fallidos concentrados en JA (JetSMART) e IB.
 
+## Fase 7.4 (15/09/2026) — rutas vigentes: OurAirports + Virtual Radar Server en lugar de OpenFlights 2014
+
+Pedido del dueño: reemplazar las rutas de OpenFlights (2014) probando OurAirports y OpenSky Network.
+
+- **OurAirports no tiene rutas** (aeropuertos, pistas, frecuencias de radio): ya era la base geográfica y ahora también aporta el mapa ICAO → IATA de los aeropuertos.
+- **OpenSky sondeado y descartado como fuente de rutas**: sin cuenta sólo permite las últimas ~12 h por aeropuerto (`flights/departure`; más atrás responde 403 "You cannot access historical flights"), en esa ventana la mayoría de los vuelos vienen sin aeropuerto de llegada estimado (todavía en el aire), y **Asunción no tiene cobertura ADS-B** (`states/all` sobre ASU devuelve `null`; 0 salidas). Con cuenta gratuita serviría para validar "visto en los últimos 7 días" en aeropuertos con cobertura; no se creó ninguna cuenta.
+- **Fuente elegida: VRS standing data** (`vradarserver/standing-data`, CC0, commit diario): 620.390 números de vuelo con su cadena de aeropuertos → 155.433 rutas (aerolínea, origen, destino) con la cantidad de números de vuelo por tramo. `pnpm catalogos` tarda ~40 s (1.576 CSV en paralelo).
+- **Limpieza** (todo documentado en `scripts/rutas-vrs.ts`): aerolíneas por ICAO del catálogo vigente (los IATA se reasignan: A7 fue Air Plus Comet, PU fue PLUNA); `airlines.csv` de VRS sólo para vigentes sin ICAO y con un único ICAO; `ICAO_EXTRA` para JetSMART Argentina (JES→WJ) y Plus Ultra (PUE→PU); códigos no vigentes afuera (52.116 números de vuelo); rutas con un único callsign alfanumérico afuera (6.420, ruido tipo "CCA12NG Ibiza→Newcastle").
+- **Motor**: `RutaCompacta` admite un sexto valor (números de vuelo); el grafo lo suma como `registros`, así que la frecuencia proxy pasa de "1 registro por aerolínea-ruta" a "números de vuelo × 7". Con eso Nivel 1 ya distingue rutas de verdad frecuentes (TAP LIS→MAD: 38 números). `config.grafo.equivalencias` pliega filiales al código que vende el boleto (LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA, JetSMART Argentina → JA) y `aerolineasExcluidas` suma cargueras (VRS trae sus vuelos). Fase 1 exige `minSalidasSemanales` (21) a los alternativos: con datos reales cualquier aeródromo tiene un vuelo internacional y desplazaba a ASU/SCL del tope; el tope de orígenes sube a 15.
+- **Boletos separados**: un boleto único de la misma aerolínea sólo anula el separado si esa conexión es Nivel 1–2. Con rutas reales LATAM vende ASU→GRU→LIS pero en Nivel 3; el separado GOL/Paranair + TAP vía GRU (y vía GIG) vuelve a aparecer, que es la oferta real de Kiwi/Momondo.
+- **Calibración nueva** (tests con datos reales): EZE→Europa pasa de ~25 a ~170 rutas Nivel 1–2 (más aerolíneas y más conexiones vigentes); el seed acepta 100–250.
+- **Ruido conocido**: quedan tramos intraeuropeos sueltos de aerolíneas de largo radio (Air China ALC→NCL con 2 callsigns, Etihad AMS→MXP) y números de vuelo discontinuados (Plus Ultra MAD→EZE). Sin fecha de última observación no se puede podar más; el puntaje no es precio y todo se verifica antes de comprar.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

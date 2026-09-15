@@ -16,7 +16,7 @@ const cfg = ConfigEspacio.parse(config);
 const aeropuertos = z.array(AeropuertoGeo).parse(aeropuertosJson);
 const rutas = z.array(RutaCompacta).parse(rutasJson);
 const nombres = new Map(z.array(z.object({ iata: z.string(), nombre: z.string() })).parse(aerolineasRutasJson).map((a) => [a.iata, a.nombre]));
-const grafo = new Grafo(rutas, aeropuertos, cfg.grafo.aerolineasExcluidas);
+const grafo = new Grafo(rutas, aeropuertos, cfg.grafo.aerolineasExcluidas, cfg.grafo.equivalencias);
 
 const candidatos = (iata: string, rol: "origen" | "destino") => {
   const r = expandirAeropuertos(iata, rol, aeropuertos, grafo, cfg.fase1);
@@ -85,11 +85,14 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(porIata.has("4M")).toBe(false); // opera en EZE pero no llega a ningún destino candidato
   });
 
-  it("los feeders de destino conectan varios destinos; una aerolínea de largo radio con un solo tramo europeo no cuenta", () => {
+  it("los feeders de destino son las low cost europeas con varios destinos; el resto de largo radio no cuenta", () => {
     expect(porIata.get("FR")?.rol).toBe("feeder_destino");
     expect(porIata.get("U2")?.rol).toBe("feeder_destino");
-    expect(porIata.has("CA")).toBe(false); // Air China: un tramo entre hubs europeos
-    expect(porIata.has("EY")).toBe(false);
+    // VRS trae tramos intraeuropeos sueltos de aerolíneas de largo radio (cargas de usuarios): con menos de
+    // 3 destinos no entran. EK y QR no llegan a ese piso; CA y EY sí pueden colarse (ruido conocido, DECISIONES 7.4).
+    expect(porIata.get("EK")?.rol).not.toBe("feeder_destino");
+    expect(porIata.get("QR")?.rol).not.toBe("feeder_destino");
+    for (const g of gaps.filter((x) => x.rol === "feeder_destino")) expect(g.requiereBoletosSeparados).toBe(true);
   });
 
   it("Gap 2 contiene Vueling como feeder de destino, con boletos separados", () => {
@@ -109,8 +112,8 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     const rutasAsu = generarRutas(origenesAsu, destinos, grafo, cfg.fase2, cfg.hubs);
     expect(rutasAsu.conservadas.some((r) => r.origen === "POA" && r.destino === "LIS" && r.aerolineas.includes("TP"))).toBe(true);
     const tp = analizarGaps({ origenes: origenesAsu, destinos, ...rutasAsu, nombres }, grafo, cfg).find((g) => g.aerolinea === "TP");
-    expect(tp).toMatchObject({ rol: "gap_origen", operaEn: ["GRU"], hub: "LIS", prioridad: "alta", requiereBoletosSeparados: true, estado: "pendiente", cubreRutasObjetivo: true });
-    expect(tp?.hipotesis).toContain("ASU→GRU (boleto aparte con G3)→LIS→destino");
+    expect(tp).toMatchObject({ rol: "gap_origen", operaEn: ["GRU", "GIG"], hub: "LIS", prioridad: "alta", requiereBoletosSeparados: true, estado: "pendiente", cubreRutasObjetivo: true });
+    expect(tp?.hipotesis).toContain("ASU→GRU/GIG (boleto aparte con G3/LA)→LIS→destino");
   });
 
   it("ordena: gaps de origen antes que feeders, por prioridad y luego por código", () => {

@@ -4,7 +4,7 @@ export interface Arista {
   destino: string;
   aerolineas: string[]; // todas, codeshares incluidos
   aerolineasOperadoras: string[]; // sin codeshares
-  registros: number; // (aerolínea, ruta) distintos: base de la frecuencia proxy
+  registros: number; // números de vuelo distintos (o registros de ruta si el dataset no los trae): base de la frecuencia proxy
   operadas: number; // registros sin codeshare
 }
 
@@ -13,11 +13,12 @@ export class Grafo {
   private readonly salidas = new Map<string, Map<string, Arista>>();
   private readonly aeropuertos: ReadonlyMap<string, AeropuertoGeo>;
 
-  constructor(rutas: readonly RutaCompacta[], aeropuertos: readonly AeropuertoGeo[], aerolineasExcluidas: readonly string[] = []) {
+  constructor(rutas: readonly RutaCompacta[], aeropuertos: readonly AeropuertoGeo[], aerolineasExcluidas: readonly string[] = [], equivalencias: Readonly<Record<string, string>> = {}) {
     this.aeropuertos = new Map(aeropuertos.map((a) => [a.iata, a]));
     const excluidas = new Set(aerolineasExcluidas);
-    for (const [aerolinea, origen, destino, , codeshare] of rutas) {
-      if (excluidas.has(aerolinea)) continue;
+    for (const [codigo, origen, destino, , codeshare, vuelos = 1] of rutas) {
+      if (excluidas.has(codigo)) continue;
+      const aerolinea = equivalencias[codigo] ?? codigo;
       let porDestino = this.salidas.get(origen);
       if (!porDestino) {
         porDestino = new Map();
@@ -25,10 +26,10 @@ export class Grafo {
       }
       const arista = porDestino.get(destino) ?? { destino, aerolineas: [], aerolineasOperadoras: [], registros: 0, operadas: 0 };
       if (!arista.aerolineas.includes(aerolinea)) arista.aerolineas.push(aerolinea);
-      arista.registros += 1;
+      arista.registros += vuelos;
       if (!codeshare) {
         if (!arista.aerolineasOperadoras.includes(aerolinea)) arista.aerolineasOperadoras.push(aerolinea);
-        arista.operadas += 1;
+        arista.operadas += vuelos;
       }
       porDestino.set(destino, arista);
     }

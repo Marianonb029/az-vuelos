@@ -172,7 +172,7 @@ export const ResultadosEspacio = ({ resultado, adaptadores }: Props) => {
         </div>
       </Bloque>
 
-      <Bloque orden={6} titulo={`Gaps: aerolíneas por explorar (${resultado.gaps.length})`} objetivo="Aerolíneas presentes en el origen o que alimentan el destino sin ruta conocida en el dataset (OpenFlights 2014). Son hipótesis de confianza baja: sirven para mirar a mano su sitio, no para decidir.">
+      <Bloque orden={6} titulo={`Gaps: aerolíneas por explorar (${resultado.gaps.length})`} objetivo="Aerolíneas presentes en el origen o que alimentan el destino sin ruta conocida en el dataset de rutas vigentes. Son hipótesis de confianza baja: sirven para mirar a mano su sitio, no para decidir.">
         <h3 className="text-sm font-medium text-slate-700">Gap 1 — presentes en el origen sin ruta Nivel 1–2 ({gapsOrigen.length})</h3>
         {gapsOrigen.length === 0 ? <p className="text-sm text-slate-500">Sin gaps de origen.</p> : <TablaGaps gaps={gapsOrigen} />}
         <h3 className="mt-2 text-sm font-medium text-slate-700">Gap 2 — feeders de destino ({feeders.length})</h3>

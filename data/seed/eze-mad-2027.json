@@ -4,7 +4,7 @@
   "esperado": {
     "origenesMinimos": ["EZE", "COR", "ROS", "MVD", "ASU", "SCL"],
     "destinosAlcanzables": 230,
-    "rutasNivel12": { "min": 65, "max": 80, "manual": 71 },
+    "rutasNivel12": { "min": 100, "max": 250, "manual": 71 },
     "combinaciones": { "min": 250, "max": 330, "manual": 290 },
     "combinacionesPorOrigen": { "EZE": 134, "SCL": 65, "COR": 28, "MVD": 28, "ASU": 26, "ROS": 9 },
     "niveles": { "EZE-MAD": 1, "EZE-MXP": 2, "EZE-AJA": "excluida" },

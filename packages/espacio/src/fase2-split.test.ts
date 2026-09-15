@@ -12,7 +12,7 @@ import rutasJson from "../../../data/rutas.json";
 
 const cfg = ConfigEspacio.parse(config);
 const aeropuertos = z.array(AeropuertoGeo).parse(aeropuertosJson);
-const grafo = new Grafo(z.array(RutaCompacta).parse(rutasJson), aeropuertos, cfg.grafo.aerolineasExcluidas);
+const grafo = new Grafo(z.array(RutaCompacta).parse(rutasJson), aeropuertos, cfg.grafo.aerolineasExcluidas, cfg.grafo.equivalencias);
 const candidatos = (iata: string, rol: "origen" | "destino") => {
   const r = expandirAeropuertos(iata, rol, aeropuertos, grafo, cfg.fase1);
   if (!r.ok) throw new Error(r.motivo);
@@ -25,10 +25,15 @@ describe("Fase 2 — boletos separados (split tickets), ASU→MAD con datos real
   const separadas = generarSplitTickets(origenes, destinos, grafo, cfg);
   const unicas = generarRutas(origenes, destinos, grafo, cfg.fase2, cfg.hubs).conservadas;
 
-  it("encuentra ASU→GRU (GOL/LATAM) + GRU→LIS (TAP), el camino del proceso manual", () => {
+  // Con rutas vigentes (VRS) el separado sale por GRU y por GIG: GOL/JetSMART/LATAM hasta Brasil y TAP a
+  // Lisboa (la oferta que muestran Kiwi y Momondo). LATAM vende ASU→GRU→LIS en un boleto, pero esa conexión
+  // es Nivel 3 y no anula el separado con TAP.
+  it("encuentra ASU→GRU/GIG (GOL/JetSMART/LATAM) + →LIS (TAP), el camino del proceso manual", () => {
     expect(() => z.array(Ruta).parse(separadas)).not.toThrow();
-    const lis = separadas.find((r) => r.origen === "ASU" && r.destino === "LIS");
-    expect(lis).toMatchObject({ via: "GRU", aerolineas: ["TP"], nivel: 2, escalas: 1, confianza: 0.4, tramoPrevio: { hub: "GRU", aerolineas: ["G3", "JJ", "PZ"] } });
+    const lis = separadas.filter((r) => r.origen === "ASU" && r.destino === "LIS");
+    expect(lis.map((r) => r.via).sort()).toEqual(["EZE", "GIG", "GRU"]);
+    expect(lis.find((r) => r.via === "GRU")).toMatchObject({ aerolineas: ["TP"], nivel: 1, escalas: 1, confianza: 0.4, tramoPrevio: { hub: "GRU", aerolineas: ["G3", "ZP"] } });
+    expect(unicas.some((u) => u.origen === "ASU" && u.destino === "LIS" && u.via === "GRU")).toBe(false); // LA vía GRU quedó en Nivel 3
   });
 
   it("sólo propone boletos separados donde no hay boleto único, en hubs de la config y con tope por par", () => {
@@ -44,9 +49,9 @@ describe("Fase 2 — boletos separados (split tickets), ASU→MAD con datos real
     expect(separadas.some((s) => s.via === s.origen || s.via === s.destino)).toBe(false);
   });
 
-  it("ASU→MAD también sale vía PTY (Copa + Iberia) y vía LIM (Avianca + Iberia/Air Europa)", () => {
+  it("ASU→MAD también sale por otros hubs, con el tope de la config por par", () => {
     const mad = separadas.filter((r) => r.origen === "ASU" && r.destino === "MAD");
-    expect(mad.map((r) => r.via).sort()).toEqual(["LIM", "PTY"]);
-    expect(mad.find((r) => r.via === "PTY")).toMatchObject({ aerolineas: ["IB"], tramoPrevio: { hub: "PTY", aerolineas: ["CM"] } });
+    expect(mad).toHaveLength(cfg.split.maxHubsPorPar);
+    expect(mad.map((r) => r.via)).toContain("GIG");
   });
 });
