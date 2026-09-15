@@ -43,10 +43,13 @@ const gapPorRegla = (
   destinoSolicitado: CandidatoAeropuerto,
   cfg: ConfigFase3,
   nombres: EntradaFase3["nombres"],
+  grafo: Grafo,
 ): GapAerolinea => {
   const necesitaVerificacion = regla.prioridad === "alta" || regla.prioridad === "condicional";
   const hubs = regla.hubs.join("/");
-  const camino = operaEn[0] === origen ? `${origen}→${hubs}` : `${origen}→${operaEn.join("/")}→${hubs}`;
+  const feeders = regla.requiereFeederA.length > 0 ? regla.aerolineasFeeder.filter((fa) => operaEn.some((f) => grafo.arista(origen, f)?.aerolineasOperadoras.includes(fa))) : [];
+  const tramoPrevio = feeders.length > 0 ? `${operaEn.join("/")} (boleto aparte con ${feeders.join("/")})` : operaEn.join("/");
+  const camino = operaEn[0] === origen ? `${origen}→${hubs}` : `${origen}→${tramoPrevio}→${hubs}`;
   const restriccion = regla.restriccion === null ? "" : ` (${regla.restriccion})`;
   return {
     aerolinea,
@@ -116,15 +119,17 @@ export const analizarGaps = (entrada: EntradaFase3, grafo: Grafo, cfg: ConfigFas
   for (const o of origenes) {
     const origen = o.aeropuerto.iata;
     const setA = operadorasEn(grafo, origen);
+    // Set B por origen: que TP cubra POA→LIS no la saca del gap de ASU (ahí sigue necesitando feeder a GRU).
+    const cubiertas = new Set(conservadas.filter((r) => r.origen === origen).flatMap((r) => r.aerolineas));
     for (const regla of cfg.hubs) {
       for (const aerolinea of regla.aerolineas) {
-        if (setB.has(aerolinea) || gaps.has(aerolinea)) continue;
+        if (cubiertas.has(aerolinea) || gaps.has(aerolinea)) continue;
         const operaEn = alcanceDeRegla(regla, aerolinea, origen, grafo, setA);
-        if (operaEn) gaps.set(aerolinea, gapPorRegla(regla, aerolinea, origen, operaEn, destinoSolicitado, cfg, nombres));
+        if (operaEn) gaps.set(aerolinea, gapPorRegla(regla, aerolinea, origen, operaEn, destinoSolicitado, cfg, nombres, grafo));
       }
     }
     for (const aerolinea of setA) {
-      if (setB.has(aerolinea) || gaps.has(aerolinea)) continue;
+      if (cubiertas.has(aerolinea) || gaps.has(aerolinea)) continue;
       const gap = gapPorDataset(aerolinea, origen, descartadas, destinoSolicitado.aeropuerto.iata, nombres);
       if (gap) gaps.set(aerolinea, gap);
     }

@@ -40,9 +40,11 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     for (const iata of seed.esperado.gap1EZE) expect(porIata.get(iata)?.rol).toBe("gap_origen");
   });
 
-  it("ninguna aerolínea de Gap 1 cubre ya una ruta Nivel 1–2", () => {
-    const setB = new Set(conservadas.flatMap((r) => r.aerolineas));
-    for (const g of gaps) expect(setB.has(g.aerolinea)).toBe(false);
+  it("ninguna aerolínea de Gap 1 cubre ya una ruta Nivel 1–2 desde el origen donde se propone", () => {
+    for (const g of gaps.filter((g) => g.rol === "gap_origen")) {
+      const desde = g.operaEn.filter((o) => origenes.some((c) => c.aeropuerto.iata === o));
+      for (const origen of desde) expect(conservadas.some((r) => r.origen === origen && r.aerolineas.includes(g.aerolinea))).toBe(false);
+    }
   });
 
   it("TK opera en EZE con hub IST, prioridad alta y verificación pendiente", () => {
@@ -99,6 +101,15 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     }
     expect(porIata.get("VY")?.nombre).toBe("Vueling");
     expect(porIata.get("U2")?.nombre).toBe("easyJet");
+  });
+
+  it("ASU→MAD: TAP entra como gap con feeder a GRU y boletos separados aunque cubra POA→LIS", () => {
+    const origenesAsu = candidatos("ASU", "origen");
+    const rutasAsu = generarRutas(origenesAsu, destinos, grafo, cfg.fase2, cfg.hubs);
+    expect(rutasAsu.conservadas.some((r) => r.origen === "POA" && r.destino === "LIS" && r.aerolineas.includes("TP"))).toBe(true);
+    const tp = analizarGaps({ origenes: origenesAsu, destinos, ...rutasAsu, nombres }, grafo, cfg).find((g) => g.aerolinea === "TP");
+    expect(tp).toMatchObject({ rol: "gap_origen", operaEn: ["GRU"], hub: "LIS", prioridad: "alta", requiereBoletosSeparados: true, estado: "pendiente", cubreRutasObjetivo: true });
+    expect(tp?.hipotesis).toContain("ASU→GRU (boleto aparte con G3/JJ)→LIS→destino");
   });
 
   it("ordena: gaps de origen antes que feeders, por prioridad y luego por código", () => {

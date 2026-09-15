@@ -198,6 +198,13 @@ El monto original también se redondea hacia arriba.
 - Efecto en EZE→MAD ida 15/01/2027: 250 destinos, 50 rutas N1–2 (41 pares), **245 combinaciones** (EZE 92, SCL 57, MVD 33, POA 33, ASU 30): ahora sí dentro del rango 250–330 del proceso manual, y con una distribución por origen parecida. Queda resuelta la pendiente "radio o región" de 6.2.
 - Gap 1 de EZE pasa a TK, ET, LX, EK: BA ya no es gap porque EZE→LHR es una ruta Nivel 2 con LHR dentro del radio (el fixture lo documenta). Gap 2 se filtra a aerolíneas que conectan ≥ 3 destinos candidatos (`MIN_DESTINOS_FEEDER`): con 250 destinos aparecían Air China o Etihad por un solo tramo entre hubs europeos, que no son feeders.
 
+## Corrección (15/09/2026) — ASU→MAD no proponía TAP vía Lisboa
+
+- Caso reportado por el dueño: para ASU→MAD el camino barato es ASU→GRU (GOL) + GRU→LIS→MAD (TAP), dos boletos. El motor no lo mostraba por dos motivos: (1) no hay ruta de **boleto único** ASU→LIS en el dataset (ASU→GRU lo operan G3/JJ/PZ y GRU→LIS sólo TP), así que la Fase 2 la descarta correctamente; (2) la regla de hub de TP (`requiereFeederA: GRU/GIG` con `aerolineasFeeder: G3/AD/LA`) sí la contempla, pero **Set B se calculaba global**: como TP cubre POA→LIS (Nivel 2), quedaba excluida del gap de todos los orígenes. Ahora Set B es **por origen**: una aerolínea sólo deja de ser gap en el origen donde ya cubre una ruta Nivel 1–2.
+- Resultado: TP aparece en Gap 1 de ASU ("ASU→GRU (boleto aparte con G3/JJ)→LIS→destino", prioridad alta, boletos separados, pendiente de verificar) y genera combinaciones ASU→MAD vía LIS con confianza baja. Puntúan 23 frente a 54 de AA/US vía MIA: el puntaje no conoce precios, sólo nivel de ruta, presión y penalizaciones (sin verificar −15, boletos separados −8); el precio real sale de verificar o de cargar a mano (TAP no tiene adaptador). Kayak sí muestra estas combinaciones de dos boletos como "self-transfer".
+- Límite que sigue: fuera de las reglas de hub, el motor **no arma boletos separados** entre aerolíneas sin relación (Prompt 2 de la Fase 5, "split tickets"). Es la próxima pieza si el dueño la prioriza: para cada origen, tramo 1 a un hub intermedio (GRU, GIG, BOG, PTY, LIM, SCL) con cualquier aerolínea + tramo 2 hub→destino con otra, marcado como boletos separados.
+- Ruido del dataset visible en ASU: `US` (US Airways, absorbida por AA en 2015) sigue contando como aerolínea vía MIA y duplica combinaciones AA/US.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
