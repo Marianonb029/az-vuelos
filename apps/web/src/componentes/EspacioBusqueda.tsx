@@ -78,9 +78,10 @@ export const EspacioBusqueda = ({ aeropuertos, adaptadores, hoy, onVerificar }: 
       )}
       {resultado && (
         <>
-          <ResultadosEspacio resultado={resultado} adaptadores={adaptadores} />
-          <CalendarioPresion key={`c-${resultado.origen}-${resultado.destino}`} origen={resultado.origen} destino={resultado.destino} hoy={hoy} />
+          {/* Orden de decisión: qué verificar, cuándo volar, por dónde (hubs), y al final lo exploratorio. */}
           <Combinaciones key={`x-${resultado.origen}-${resultado.destino}`} origen={resultado.origen} destino={resultado.destino} hoy={hoy} adaptadores={adaptadores} onVerificar={onVerificar} />
+          <CalendarioPresion key={`c-${resultado.origen}-${resultado.destino}`} origen={resultado.origen} destino={resultado.destino} hoy={hoy} />
+          <ResultadosEspacio resultado={resultado} adaptadores={adaptadores} />
         </>
       )}
     </div>

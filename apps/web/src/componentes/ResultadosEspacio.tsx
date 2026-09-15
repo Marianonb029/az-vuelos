@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { CandidatoAeropuerto, GapAerolinea, ResultadoEspacio, Ruta } from "@az/espacio";
 import { fechaHoraCorta } from "@az/core";
+import { Bloque } from "./Bloque";
 
 interface Props {
   resultado: ResultadoEspacio;
@@ -150,42 +151,33 @@ export const ResultadosEspacio = ({ resultado, adaptadores }: Props) => {
         Nivel 3–4 · {separadas.length} boletos separados · {resultado.gaps.length} gaps · calculado {fechaHoraCorta(resultado.calculadoEn)}
       </p>
 
-      <section aria-label="Aeropuertos alternativos" className="grid gap-3 md:grid-cols-2">
-        <Candidatos titulo="Orígenes (radio de origen)" lista={resultado.origenes} />
-        <Candidatos titulo="Destinos (radio de destino)" lista={resultado.destinos} />
-      </section>
+      <Bloque orden={3} titulo={`Boletos separados: dos compras por un hub barato (${separadas.length})`} objetivo="Origen → hub con una aerolínea y hub → destino con otra (p. ej. GRU/GIG → LIS con TAP), sólo donde no hay boleto único. Suele ser lo más barato hacia Europa; sin protección de conexión, dejá margen entre vuelos.">
+        {separadas.length === 0 ? <p className="text-sm text-slate-500">Sin boletos separados con el dataset actual.</p> : <TablaRutas rutas={separadas} nombres={nombres} adaptadores={adaptadores} />}
+      </Bloque>
 
-      <section aria-label="Rutas">
-        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="text-sm font-medium text-slate-700">Rutas Nivel 1–2 ({conservadas.length})</h3>
-          <label className="flex items-center gap-2 text-xs text-slate-600">
-            <input type="checkbox" checked={verDescartadas} onChange={(e) => setVerDescartadas(e.target.checked)} />
-            Mostrar Nivel 3–4 persistidas ({descartadas.length})
-          </label>
-        </div>
+      <Bloque orden={4} titulo={`Rutas con boleto único, Nivel 1–2 (${conservadas.length})`} objetivo="Aerolíneas que vuelan la ruta directa o con 1 escala con frecuencia suficiente: son las que se verifican en su sitio oficial. Nivel 1 = máxima frecuencia. Las de Nivel 3–4 quedan guardadas por si hace falta.">
+        <label className="flex items-center gap-2 text-xs text-slate-600">
+          <input type="checkbox" checked={verDescartadas} onChange={(e) => setVerDescartadas(e.target.checked)} />
+          Mostrar Nivel 3–4 persistidas ({descartadas.length})
+        </label>
         {conservadas.length === 0 && <p className="text-sm text-slate-500">Ninguna ruta llega al Nivel 1–2 con el dataset actual.</p>}
         {conservadas.length > 0 && <TablaRutas rutas={conservadas} nombres={nombres} adaptadores={adaptadores} />}
-        {verDescartadas && descartadas.length > 0 && (
-          <div className="mt-3">
-            <TablaRutas rutas={descartadas} nombres={nombres} adaptadores={adaptadores} />
-          </div>
-        )}
-      </section>
+        {verDescartadas && descartadas.length > 0 && <TablaRutas rutas={descartadas} nombres={nombres} adaptadores={adaptadores} />}
+      </Bloque>
 
-      <section aria-label="Boletos separados">
-        <h3 className="mb-2 text-sm font-medium text-slate-700">Boletos separados Nivel 1–2 ({separadas.length})</h3>
-        <p className="mb-2 text-xs text-slate-500">
-          Dos compras: origen → hub con una aerolínea y hub → destino con otra, sólo donde no existe boleto único. Sin protección de conexión: conviene dejar margen entre vuelos.
-        </p>
-        {separadas.length === 0 ? <p className="text-sm text-slate-500">Sin boletos separados con el dataset actual.</p> : <TablaRutas rutas={separadas} nombres={nombres} adaptadores={adaptadores} />}
-      </section>
+      <Bloque orden={5} titulo="Aeropuertos alternativos (hasta 2000 km del origen y del destino)" objetivo="Salir o llegar por un aeropuerto cercano suele cambiar el precio más que la fecha. Estos ya están dentro de las rutas y combinaciones de arriba; acá se ve cuáles entraron y a qué distancia.">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Candidatos titulo="Orígenes (radio de origen)" lista={resultado.origenes} />
+          <Candidatos titulo="Destinos (radio de destino)" lista={resultado.destinos} />
+        </div>
+      </Bloque>
 
-      <section aria-label="Gaps de aerolíneas">
-        <h3 className="mb-2 text-sm font-medium text-slate-700">Gap 1 — aerolíneas presentes en el origen sin ruta Nivel 1–2 ({gapsOrigen.length})</h3>
+      <Bloque orden={6} titulo={`Gaps: aerolíneas por explorar (${resultado.gaps.length})`} objetivo="Aerolíneas presentes en el origen o que alimentan el destino sin ruta conocida en el dataset (OpenFlights 2014). Son hipótesis de confianza baja: sirven para mirar a mano su sitio, no para decidir.">
+        <h3 className="text-sm font-medium text-slate-700">Gap 1 — presentes en el origen sin ruta Nivel 1–2 ({gapsOrigen.length})</h3>
         {gapsOrigen.length === 0 ? <p className="text-sm text-slate-500">Sin gaps de origen.</p> : <TablaGaps gaps={gapsOrigen} />}
-        <h3 className="mb-2 mt-4 text-sm font-medium text-slate-700">Gap 2 — feeders de destino ({feeders.length})</h3>
+        <h3 className="mt-2 text-sm font-medium text-slate-700">Gap 2 — feeders de destino ({feeders.length})</h3>
         {feeders.length === 0 ? <p className="text-sm text-slate-500">Sin feeders de destino.</p> : <TablaGaps gaps={feeders} />}
-      </section>
+      </Bloque>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MAX_DIAS_RANGO, sumarDias } from "@az/core";
 import type { Busqueda, Cotizacion, CotizacionManual, EnvioFormulario, EstadoAdaptador, Exploracion, MetabuscadorRef, ValoresFormulario } from "@az/core";
+import { Bloque } from "./componentes/Bloque";
 import { BusquedaGuiada } from "./componentes/BusquedaGuiada";
 import type { VerificacionPedida } from "./componentes/Combinaciones";
 import { EspacioBusqueda } from "./componentes/EspacioBusqueda";
@@ -9,6 +10,7 @@ import { EstadoResultados } from "./componentes/EstadoResultados";
 import { FormularioBusqueda } from "./componentes/FormularioBusqueda";
 import { PendientesManual } from "./componentes/PendientesManual";
 import { ResultadosComparacion } from "./componentes/ResultadosComparacion";
+import { TableroOperaciones } from "./componentes/TableroOperaciones";
 import { crearBusqueda, crearExploracion, obtenerAdaptadores, obtenerCotizaciones, obtenerMetabuscadores, obtenerPendientesManual } from "./lib/api";
 import { aerolineas, aeropuertos } from "./lib/catalogos";
 import { hoyIso } from "./lib/hoy";
@@ -23,12 +25,13 @@ type Vista =
 
 const terminada = (b: Busqueda) => b.estado !== "pendiente" && b.estado !== "corriendo";
 
-type Pestana = "buscar" | "precios" | "espacio";
+type Pestana = "buscar" | "precios" | "espacio" | "operaciones";
 
 const PESTANAS: { id: Pestana; titulo: string }[] = [
   { id: "buscar", titulo: "Buscar" },
   { id: "precios", titulo: "Precio de una aerolínea" },
   { id: "espacio", titulo: "Espacio de búsqueda" },
+  { id: "operaciones", titulo: "Operaciones" },
 ];
 
 export const App = () => {
@@ -160,6 +163,10 @@ export const App = () => {
         </section>
       )}
 
+      <section aria-label="Operaciones" hidden={pestana !== "operaciones"}>
+        <TableroOperaciones visible={pestana === "operaciones"} />
+      </section>
+
       <section aria-label="Búsqueda" className="mb-8" hidden={pestana !== "precios"}>
         <FormularioBusqueda
           key={prellenado?.clave ?? 0}
@@ -200,13 +207,13 @@ export const App = () => {
         </section>
       )}
       {pestana === "precios" && vista?.tipo === "exploracion" && (
-        <section aria-label="Comparación">
+        <Bloque orden={1} titulo="Precios reales por aerolínea, misma ruta y fechas" objetivo="Una búsqueda por aerolínea leída en su sitio oficial, con captura y USD fechado. La tabla junta todas: la más barata primero. Decidí con esto.">
           <ResultadosComparacion
             busquedas={vista.busquedas}
             cotizaciones={vista.cotizaciones}
             nombres={new Map(adaptadores.map((a) => [a.iata, a.nombre]))}
           />
-        </section>
+        </Bloque>
       )}
     </main>
   );

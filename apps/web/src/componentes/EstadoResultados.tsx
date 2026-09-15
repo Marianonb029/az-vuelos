@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { combinaciones, esManual, esNoVerificada, esVerificada, fechaCorta, fechaHoraCorta } from "@az/core";
 import type { Busqueda, Cotizacion, CotizacionManual, CotizacionNoVerificada, MetabuscadorRef } from "@az/core";
+import { Bloque } from "./Bloque";
 import { CargaManual } from "./CargaManual";
 import { ComparacionMetabuscador } from "./ComparacionMetabuscador";
 import { CotizacionesManuales } from "./CotizacionesManuales";
@@ -86,7 +87,11 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCarga
   const corriendo = busqueda.estado === "pendiente" || busqueda.estado === "corriendo";
   const capturas = noVerificadas.filter((c) => c.evidencia.screenshotPath !== null).map((c) => ({ ruta: c.evidencia.screenshotPath ?? "", capturadoEn: c.evidencia.capturadoEn, url: c.evidencia.url }));
   const formulario = <CargaManual busqueda={busqueda} onCargada={onCargaManual} capturas={capturas} />;
-  const metabuscador = <ComparacionMetabuscador busquedaId={busqueda.id} metabuscadores={metabuscadores} cotizaciones={cotizaciones} />;
+  const metabuscador = metabuscadores.length === 0 ? null : (
+    <Bloque orden={3} titulo="Referencia de metabuscadores (no verificado)" objetivo="Kayak, Kiwi, Trip.com y otros muestran agencias y boletos separados que suelen ser más baratos. El delta contra el precio oficial de la misma fecha dice si vale la pena verificar esa opción antes de comprar.">
+      <ComparacionMetabuscador busquedaId={busqueda.id} metabuscadores={metabuscadores} cotizaciones={cotizaciones} />
+    </Bloque>
+  );
 
   if (busqueda.estado === "bloqueada" || busqueda.estado === "fallida") {
     const ultimoIntento = noVerificadas.at(-1)?.evidencia.capturadoEn ?? busqueda.creadaEn;
@@ -116,8 +121,16 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCarga
   return (
     <div className="grid gap-4">
       {corriendo && <Progreso hechas={cotizaciones.length} total={combos.length} aviso={busqueda.aviso} />}
-      {verificadas.length > 0 && <TablaResultados cotizaciones={verificadas} />}
-      {manuales.length > 0 && <CotizacionesManuales cotizaciones={manuales} />}
+      {verificadas.length > 0 && (
+        <Bloque orden={1} titulo="Precios reales leídos en el sitio oficial" objetivo="Es el precio que se paga: leído del sitio oficial de la aerolínea, con captura como prueba y convertido a USD con tasa fechada. Una fila por fecha; la más barata primero. Decidí con esto.">
+          <TablaResultados cotizaciones={verificadas} />
+        </Bloque>
+      )}
+      {manuales.length > 0 && (
+        <Bloque orden={2} titulo="Precios verificados a mano en el sitio oficial" objetivo="Leídos por una persona en el sitio oficial y cargados con captura. Valen como precio real; el itinerario está en la nota.">
+          <CotizacionesManuales cotizaciones={manuales} />
+        </Bloque>
+      )}
       {!corriendo && verificadas.length === 0 && manuales.length === 0 && (
         <section className="rounded-md border border-slate-200 p-4 text-sm text-slate-700">
           <p className="font-medium">No se encontraron vuelos publicados para esta combinación.</p>
@@ -126,14 +139,18 @@ export const EstadoResultados = ({ busqueda, cotizaciones, onReintentar, onCarga
           </p>
         </section>
       )}
-      {noVerificadas.length > 0 && <NoVerificadas lista={noVerificadas} />}
-      {!corriendo && (busqueda.estado === "parcial" || noVerificadas.length > 0) && (
-        <details className="rounded-md border border-slate-200 p-3 text-sm">
-          <summary className="cursor-pointer text-slate-700">Cargar a mano una fecha sin precio</summary>
-          <div className="mt-3">{formulario}</div>
-        </details>
-      )}
       {!corriendo && metabuscador}
+      {(noVerificadas.length > 0 || (!corriendo && busqueda.estado === "parcial")) && (
+        <Bloque orden={4} titulo="Fechas sin precio verificado" objetivo="Fechas que el sistema no pudo leer (sin disponibilidad, bloqueo o error). No hay precio estimado: se cargan a mano desde el sitio oficial o se reintentan.">
+          {noVerificadas.length > 0 && <NoVerificadas lista={noVerificadas} />}
+          {!corriendo && (
+            <details className="rounded-md border border-slate-200 p-3 text-sm">
+              <summary className="cursor-pointer text-slate-700">Cargar a mano una fecha sin precio</summary>
+              <div className="mt-3">{formulario}</div>
+            </details>
+          )}
+        </Bloque>
+      )}
     </div>
   );
 };

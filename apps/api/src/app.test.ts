@@ -23,7 +23,7 @@ const armar = () => {
   const ejecutar = vi.fn();
   const eventos = crearEventos();
   const leerMetabuscador = vi.fn(async () => {});
-  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) }, cargaManual: { obtenerTablaFx: vi.fn(async () => ({ fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z", usdA: { EUR: 0.926441 } })), nombreAerolinea: () => "LATAM", notificar: eventos.notificar }, metabuscadores: [kayakFalso], leerMetabuscador });
+  const app = crearApp({ db, directorioEvidencia, eventos, ejecutar, espacio, feriados: { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) }, cargaManual: { obtenerTablaFx: vi.fn(async () => ({ fuente: "ExchangeRate-API", capturadaEn: "2026-09-14T00:02:31.000Z", usdA: { EUR: 0.926441 } })), nombreAerolinea: () => "LATAM", notificar: eventos.notificar }, metabuscadores: [kayakFalso], leerMetabuscador, estadoCola: () => ({ corriendo: 0, pendientes: 0, dominiosActivos: [], maxSimultaneos: 2 }) });
   return { app, ejecutar, eventos, directorioEvidencia, db, leerMetabuscador };
 };
 

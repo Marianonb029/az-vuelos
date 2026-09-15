@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
 import type { Combinacion, ResultadoCombinaciones } from "@az/espacio";
 import { obtenerCombinaciones, urlExportarEspacio } from "../lib/api";
+import { Bloque } from "./Bloque";
 
 export interface VerificacionPedida {
   aerolineaIata: string;
@@ -91,8 +92,11 @@ export const Combinaciones = ({ origen, destino, hoy, adaptadores, onVerificar }
   for (const c of resultado?.combinaciones ?? []) porOrigen.set(c.origen, [...(porOrigen.get(c.origen) ?? []), c]);
 
   return (
-    <section aria-label="Combinaciones" className="grid gap-3">
-      <h3 className="text-sm font-medium text-slate-700">Combinaciones — {origen} → {destino}, por ventana de ida</h3>
+    <Bloque
+      orden={1}
+      titulo={`Combinaciones a verificar: ${origen} → ${destino}, por ventana de ida`}
+      objetivo="Cada fila es una hipótesis (ruta + aerolínea + ventana de ida) con mejor chance de precio bajo según rutas, hubs y calendario. El puntaje ordena dónde mirar primero; no es un precio. Verificá en el sitio oficial o cargá el precio a mano."
+    >
       <form onSubmit={(e) => void calcular(e)} className="flex flex-wrap items-end gap-3 text-sm">
         <label className="flex flex-col gap-1 text-slate-700">
           Ida desde
@@ -158,6 +162,6 @@ export const Combinaciones = ({ origen, destino, hoy, adaptadores, onVerificar }
           </p>
         </>
       )}
-    </section>
+    </Bloque>
   );
 };

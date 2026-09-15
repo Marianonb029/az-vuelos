@@ -1,4 +1,6 @@
 import Fastify from "fastify";
+import { REGISTRO } from "@az/scraper";
+import type { EstadoCola } from "@az/core";
 import type { Db } from "./db/conexion";
 import { repoBloqueos } from "./repos/bloqueos";
 import { repoBusquedas } from "./repos/busquedas";
@@ -11,6 +13,7 @@ import { rutasEspacio } from "./rutas/espacio";
 import { rutasEvidencia } from "./rutas/evidencia";
 import { rutasExploraciones } from "./rutas/exploraciones";
 import { rutasMetabuscadores } from "./rutas/metabuscadores";
+import { rutasOperaciones } from "./rutas/operaciones";
 import { rutasProgreso } from "./rutas/progreso";
 import type { DependenciasCargaManual } from "./servicios/carga-manual";
 import type { ServicioEspacio } from "./servicios/espacio";
@@ -28,6 +31,7 @@ export interface OpcionesApp {
   cargaManual: Pick<DependenciasCargaManual, "obtenerTablaFx" | "nombreAerolinea" | "notificar">;
   metabuscadores: readonly AdaptadorMetabuscador[];
   leerMetabuscador: (busquedaId: string, m: AdaptadorMetabuscador) => Promise<void>;
+  estadoCola: () => EstadoCola;
 }
 
 export const crearApp = (op: OpcionesApp) => {
@@ -45,6 +49,13 @@ export const crearApp = (op: OpcionesApp) => {
   rutasEvidencia(app, op.directorioEvidencia);
   rutasMetabuscadores(app, { busquedas, lecturas: repoLecturasMetabuscador(op.db), metabuscadores: op.metabuscadores, encolar: op.leerMetabuscador });
   rutasEspacio(app, op.espacio, op.feriados);
+  rutasOperaciones(app, {
+    db: op.db,
+    bloqueos,
+    estadoCola: op.estadoCola,
+    adaptadores: { propios: REGISTRO.filter((a) => !a.generico).length, asistidos: REGISTRO.filter((a) => a.generico).length },
+    metabuscadores: op.metabuscadores.map((m) => m.ref.id),
+  });
 
   return app;
 };

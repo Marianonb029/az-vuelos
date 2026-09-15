@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Busqueda, Cotizacion, MetabuscadorRef } from "@az/core";
 import { suscribirProgreso } from "../lib/progreso";
+import { Bloque } from "./Bloque";
 import { ComparacionMetabuscador } from "./ComparacionMetabuscador";
 import { ResultadosComparacion } from "./ResultadosComparacion";
 
@@ -38,6 +39,38 @@ export const VerificacionesEnCurso = ({ iniciales, nombres, metabuscadores, onAb
   const cotizaciones = lista.flatMap((e) => e.cotizaciones);
   const manuales = busquedas.filter((b) => b.estado === "manual_pendiente" || b.estado === "bloqueada" || b.estado === "fallida");
 
+  // Orden de decisión: primero el precio real, después la referencia de terceros, al final lo que falta cargar.
+  const manual = manuales.length === 0 ? null : (
+    <ul className="grid gap-1 text-sm">
+      {manuales.map((b) => (
+        <li key={b.id} className="flex flex-wrap items-center gap-x-3">
+          <span className="font-medium text-slate-900">
+            {b.aerolineaIata} — {nombres.get(b.aerolineaIata) ?? b.aerolineaIata}
+          </span>
+          <span className="text-slate-700">
+            {b.origenIata} → {b.destinoIata} · {rango(b)}
+          </span>
+          <button type="button" onClick={() => onAbrir(b)} className="rounded-md border border-violet-500 px-2 py-0.5 text-xs font-medium text-violet-800 hover:bg-violet-50">
+            Cargar precio
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+  const terminadas = lista.filter((e) => terminada(e.busqueda));
+  const referencia = metabuscadores.length === 0 || terminadas.length === 0 ? null : (
+    <div className="grid gap-3">
+      {terminadas.map((e) => (
+        <div key={e.busqueda.id}>
+          <p className="mb-1 text-xs text-slate-600">
+            {e.busqueda.aerolineaIata} · {e.busqueda.origenIata} → {e.busqueda.destinoIata} · {rango(e.busqueda)}
+          </p>
+          <ComparacionMetabuscador busquedaId={e.busqueda.id} metabuscadores={metabuscadores} cotizaciones={e.cotizaciones} />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="grid gap-4">
       {error && (
@@ -45,43 +78,18 @@ export const VerificacionesEnCurso = ({ iniciales, nombres, metabuscadores, onAb
           {error}
         </p>
       )}
-      <ResultadosComparacion busquedas={busquedas} cotizaciones={cotizaciones} nombres={nombres} modo="verificar" />
-      {manuales.length > 0 && (
-        <section aria-label="Para cargar a mano" className="rounded-md border border-violet-200 bg-violet-50 p-3">
-          <h3 className="mb-2 text-sm font-medium text-violet-900">Sin lectura automática: cargá el precio leído en el sitio oficial</h3>
-          <ul className="grid gap-1 text-sm">
-            {manuales.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center gap-x-3">
-                <span className="font-medium text-slate-900">
-                  {b.aerolineaIata} — {nombres.get(b.aerolineaIata) ?? b.aerolineaIata}
-                </span>
-                <span className="text-slate-700">
-                  {b.origenIata} → {b.destinoIata} · {rango(b)}
-                </span>
-                <button type="button" onClick={() => onAbrir(b)} className="rounded-md border border-violet-500 px-2 py-0.5 text-xs font-medium text-violet-800 hover:bg-violet-50">
-                  Cargar precio
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+      <Bloque orden={1} titulo="Precios reales leídos en los sitios oficiales" objetivo="Es el precio que se paga: leído del sitio oficial de cada aerolínea, con captura como prueba y convertido a USD con tasa fechada. Por fecha, de menor a mayor. Decidí con esto.">
+        <ResultadosComparacion busquedas={busquedas} cotizaciones={cotizaciones} nombres={nombres} modo="verificar" />
+      </Bloque>
+      {referencia && (
+        <Bloque orden={2} titulo="Referencia de metabuscadores (no verificado)" objetivo="Kayak, Kiwi, Trip.com y otros muestran agencias y boletos separados que suelen ser más baratos. El delta contra el precio oficial dice si vale la pena verificar esa opción antes de comprar.">
+          {referencia}
+        </Bloque>
       )}
-      {metabuscadores.length > 0 && busquedas.some(terminada) && (
-        <details className="rounded-md border border-orange-200 p-3">
-          <summary className="cursor-pointer text-sm font-medium text-orange-900">Comparar con metabuscadores (por búsqueda)</summary>
-          <div className="mt-3 grid gap-3">
-            {lista
-              .filter((e) => terminada(e.busqueda))
-              .map((e) => (
-                <div key={e.busqueda.id}>
-                  <p className="mb-1 text-xs text-slate-600">
-                    {e.busqueda.aerolineaIata} · {e.busqueda.origenIata} → {e.busqueda.destinoIata} · {rango(e.busqueda)}
-                  </p>
-                  <ComparacionMetabuscador busquedaId={e.busqueda.id} metabuscadores={metabuscadores} cotizaciones={e.cotizaciones} />
-                </div>
-              ))}
-          </div>
-        </details>
+      {manual && (
+        <Bloque orden={3} titulo="Sin lectura automática: precio a cargar a mano" objetivo="Aerolíneas sin lector o que bloquearon la lectura: leé el precio en su sitio oficial y cargalo con captura para que entre en la comparación con los demás.">
+          {manual}
+        </Bloque>
       )}
     </div>
   );

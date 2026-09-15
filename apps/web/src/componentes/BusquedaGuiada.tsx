@@ -4,6 +4,7 @@ import { MAX_DIAS_RANGO, buscarAeropuertos, etiquetaAeropuerto, sumarDias } from
 import type { Aeropuerto, Busqueda, EquipajeSolicitado, MetabuscadorRef, NuevaBusqueda, RangoFechas } from "@az/core";
 import type { Combinacion, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
 import { crearBusqueda, obtenerCombinaciones, obtenerEspacio, urlExportarEspacio } from "../lib/api";
+import { Bloque } from "./Bloque";
 import { CalendarioRango } from "./CalendarioRango";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
@@ -158,11 +159,16 @@ export const BusquedaGuiada = ({ aeropuertos, adaptadores, asistidas = new Set()
         </p>
       )}
 
+      {busquedas && (
+        <VerificacionesEnCurso key={busquedas.map((b) => b.id).join(",")} iniciales={busquedas} nombres={nombres} metabuscadores={metabuscadores} onAbrir={onAbrirBusqueda} />
+      )}
+
       {e && x && (
-        <section aria-label="Opciones encontradas" className="grid gap-3">
-          <h2 className="text-base font-semibold text-slate-900">
-            Paso 2 · {x.combinaciones.length} combinaciones para {e.origen} → {e.destino}
-          </h2>
+        <Bloque
+          orden={4}
+          titulo={`Combinaciones a verificar: ${x.combinaciones.length} para ${e.origen} → ${e.destino}`}
+          objetivo="Cada fila es una hipótesis (ruta + aerolínea + ventana de ida) con mejor chance de precio bajo según rutas, hubs y calendario. El puntaje ordena dónde mirar primero; no es un precio. Elegí y verificá en los sitios oficiales."
+        >
           <p className="text-sm text-slate-600" data-testid="resumen-guiado">
             {e.origenes.length} aeropuertos de salida y {e.destinos.length} de llegada · {e.rutas.conservadas.length} rutas Nivel 1–2 · {e.gaps.length} aerolíneas por explorar · ventanas verdes buscadas entre{" "}
             {x.calendario.desde} y {x.calendario.hasta} ·{" "}
@@ -181,14 +187,7 @@ export const BusquedaGuiada = ({ aeropuertos, adaptadores, asistidas = new Set()
               {lanzando ? "Lanzando…" : `Verificar ${seleccion.size} en los sitios oficiales`}
             </button>
           </div>
-        </section>
-      )}
-
-      {busquedas && (
-        <section aria-label="Verificaciones" className="grid gap-3">
-          <h2 className="text-base font-semibold text-slate-900">Paso 3 · Precios leídos en los sitios oficiales</h2>
-          <VerificacionesEnCurso key={busquedas.map((b) => b.id).join(",")} iniciales={busquedas} nombres={nombres} metabuscadores={metabuscadores} onAbrir={onAbrirBusqueda} />
-        </section>
+        </Bloque>
       )}
     </div>
   );

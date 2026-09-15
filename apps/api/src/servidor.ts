@@ -12,7 +12,7 @@ import { repoBusquedas } from "./repos/busquedas";
 import { repoCache } from "./repos/cache";
 import { repoCotizaciones } from "./repos/cotizaciones";
 import { repoRegistros } from "./repos/registros";
-import { crearCola } from "./servicios/cola";
+import { MAX_NAVEGADORES, crearCola } from "./servicios/cola";
 import { crearServicioEspacio } from "./servicios/espacio";
 import { crearServicioFeriados } from "./servicios/feriados";
 import { leerMetabuscador } from "./servicios/leer-metabuscador";
@@ -88,6 +88,7 @@ const app = crearApp({
   cargaManual: { obtenerTablaFx, nombreAerolinea: (iata) => aerolineas.get(iata) ?? null, notificar: eventos.notificar },
   metabuscadores: REGISTRO_METABUSCADORES,
   leerMetabuscador: encolarMetabuscador,
+  estadoCola: () => ({ ...cola.estado(), maxSimultaneos: MAX_NAVEGADORES }),
 });
 
 app.listen({ port: config.puerto, host: "127.0.0.1" }).then((direccion) => {

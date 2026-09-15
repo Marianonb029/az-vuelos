@@ -17,7 +17,7 @@ const feriados = {
     avisos: ["Sin feriados de ES 2027: Nager.Date respondió HTTP 503 para ES 2027"],
   }),
 };
-const app = crearApp({ db: abrirDb(":memory:", config.directorioMigraciones), directorioEvidencia: mkdtempSync(join(tmpdir(), "az-")), eventos: crearEventos(), ejecutar: vi.fn(), espacio, feriados, cargaManual: { obtenerTablaFx: vi.fn(), nombreAerolinea: () => null, notificar: vi.fn() }, metabuscadores: [], leerMetabuscador: vi.fn(async () => {}) });
+const app = crearApp({ db: abrirDb(":memory:", config.directorioMigraciones), directorioEvidencia: mkdtempSync(join(tmpdir(), "az-")), eventos: crearEventos(), ejecutar: vi.fn(), espacio, feriados, cargaManual: { obtenerTablaFx: vi.fn(), nombreAerolinea: () => null, notificar: vi.fn() }, metabuscadores: [], leerMetabuscador: vi.fn(async () => {}), estadoCola: () => ({ corriendo: 0, pendientes: 0, dominiosActivos: [], maxSimultaneos: 2 }) });
 
 describe("GET /espacio/calendario", () => {
   it("pide feriados de ambos países y devuelve el calendario con ventanas verdes y avisos", async () => {

@@ -107,7 +107,7 @@ describe("BusquedaGuiada", () => {
     fireEvent.click(screen.getByRole("button", { name: "Buscar opciones" }));
 
     await waitFor(() => expect(screen.getByTestId("resumen-guiado")).toBeTruthy());
-    expect(screen.getByText(/4 combinaciones para EZE → MAD/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Combinaciones a verificar: 4 para EZE → MAD" })).toBeTruthy();
     const casillas = screen.getAllByRole("checkbox") as HTMLInputElement[];
     expect(casillas.map((c) => c.checked)).toEqual([true, false, true, false]); // AR sí, TK y UX no
     expect(screen.getByText("2 de 4 seleccionadas")).toBeTruthy();
@@ -117,7 +117,9 @@ describe("BusquedaGuiada", () => {
     await waitFor(() => expect(creadas).toHaveLength(3));
     expect(creadas.map((b) => [b.aerolineaIata, b.rangoIda.desde, b.tipo])).toEqual([["AR", "2027-01-25", "ida"], ["TK", "2027-01-25", "ida"], ["AR", "2027-01-15", "ida"]]);
     await waitFor(() => expect(screen.getByText(/Verificando 3 combinaciones/)).toBeTruthy());
-    expect(screen.getByRole("region", { name: "Para cargar a mano" }).textContent).toContain("TK — Turkish Airlines");
+    expect(screen.getByRole("region", { name: "Sin lectura automática: precio a cargar a mano" }).textContent).toContain("TK — Turkish Airlines");
+    // orden de decisión: 1 precios reales, 2 carga manual (sin metabuscadores en este test), 3 combinaciones
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Precios reales leídos en los sitios oficiales", "Sin lectura automática: precio a cargar a mano", "Combinaciones a verificar: 4 para EZE → MAD"]);
     fireEvent.click(screen.getByRole("button", { name: "Cargar precio" }));
     expect(onAbrir).toHaveBeenCalledWith(expect.objectContaining({ aerolineaIata: "TK", estado: "manual_pendiente" }));
   });

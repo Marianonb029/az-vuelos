@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Busqueda, Cotizacion, CotizacionManual, EstadoAdaptador, EstadoMetabuscador, Exploracion, MetabuscadorRef } from "@az/core";
+import { Busqueda, Cotizacion, CotizacionManual, EstadoAdaptador, EstadoMetabuscador, Exploracion, MetabuscadorRef, ResumenOperaciones } from "@az/core";
 import type { CargaManual, NuevaBusqueda, NuevaExploracion } from "@az/core";
 import { ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
 
@@ -60,3 +60,6 @@ export const urlExportarEspacio = (origen: string, destino: string, desde: strin
   `${BASE}/espacio/exportar?origen=${origen}&destino=${destino}&desde=${desde}&hasta=${hasta}&formato=${formato}`;
 
 export const urlEvidencia = (screenshotPath: string) => `${BASE}/evidencia/${screenshotPath}`;
+
+// Tablero de operaciones: cuentas sobre lo registrado, desde una fecha y hora o todo.
+export const obtenerOperaciones = (desde: string | null) => pedir(ResumenOperaciones, `/operaciones${desde === null ? "" : `?desde=${encodeURIComponent(desde)}`}`);

@@ -271,6 +271,16 @@ Pedido: Turismocity, Viajala, Kayak, Google Flights, Skyscanner, Momondo, Hopper
 - Comprobado en vivo ASU→MAD 19/01/2027: Kiwi USD 772 (GOL+Iberia vía GIG y LIS, self-transfer), Momondo USD 707 (GOL+TAP vía GIG/LIS, boletos separados), Trip.com USD 708 (GOL+TAP), Turismocity USD 782 (G3+IB vía Kissandfly), Viajala USD 814 (G3+TP vía Kiwi), Google USD 987 (AR vía AEP/EZE con cambio de aeropuerto). Es exactamente el camino vía Lisboa que el dueño señaló como faltante en la Fase 6.10: ahora aparece en seis fuentes de referencia.
 - Regla mantenida: ninguna oferta de metabuscador es cotización; el precio válido sigue saliendo del sitio oficial.
 
+## Fase 8.1 (15/09/2026) — salidas con título y objetivo, orden por peso en la decisión, tablero de operaciones
+
+Pedido del dueño: que cada salida diga para qué existe, que se ordenen por lo que más ayuda a encontrar un vuelo barato, y un tablero con las métricas de las operaciones que hace el sistema al buscar.
+
+- **`Bloque`** (`apps/web/src/componentes/Bloque.tsx`): toda salida es una sección con título (el objetivo), una línea de "cómo usarlo" y un número fijo de **peso en la decisión** (1 = lo que más pesa). El número es fijo por tipo de salida, no por posición en pantalla: si falta un bloque intermedio, se salta el número y el orden sigue siendo legible.
+- **Orden acordado.** Buscar / Precio de una aerolínea: 1 precios reales leídos en los sitios oficiales · 2 precios verificados a mano (o referencia de metabuscadores en Buscar) · 3 referencia de metabuscadores (o precio a cargar a mano) · 4 combinaciones elegidas / fechas sin precio. Espacio de búsqueda: 1 combinaciones a verificar · 2 cuándo volar (calendario de presión) · 3 boletos separados por hub barato · 4 rutas con boleto único · 5 aeropuertos alternativos · 6 gaps. Es el orden inverso al de cálculo del SPEC: primero lo accionable, al final lo exploratorio.
+- **Tablero de operaciones** (`GET /operaciones?desde=`, `apps/api/src/servicios/operaciones.ts`, `ResumenOperaciones` en core): cuentas sobre lo ya registrado en SQLite (búsquedas, cotizaciones, `cache_lecturas`, `registro_robots`, `intentos_fallidos`, `bloqueos`, `lecturas_metabuscador`) más el estado vivo de la cola. No abre Chrome ni agrega tablas: la bitácora de la sección 8 del brief ya tenía todo. La duración de una búsqueda se mide de su creación a su última cotización (mediana y máxima sobre completas y parciales). La tasa de cambio mostrada es la última tabla congelada que usó una cotización no USD, con sus pares.
+- La pestaña Operaciones consulta sólo mientras está visible y se refresca cada 10 s; ventana 24 h (por defecto), 7 días o todo.
+- Comprobado en vivo con la base actual: 52 lecturas en 24 h con 29 % verificadas, 39 de 44 consultas a robots.txt en Disallow (metabuscadores), intentos fallidos concentrados en JA (JetSMART) e IB.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

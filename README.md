@@ -32,7 +32,18 @@ La pantalla principal muestra el **estado de cada adaptador**: modo, última lec
 
 ## Búsqueda guiada (pestaña Buscar)
 
-Origen, destino, fechas y equipaje → el sistema arma el espacio de búsqueda (aeropuertos alternativos, rutas, gaps, calendario de presión) y propone combinaciones puntuadas. Se eligen las que se quieren verificar y cada una se lee en el sitio oficial de su aerolínea (o queda para carga manual si no hay adaptador). Al final, tabla consolidada de precios y comparación vía Kayak por búsqueda.
+Origen, destino, fechas y equipaje → el sistema arma el espacio de búsqueda (aeropuertos alternativos, rutas, gaps, calendario de presión) y propone combinaciones puntuadas. Se eligen las que se quieren verificar y cada una se lee en el sitio oficial de su aerolínea (o queda para carga manual si no hay adaptador). Al final, tabla consolidada de precios y comparación vía metabuscadores por búsqueda.
+
+## Cómo leer las salidas: título, objetivo y peso en la decisión
+
+Cada salida de la app es un bloque con **título** (el objetivo por el que existe), una línea de **cómo usarlo** y un número de **peso en la decisión**: 1 es lo que más pesa para elegir un vuelo barato; los bloques se muestran en ese orden.
+
+- Pestaña **Buscar** y **Precio de una aerolínea**: 1 precios reales leídos en los sitios oficiales → 2 precios verificados a mano / referencia de metabuscadores → 3 referencia de metabuscadores / precio a cargar a mano → 4 combinaciones elegidas o fechas sin precio.
+- Pestaña **Espacio de búsqueda**: 1 combinaciones a verificar (por puntaje) → 2 cuándo volar (calendario de presión) → 3 boletos separados por un hub barato → 4 rutas con boleto único → 5 aeropuertos alternativos → 6 gaps (aerolíneas por explorar, confianza baja).
+
+## Tablero de operaciones (pestaña Operaciones)
+
+Qué hizo el sistema para buscar precios, en cuentas y nunca precios: lecturas corriendo y en cola (máximo 2 navegadores, nunca dos sobre el mismo sitio), aerolíneas bloqueadas ahora, lecturas en sitios oficiales por estado con tasa de verificación, capturas guardadas y lecturas reutilizables de caché, búsquedas por estado con duración mediana y máxima, tasa de cambio aplicada (fuente, fecha, pares), lecturas por metabuscador, consultas a robots.txt (y cuántas caen en un Disallow), intentos fallidos por sitio y cobertura (lectores propios, asistidos, metabuscadores). Ventana de 24 h, 7 días o todo; se refresca cada 10 s. `GET /operaciones?desde=<ISO>`.
 
 ## Carga manual (aerolíneas sin adaptador o bloqueadas)
 

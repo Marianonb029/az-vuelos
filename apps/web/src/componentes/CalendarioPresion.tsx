@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
 import type { Banda, PuntajeDia, ResultadoCalendario } from "@az/espacio";
 import { obtenerCalendario } from "../lib/api";
+import { Bloque } from "./Bloque";
 
 interface Props {
   origen: string;
@@ -88,10 +89,11 @@ export const CalendarioPresion = ({ origen, destino, hoy }: Props) => {
   const meses = resultado ? [...new Set(resultado.puntajes.map((p) => p.fecha.slice(0, 7)))] : [];
 
   return (
-    <section aria-label="Calendario de presión" className="grid gap-3">
-      <h3 className="text-sm font-medium text-slate-700">
-        Calendario de presión de demanda — salidas desde {origen} hacia {destino}
-      </h3>
+    <Bloque
+      orden={2}
+      titulo={`Cuándo volar: calendario de presión de demanda, salidas ${origen} → ${destino}`}
+      objetivo="Días verdes = menos demanda (sin feriados ni fines de semana largos en origen ni destino): ahí suelen estar las tarifas bajas. Si la fecha es flexible, mové la ida a una ventana verde antes de verificar."
+    >
       <form onSubmit={(e) => void calcular(e)} className="flex flex-wrap items-end gap-3 text-sm">
         <label className="flex flex-col gap-1 text-slate-700">
           Desde
@@ -140,6 +142,6 @@ export const CalendarioPresion = ({ origen, destino, hoy }: Props) => {
           </p>
         </>
       )}
-    </section>
+    </Bloque>
   );
 };
