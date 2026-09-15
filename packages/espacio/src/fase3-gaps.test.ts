@@ -110,7 +110,7 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(rutasAsu.conservadas.some((r) => r.origen === "POA" && r.destino === "LIS" && r.aerolineas.includes("TP"))).toBe(true);
     const tp = analizarGaps({ origenes: origenesAsu, destinos, ...rutasAsu, nombres }, grafo, cfg).find((g) => g.aerolinea === "TP");
     expect(tp).toMatchObject({ rol: "gap_origen", operaEn: ["GRU"], hub: "LIS", prioridad: "alta", requiereBoletosSeparados: true, estado: "pendiente", cubreRutasObjetivo: true });
-    expect(tp?.hipotesis).toContain("ASU→GRU (boleto aparte con G3/JJ)→LIS→destino");
+    expect(tp?.hipotesis).toContain("ASU→GRU (boleto aparte con G3)→LIS→destino");
   });
 
   it("ordena: gaps de origen antes que feeders, por prioridad y luego por código", () => {
