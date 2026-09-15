@@ -362,6 +362,43 @@ El dueño pidió el total de aerolíneas que operan cada ruta, no sólo la del t
   Conclusión: en los cinco tramos el dataset no tiene aerolíneas de menos; en dos tiene una de más que Kiwi no vendía ese día concreto (no es que no exista la ruta). No se agregan overrides manuales.
 - La lista "Carriers" del filtro de Kiwi es global (todas las aerolíneas que Kiwi conoce), no sirve para contar competencia; sólo valen los logos de las tarjetas con el filtro de directos.
 
+## Fase 10 (15/09/2026) — certeza como objetivo: validación, competencia real, variables faltantes y refresco
+
+Orden del dueño: *"implementa todo. La certeza es un objetivo entre las herramientas gratuitas y públicas que podemos acceder. Lo ideal es identificar, de múltiples combinaciones, las de mayor probabilidad de menor valor para llegar al destino solicitado, según las variables que afectarían los precios de las aerolíneas y que podemos medir con certeza o inferencia de otra información pública y gratuita."* Se implementaron los 19 puntos de la revisión previa (A–E). Lo que sigue es qué se hizo y, sobre todo, qué mide.
+
+**A. Poder medir (la única certeza posible es cuántas veces el orden acierta)**
+- `POST /observaciones`: desde "Ver" en cualquier fila se anota el precio visto en un metabuscador (USD y fuente). `GET /validacion` mide por consulta (origen, destino, fechas, ≥3 precios): **correlación de Spearman índice↔precio**, **acierto top 5** (el más barato observado cayó en las 5 primeras) y **USD por punto de índice** (mediana; también por mes de viaje, para calibrar temporadas), más los peores desvíos (rutas que salieron más baratas de lo que el índice decía).
+- Semilla: `pnpm importar-observaciones` pasa a `data/local/observaciones.json` los 108 precios que la fase anterior leyó (SQLite local, con `node:sqlite`) y los ubica en el ranking actual (50 con posición; los de Kiwi sin IATA de escala quedan sin posición).
+- **Primera medición real**: sobre 3 consultas medibles (ASU→MAD 19 y 20/01/2027, EZE→MAD 28/09/2026) el índice de partida da **correlación −0.19 y acierto top 5 del 33 %**: no acierta. Los peores desvíos son los boletos separados vía GRU/GIG (−34 %): el índice los castigaba y son lo más barato.
+- `pnpm calibrar`: búsqueda por coordenadas sobre los factores de `fase7` maximizando la correlación media; escribe `config/espacio.calibrado.json` (propuesta, no pisa la config). Primera corrida: **de −0.22 a +0.66** con dos cambios: boletos separados ×0.92 (más baratos, no más caros) y bajo costo ×0.75. Con 50 observaciones de un solo par es sobreajuste seguro: **no se aplicó**; hay que juntar consultas de más pares antes de copiarla.
+- Empates (índices a <2 %: marca ≈N), familias (misma estrategia con distinto origen: se muestra la mejor, "+N de la misma familia" despliega) y robustez (puesto mín–máx al mover cada factor ±20 %, bajo el número de puesto).
+
+**B. Competencia real**
+- `grafo.gruposTarifarios`: IAG, LATAM-Delta, Air France-KLM, Lufthansa Group (con ITA), Abra (Avianca+GOL), American-JetSMART, United-Copa, Turkish-Air Europa, etc. Una unidad de competencia por grupo.
+- Competencia **efectiva** = suma por grupo del peso de cada aerolínea, `min(1, números de vuelo / 4)` con piso 0,5: una aerolínea con un vuelo aislado no compite como una con vuelos diarios. La tabla de factor se interpola (2,5 → ×0,87). La UI muestra total, efectiva y tramo más cerrado; cada código lleva `lc` si es bajo costo y el tooltip trae sus números de vuelo.
+- Dataset: fuera los tramos de un solo callsign de aerolíneas que no tocan ni origen ni destino en otra ruta (9.232 descartes; queda ruido residual como Air China ALC→NCL con 2 callsigns).
+
+**C. Variables de la tarifa que faltaban** (todas en `config/espacio.json` → `fase7`)
+- Anticipación: ≤7 días ×1,45 · ≤21 ×1,30 · ≤45 ×1,15 · ≤90 ×1,05 · resto ×1,0. Estadía (ida y vuelta): ≤2 días ×1,2 · ≤5 ×1,1 · ≤30 ×1,0 · más ×1,05.
+- Restricción de vía (visa/ESTA en hubs de EE.UU.) ahora también en el índice (×1,15) y marcada en la fila.
+- Equipaje "sólo mano / con valija": con valija la ventaja low cost se anula (×1,0 en vez de ×0,88).
+- Traslado a alternativos: por encima de 400 km se cuenta como otro vuelo (km equivalentes + un boleto), no como bus.
+- Tasas de salida por aeropuerto/país en km equivalentes (APD británica ≈250, GRU/GIG 80, EZE 90, ASU 45…): orden de magnitud público, revisar anualmente.
+- Boletos separados ×1,08 por el riesgo de conexión propia (la calibración sugiere que debería ser <1: ver A).
+- Presión sin recorte a 0 (−50…100): los días valle se distinguen entre sí y bajan el índice (×0,89 a −18).
+
+**D. Presión de fecha**
+- `pnpm tendencia ORIGEN DESTINO FECHA [VUELTA]`: lee la etiqueta de Google Flights ("prices are currently low / typical / high" respecto de 12 meses) y el rango típico, con el Chrome instalado (Playwright como devDependency de la raíz, sólo para este script), sin aceptar consentimiento. Queda en `data/local/tendencias.json` y la priorización lo muestra como aviso del par. Es señal para la persona y el calendario; no reordena rutas del mismo par. Probado: ASU→MAD 25/02/2027 = "típicos". Es la única lectura de un sitio que volvió, acotada y a pedido.
+- Carnaval calculado (sábado a martes antes del Miércoles de Ceniza) como pico en Sudamérica y Caribe; eventos manuales con fuente (Oktoberfest 2026 con fecha; MWC, ITB, final de Champions 2027 en Madrid y Tomorrowland como tentativos: sólo etiquetan hasta tener fecha); Wikidata con umbral 4 Wikipedias.
+- Corredores para más pares: no se inventaron; `porMes` de la validación es la base para escribirlos con datos.
+
+**E. Operación**
+- Refresco automático: la API mira una vez por día qué fuente venció y corre `pnpm catalogos` / `pnpm eventos`, recargando los datasets en memoria.
+- Historial de priorizaciones (`GET /historial`, bloque 3 de Datos): las 10 primeras de cada consulta, para ver cómo cambia el orden.
+- El calendario del desplegable se abre y calcula solo ±30 días alrededor de la fecha pedida.
+
+**Lo que sigue siendo estimación** (y así se muestra): los factores de `fase7` hasta que la validación tenga varios pares; temporadas por región; tasas en km equivalentes; impacto de eventos por cantidad de Wikipedias. Lo que es medido: km, competencia por tramo (VRS), feriados, puentes, Carnaval y Semana Santa, anticipación, estadía, y —a partir de ahora— cuánto acierta el orden.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

@@ -38,6 +38,12 @@ export const enSemanaSanta = (fecha: string): boolean => {
   return fecha >= sumarDias(pascua, -3) && fecha <= sumarDias(pascua, 1);
 };
 
+// Carnaval: del sábado al martes previos al Miércoles de Ceniza (46 días antes de Pascua).
+export const enCarnaval = (fecha: string): boolean => {
+  const pascua = domingoDePascua(Number(fecha.slice(0, 4)));
+  return fecha >= sumarDias(pascua, -50) && fecha <= sumarDias(pascua, -47);
+};
+
 export interface FinDeSemanaLargo {
   feriado: Feriado;
   diaFeriado: DiaSemana;
@@ -73,6 +79,7 @@ export const temporadasDe = (pais: string, fecha: string, cfg: Pick<ConfigEspaci
     if (!(cfg.regiones[temporada.region] ?? []).includes(pais)) continue;
     for (const ventana of temporada.ventanas) if (cubre(ventana)) salida.push({ temporada, ventana });
     if (temporada.semanaSanta && enSemanaSanta(fecha)) salida.push({ temporada, ventana: { desde: fecha.slice(5), hasta: fecha.slice(5), presion: "pico", nota: "Semana Santa (Jueves Santo a Lunes de Pascua)" } });
+    if (temporada.carnaval && enCarnaval(fecha)) salida.push({ temporada, ventana: { desde: fecha.slice(5), hasta: fecha.slice(5), presion: "pico", nota: "Carnaval (sábado a martes previos al Miércoles de Ceniza)" } });
   }
   return salida;
 };

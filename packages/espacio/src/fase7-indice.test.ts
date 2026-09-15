@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { ConfigEspacio } from "./configuracion";
 import { calcularCalendario, puntuarDia } from "./fase5-calendario";
-import { domingoDePascua, enSemanaSanta, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
+import { domingoDePascua, enCarnaval, enSemanaSanta, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
 import { competenciaEfectivaDe, factorCompetencia, factorPorDias, kmEquivalentes } from "./fase7-indice";
 import { priorizarRutas } from "./fase7-ranking";
 import { expandirAeropuertos } from "./fase1-aeropuertos";
@@ -156,5 +156,22 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(conVuelta?.desglose.factorEstadia).toBe(1.2);
     const viaMiami = rutas.find((r) => r.via === "MIA" || r.tramoPrevio?.hub === "MIA");
     if (viaMiami) expect(viaMiami.restriccion).toBe("requiere_visa_eeuu_o_esta");
+  });
+});
+
+describe("Carnaval y eventos de config con fechas completas", () => {
+  it("Carnaval 2027 (Pascua 28/3): sábado 6 a martes 9 de febrero, pico en Brasil", () => {
+    expect(enCarnaval("2027-02-06")).toBe(true);
+    expect(enCarnaval("2027-02-09")).toBe(true);
+    expect(enCarnaval("2027-02-10")).toBe(false); // Miércoles de Ceniza
+    expect(temporadasDe("BR", "2027-02-08", cfg).map((t) => t.ventana.nota)).toContain("Carnaval (sábado a martes previos al Miércoles de Ceniza)");
+    expect(temporadasDe("ES", "2027-02-08", cfg).map((t) => t.ventana.nota).join()).not.toContain("Carnaval");
+  });
+  it("Oktoberfest 2026 pesa como evento en Múnich con fecha completa; los tentativos sólo etiquetan", () => {
+    const muc = puntuarDia("2026-09-26", { desde: "2026-09-26", hasta: "2026-09-26", origen: geo("ASU"), destino: geo("MUC"), feriados: [] }, cfg);
+    expect(muc.fundamento).toContain("evento en destino: Oktoberfest 2026 +39");
+    const bcn = puntuarDia("2027-03-10", { desde: "2027-03-10", hasta: "2027-03-10", origen: geo("ASU"), destino: geo("BCN"), feriados: [] }, cfg);
+    expect(bcn.etiquetas).toContain("Mobile World Congress 2027 (tentativo, sin fecha)");
+    expect(bcn.fundamento).not.toContain("Mobile World Congress");
   });
 });

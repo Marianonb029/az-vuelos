@@ -55,8 +55,8 @@ const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"
 // Carga los datasets una sola vez (≈2 MB) y corre las Fases 1–3 en memoria: sin I/O por consulta.
 const MetaDatasets = z.object({ descargadoEn: z.iso.datetime(), rutas: z.object({ registros: z.number() }) });
 
-export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string, ahora = () => new Date()): ServicioEspacio => {
-  const configBase = ConfigEspacio.parse(leerJson(rutaConfig));
+export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string, ahora = () => new Date(), configAlternativa: ConfigEspacio | null = null): ServicioEspacio => {
+  const configBase = configAlternativa ?? ConfigEspacio.parse(leerJson(rutaConfig)); // la calibración prueba configs sin escribirlas
   const meta = MetaDatasets.parse(leerJson(resolve(directorioDatos, "meta.json")));
   // Eventos masivos (`pnpm eventos`, Wikidata) se suman a los de config; si el archivo no está, sólo config.
   const rutaEventos = resolve(directorioDatos, "eventos.json");

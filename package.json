@@ -18,7 +18,9 @@
     "lint": "eslint .",
     "catalogos": "tsx scripts/descargar-catalogos.ts",
     "eventos": "tsx scripts/actualizar-eventos.ts",
-    "importar-observaciones": "tsx scripts/importar-observaciones.ts"
+    "importar-observaciones": "tsx scripts/importar-observaciones.ts",
+    "calibrar": "tsx scripts/calibrar.ts",
+    "tendencia": "tsx scripts/tendencias.ts"
   },
   "dependencies": {
     "@az/core": "workspace:*",
@@ -26,8 +28,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
-    "tsx": "^4.20.5",
     "eslint": "^9.36.0",
+    "playwright": "^1.63.0",
+    "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.0",
     "vitest": "^3.2.4"

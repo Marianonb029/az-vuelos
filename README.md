@@ -16,9 +16,30 @@ Historia del producto: `docs/BRIEF.md` (brief original, lectura de precios en si
 | Pestaña | Para qué sirve |
 |---|---|
 | **Rutas** | Origen, destino y fecha → tabla ordenada por índice con km, competencia, aerolíneas por tramo, presión de ida/vuelta y enlaces. Debajo, desplegable con el espacio de búsqueda que hay detrás: cuándo volar (calendario de presión), boletos separados por hub, rutas con boleto único, aeropuertos alternativos y gaps. |
-| **Datos** | Cada variable de la priorización con su fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. |
+| **Datos** | Cada variable de la priorización con su fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció; **validación del índice** contra los precios anotados (correlación, acierto top 5, USD por punto) e historial de priorizaciones. |
 
 Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y un número de peso en la decisión (1 = lo que más pesa).
+
+## Cómo se mide si el orden acierta
+
+1. Priorizá un par y una fecha; abrí "Ver" en tres o más filas, buscá cada una en un metabuscador con el enlace y anotá el precio visto.
+2. En **Datos → Validación** aparece la correlación índice↔precio por consulta, cuántas veces el más barato cayó en el top 5 y cuánto vale un punto de índice en USD.
+3. `pnpm calibrar` propone factores de `fase7` que maximizan esa correlación (escribe `config/espacio.calibrado.json`, no pisa nada). Con pocas consultas es sobreajuste: juntá varios pares antes de copiarla.
+4. `pnpm importar-observaciones` carga como semilla los precios leídos en fases anteriores (SQLite local).
+
+Estado al 15/09/2026: con 50 precios ubicados de 3 consultas el índice de partida da correlación −0.19; la calibración sube a +0.66 cambiando dos factores. Es la única cifra de "certeza" que existe y hay que seguir alimentándola.
+
+## Señales y comandos
+
+| Comando | Qué hace |
+|---|---|
+| `pnpm catalogos` | Rutas vigentes (VRS) y aeropuertos (OurAirports), ~40 s |
+| `pnpm eventos` | Eventos masivos confirmados (Wikidata), ~2 min |
+| `pnpm tendencia ASU MAD 2027-02-25` | Lee en Google Flights si los precios del par están bajos / típicos / altos respecto de 12 meses (usa el Chrome instalado; no acepta consentimiento) |
+| `pnpm importar-observaciones` | Semilla de precios observados desde la base vieja |
+| `pnpm calibrar` | Propuesta de factores calibrados con las observaciones |
+
+La API corre el refresco automático una vez por día para lo que venció (`pnpm catalogos`, `pnpm eventos`).
 
 ## Datos y mantenimiento (qué envejece)
 
@@ -38,7 +59,7 @@ La priorización avisa cuando una fuente venció o la fecha pedida cae fuera de 
 
 ## Requisitos
 
-Node ≥ 22 y pnpm ≥ 10. No hace falta Chrome: nada se scrapea.
+Node ≥ 22 y pnpm ≥ 10. Chrome sólo hace falta para `pnpm tendencia` (Google Flights); nada más se lee de un sitio.
 
 ```bash
 pnpm install
@@ -50,7 +71,7 @@ pnpm test
 
 ## Limitaciones conocidas
 
-- El índice no es un precio ni está calibrado con tarifas reales: los factores son supuestos declarados; el orden vale más que el número.
+- El índice no es un precio. Sus factores son supuestos hasta que la validación (Datos) tenga varios pares; `pnpm calibrar` los ajusta con lo observado.
 - Las rutas de VRS no traen horarios ni fecha de última observación: pueden quedar números de vuelo discontinuados y tramos sueltos de aerolíneas de largo radio. Corroborado contra Kiwi.com en cinco tramos ASU/GRU/EZE→MAD/LIS: ninguna aerolínea faltante (DECISIONES, ajuste del 15/09).
 - Las temporadas por región son ventanas fijas por mes y día; Año Nuevo Lunar y Ramadán son móviles y sólo aproximados. Sin fuente abierta de calendarios escolares de todos los países.
 - Los eventos masivos son los que tienen ítem en Wikidata con fecha exacta (día): Eurovisión 2027 quedó afuera por tener fecha sólo de mes.

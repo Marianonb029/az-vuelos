@@ -5,6 +5,8 @@ import { rutasEspacio } from "./rutas/espacio";
 import { crearHistorial, rutasHistorial } from "./rutas/historial";
 import { rutasPriorizadas } from "./rutas/rutas-priorizadas";
 import { rutasValidacion } from "./rutas/validacion";
+import { listaJson } from "./repos/archivo-json";
+import { Tendencia } from "@az/core";
 import type { ServicioEspacio } from "./servicios/espacio";
 import type { ServicioFeriados } from "./servicios/feriados";
 
@@ -13,6 +15,7 @@ export interface OpcionesApp {
   feriados: ServicioFeriados;
   rutaObservaciones: string;
   rutaHistorial: string;
+  rutaTendencias: string;
 }
 
 // API de cálculo sobre datasets: no abre navegadores ni lee precios. Lo único que escribe son las
@@ -20,10 +23,12 @@ export interface OpcionesApp {
 export const crearApp = (op: OpcionesApp) => {
   const app = Fastify({ logger: false });
   const historial = crearHistorial(op.rutaHistorial);
+  const tendencias = listaJson(op.rutaTendencias, Tendencia);
   app.get("/salud", async () => ({ ok: true }));
   rutasPriorizadas(app, {
     espacio: op.espacio,
     feriados: op.feriados,
+    tendencia: (origen, destino, fechaIda, fechaVuelta) => [...tendencias.listar()].reverse().find((t) => t.origen === origen && t.destino === destino && t.fechaIda === fechaIda && t.fechaVuelta === fechaVuelta) ?? null,
     registrar: (r) =>
       historial.agregar({
         id: randomUUID(),

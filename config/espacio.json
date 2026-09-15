@@ -609,6 +609,84 @@
         "tentativo": false,
         "impacto": "alto",
         "tipo": "receso"
+      },
+      {
+        "pais": "DE",
+        "ciudad": "Munich",
+        "nombre": "Oktoberfest 2026",
+        "mes": 9,
+        "dias": null,
+        "desde": "2026-09-19",
+        "hasta": "2026-10-04",
+        "fuente": "https://www.oktoberfest.de",
+        "tentativo": false,
+        "impacto": "muy_alto",
+        "tipo": "evento"
+      },
+      {
+        "pais": "PT",
+        "ciudad": "Lisbon",
+        "nombre": "Web Summit 2026",
+        "mes": 11,
+        "dias": null,
+        "desde": "2026-11-09",
+        "hasta": "2026-11-12",
+        "fuente": "https://websummit.com",
+        "tentativo": false,
+        "impacto": "alto",
+        "tipo": "feria"
+      },
+      {
+        "pais": "ES",
+        "ciudad": "Barcelona",
+        "nombre": "Mobile World Congress 2027",
+        "mes": 3,
+        "dias": null,
+        "desde": null,
+        "hasta": null,
+        "fuente": "https://www.mwcbarcelona.com",
+        "tentativo": true,
+        "impacto": "muy_alto",
+        "tipo": "feria"
+      },
+      {
+        "pais": "DE",
+        "ciudad": "Berlin",
+        "nombre": "ITB Berlin 2027",
+        "mes": 3,
+        "dias": null,
+        "desde": null,
+        "hasta": null,
+        "fuente": "https://www.itb.com",
+        "tentativo": true,
+        "impacto": "medio",
+        "tipo": "feria"
+      },
+      {
+        "pais": "ES",
+        "ciudad": "Madrid",
+        "nombre": "Final de la UEFA Champions League 2027 (Bernabéu)",
+        "mes": 6,
+        "dias": null,
+        "desde": null,
+        "hasta": null,
+        "fuente": "https://www.uefa.com",
+        "tentativo": true,
+        "impacto": "muy_alto",
+        "tipo": "evento"
+      },
+      {
+        "pais": "BE",
+        "ciudad": "Brussels",
+        "nombre": "Tomorrowland 2027",
+        "mes": 7,
+        "dias": null,
+        "desde": null,
+        "hasta": null,
+        "fuente": "https://www.tomorrowland.com",
+        "tentativo": true,
+        "impacto": "alto",
+        "tipo": "evento"
       }
     ],
     "corredores": [
@@ -700,7 +778,8 @@
             "presion": "baja",
             "nota": "Primavera austral, fuera de recesos"
           }
-        ]
+        ],
+        "carnaval": true
       },
       {
         "region": "europa_toda",
@@ -817,7 +896,8 @@
             "presion": "baja",
             "nota": "Temporada de huracanes: valle"
           }
-        ]
+        ],
+        "carnaval": true
       },
       {
         "region": "asia",

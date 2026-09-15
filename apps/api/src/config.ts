@@ -11,4 +11,5 @@ export const config = {
   // Lo que escribe la app (no son datasets): observaciones de precios e historial de priorizaciones.
   rutaObservaciones: resolve(REPO, "data", "local", "observaciones.json"),
   rutaHistorial: resolve(REPO, "data", "local", "historial.json"),
+  rutaTendencias: resolve(REPO, "data", "local", "tendencias.json"),
 };

@@ -10,7 +10,7 @@ export type { ResultadoFase2 } from "./fase2-rutas";
 export { analizarGaps } from "./fase3-gaps";
 export type { EntradaFase3 } from "./fase3-gaps";
 export { calcularCalendario, puntuarDia, ventanasVerdes } from "./fase5-calendario";
-export { diaSemana, domingoDePascua, enSemanaSanta, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
+export { diaSemana, domingoDePascua, enCarnaval, enSemanaSanta, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
 export { competenciaEfectivaDe, factorCompetencia, factorPorDias, kmEquivalentes, medirRuta } from "./fase7-indice";
 export type { ConfigFase7, EntradaFase7, MedidaRuta } from "./fase7-indice";
 export { priorizarRutas } from "./fase7-ranking";

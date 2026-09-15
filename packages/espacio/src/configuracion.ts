@@ -62,6 +62,7 @@ export const TemporadaRegional = z.object({
   region: z.string().min(1), // clave de `regiones`
   fuente: z.string().min(1),
   semanaSanta: z.boolean(), // Jueves Santo a Lunes de Pascua como pico (fecha móvil, se calcula)
+  carnaval: z.boolean().default(false), // sábado a martes de Carnaval (47 días antes de Pascua) como pico
   ventanas: z.array(z.object({ desde: z.string().regex(/^\d{2}-\d{2}$/), hasta: z.string().regex(/^\d{2}-\d{2}$/), presion: z.enum(["pico", "media", "baja", "minima"]), nota: z.string() })),
 });
 

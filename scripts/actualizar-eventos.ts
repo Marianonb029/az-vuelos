@@ -9,7 +9,7 @@ import type { Evento } from "@az/espacio";
 // Correr `pnpm eventos` una vez por mes; la app avisa cuando el dataset envejece (DECISIONES 9.2).
 const WIKIDATA = "https://query.wikidata.org/sparql";
 const MESES_ADELANTE = 18;
-const MIN_SITELINKS = 6; // por debajo son torneos menores que no mueven tarifas
+const MIN_SITELINKS = 4; // por debajo son torneos menores que no mueven tarifas
 const MAX_DIAS = 45; // ligas y temporadas enteras no son "eventos"
 const RADIO_CIUDAD_KM = 80;
 const DATOS = resolve(import.meta.dirname, "..", "data");
@@ -59,7 +59,7 @@ SELECT ?evento ?eventoLabel ?inicio ?fin ?sitelinks ?paisIso (GROUP_CONCAT(DISTI
 // Qué cuenta como evento masivo: por clase o por nombre (deporte, festival, feria, congreso…).
 const ES_EVENTO = /deport|campeonato|copa|juegos|torneo|gran premio|ol[ií]mp|festival|feria|exposici|convenci|congreso|marat|carnaval|eurovisi|mundial|world cup|championship|games|grand prix|expo|summit/i;
 const NO_ES_EVENTO = /serie|miniserie|pel[ií]cula|movie|televisi|año|year|calendario|sonda|misi[óo]n|elecci|election|videojuego|álbum|album/i;
-const impactoDe = (sitelinks: number): Evento["impacto"] => (sitelinks >= 30 ? "muy_alto" : sitelinks >= 14 ? "alto" : "medio");
+const impactoDe = (sitelinks: number): Evento["impacto"] => (sitelinks >= 30 ? "muy_alto" : sitelinks >= 12 ? "alto" : "medio");
 
 // "Point(-46.6 -23.5)" → ciudad del aeropuerto grande/mediano más cercano (≤ 80 km); con varias sedes o sin
 // coordenadas, null = todo el país.

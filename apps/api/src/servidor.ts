@@ -6,7 +6,7 @@ import { iniciarRefresco } from "./servicios/refresco";
 
 // El servicio del espacio se recrea cuando el refresco automático trae datasets nuevos.
 let espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
-const app = crearApp({ espacio: () => espacio, feriados: crearServicioFeriados(), rutaObservaciones: config.rutaObservaciones, rutaHistorial: config.rutaHistorial });
+const app = crearApp({ espacio: () => espacio, feriados: crearServicioFeriados(), rutaObservaciones: config.rutaObservaciones, rutaHistorial: config.rutaHistorial, rutaTendencias: config.rutaTendencias });
 
 iniciarRefresco({
   fuentesVencidas: () => espacio.fuentes().filter((f) => f.vencida),
