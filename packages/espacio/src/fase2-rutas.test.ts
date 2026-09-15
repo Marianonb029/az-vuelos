@@ -41,13 +41,13 @@ describe("Fase 2 — generarRutas (datasets reales)", () => {
     expect(directa?.fuente).toBe("dataset");
   });
 
-  it("EZE→MXP es Nivel 2 (vía MAD con IB/UX); EZE→AJA queda fuera del set de trabajo", () => {
+  it("EZE→MXP es Nivel 1 (vía MAD con IB/UX, varios números diarios); EZE→AJA entra en Nivel 1 vía un hub europeo (AF vía CDG)", () => {
     const r = generarRutas(soloEze, [comoDestino("MXP"), comoDestino("AJA", 2)], grafo, cfg.fase2, cfg.hubs);
     const mxp = r.conservadas.filter((x) => x.destino === "MXP");
     expect(mxp.length).toBeGreaterThan(0);
     expect(Math.min(...mxp.map((x) => x.nivel))).toBe(seed.esperado.niveles["EZE-MXP"]);
     expect(mxp[0]?.via).toBe("MAD");
-    expect(r.conservadas.some((x) => x.destino === "AJA")).toBe(false);
+    expect(Math.min(...r.conservadas.filter((x) => x.destino === "AJA").map((x) => x.nivel))).toBe(seed.esperado.niveles["EZE-AJA"]);
   });
 
   it("conserva sólo los niveles configurados y persiste el resto, ordenado por nivel y frecuencia", () => {
@@ -70,12 +70,13 @@ describe("Fase 2 — generarRutas (datasets reales)", () => {
     }
   });
 
-  it("calibración: con destinos de toda Europa (como el proceso manual) hay ~230 destinos y 100–250 rutas N1–2", () => {
+  it("calibración: con destinos de toda Europa (como el proceso manual) hay ~230 destinos y cientos de rutas N1–2", () => {
     const europa = new Set(cfg.regiones.europa);
     const destinosEuropa = aeropuertos.filter((a) => europa.has(a.pais) && a.tipo === "grande").map((a, i) => comoDestino(a.iata, i + 1));
     expect(destinosEuropa.length).toBeGreaterThanOrEqual(seed.esperado.destinosAlcanzables - 10);
     const r = generarRutas(origenes, destinosEuropa, grafo, cfg.fase2, cfg.hubs);
-    // Con rutas vigentes (VRS) hay más aerolíneas y más tramos con 1 escala que en OpenFlights 2014: ~170 rutas N1–2.
+    // Con rutas vigentes (VRS) y la frecuencia de conexión por números de vuelo de cada aerolínea (Fase 11), cada
+    // hub europeo abre decenas de destinos en un boleto (IB/UX vía MAD, LX vía ZRH, BA vía LHR): ~1.400 rutas N1–2.
     expect(r.conservadas.length).toBeGreaterThanOrEqual(seed.esperado.rutasNivel12.min);
     expect(r.conservadas.length).toBeLessThanOrEqual(seed.esperado.rutasNivel12.max);
   });

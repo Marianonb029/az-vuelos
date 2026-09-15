@@ -26,15 +26,16 @@ const frecuenciaDirecta = (grafo: Grafo, origen: string, destino: string, porReg
 };
 
 // Un solo boleto: la misma aerolínea vende el primer tramo (operado o en codeshare) y opera el segundo.
-// No todo vuelo del primer tramo conecta con uno del segundo: la frecuencia proxy es la del tramo
-// débil por `factorEscala`.
+// La frecuencia proxy de cada aerolínea es la de su tramo débil (números de vuelo que opera; un
+// codeshare cuenta como uno) por `factorEscala`: no todo vuelo del primer tramo conecta con el segundo.
 const frecuenciaConEscala = (grafo: Grafo, origen: string, via: string, destino: string, config: ConfigEspacio["fase2"]): Frecuencias | null => {
   const ida = grafo.arista(origen, via);
   const salida = grafo.arista(via, destino);
   if (!ida || !salida) return null;
   const comunes = ida.aerolineas.filter((a) => salida.aerolineasOperadoras.includes(a));
   if (comunes.length === 0) return null;
-  return { aerolineas: comunes, vuelosSemanales: Math.round(comunes.length * config.vuelosSemanalesPorRegistro * config.factorEscala) };
+  const numeros = comunes.reduce((suma, a) => suma + Math.min(ida.vuelosPorAerolinea[a] ?? 1, salida.vuelosPorAerolinea[a] ?? 1), 0);
+  return { aerolineas: comunes, vuelosSemanales: Math.round(numeros * config.vuelosSemanalesPorRegistro * config.factorEscala) };
 };
 
 const esHub = (iata: string, hubs: ReadonlySet<string>, grafo: Grafo, config: ConfigEspacio["fase2"]) =>
@@ -50,6 +51,8 @@ export const generarRutas = (
   reglasHub: readonly ReglaHub[],
 ): ResultadoFase2 => {
   const hubs = new Set(reglasHub.flatMap((r) => [...r.hubs, ...r.via]));
+  // Escalar en el aeropuerto pedido para seguir a un alternativo (EZE→MAD→VLC para ir a MAD) es hidden city: no es ruta.
+  const pedidos = new Set([...origenes, ...destinos].filter((c) => c.esSolicitado).map((c) => c.aeropuerto.iata));
   const porRegistro = config.vuelosSemanalesPorRegistro;
   const conservadas: Ruta[] = [];
   const descartadas: Ruta[] = [];
@@ -83,7 +86,7 @@ export const generarRutas = (
       if (config.maxEscalas === 0) continue;
       for (const salida of grafo.salidasDe(origen)) {
         const via = salida.destino;
-        if (via === destino || !esHub(via, hubs, grafo, config)) continue;
+        if (via === destino || pedidos.has(via) || !esHub(via, hubs, grafo, config)) continue;
         const f = frecuenciaConEscala(grafo, origen, via, destino, config);
         if (f) registrar(origen, destino, via, f);
       }

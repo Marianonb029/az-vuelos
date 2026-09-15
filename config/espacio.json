@@ -13,7 +13,8 @@
       "K4",
       "3S",
       "PO",
-      "GG"
+      "GG",
+      "WH"
     ],
     "equivalencias": {
       "PZ": "LA",
@@ -102,7 +103,7 @@
         "AD"
       ]
     },
-    "nota": "US Airways ya no existe (2015). Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA. Grupos tarifarios: participaciones y joint ventures públicas al 2026 (IAG; LATAM-Delta JV; Air France-KLM; Lufthansa Group con ITA; Abra con Avianca y GOL; American 20 % de JetSMART; Turkish 26 % de Air Europa). Revisar trimestralmente."
+    "nota": "US Airways ya no existe (2015) y WH (Webjet, absorbida por GOL en 2015; OpenTravelData asigna hoy el código a West African Airlines) tampoco: VRS todavía trae sus callsigns en Brasil. Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA. Grupos tarifarios: participaciones y joint ventures públicas al 2026 (IAG; LATAM-Delta JV; Air France-KLM; Lufthansa Group con ITA; Abra con Avianca y GOL; American 20 % de JetSMART; Turkish 26 % de Air Europa). Revisar trimestralmente."
   },
   "fase1": {
     "radioOrigenKm": 2000,

@@ -19,6 +19,7 @@ const ruta = (extra: Partial<RutaPriorizada> & Pick<RutaPriorizada, "posicion" |
   distanciaDirectaKm: 8900,
   trasladoOrigenKm: 0,
   trasladoDestinoKm: 0,
+  trasladoAereo: false,
   desvioPct: 7,
   tramos: [
     { origen: "ASU", destino: "GRU", km: 1100, aerolineas: ["G3", "LA"], vuelosPorAerolinea: { G3: 2, LA: 5 }, grupos: ["Abra", "LATAM-Delta"], competenciaEfectiva: 1.5 },

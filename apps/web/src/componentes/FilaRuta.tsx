@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import type { NuevaObservacion } from "@az/core";
+import { dondeBuscar, explicarRuta } from "@az/espacio";
 import type { PuntajeDia, ResultadoRutas, RutaPriorizada } from "@az/espacio";
 import { registrarObservacion } from "../lib/api";
 
@@ -62,13 +63,16 @@ interface Props {
   variantes: number; // otras rutas de la misma familia que quedaron plegadas
   onVerFamilia: (() => void) | null;
   empate: number | null; // grupo de empate si hay otras filas con índice casi igual
+  mejorIndice: number; // índice de la primera fila: la explicación compara contra él
 }
 
 // Una fila por ruta: km, competencia, presión, índice y robustez; desplegable con fundamento, tramos, enlaces y observación.
-export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFamilia, empate }: Props) => {
+export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFamilia, empate, mejorIndice }: Props) => {
   const [abierta, setAbierta] = useState(false);
   const nombre = (iata: string) => nombres.get(iata) ?? iata;
   const vende = (a: string) => r.aerolineas.includes(a) || (r.tramoPrevio?.aerolineas ?? []).includes(a);
+  const buscarEn = dondeBuscar(r);
+  const enCriollo = explicarRuta(r, { origen: resultado.origen, destino: resultado.destino, equipaje: resultado.equipaje, mejorIndice, nombre });
   return (
     <>
       <tr className="border-b border-slate-100 align-top">
@@ -90,6 +94,11 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
               +{variantes} de la misma familia
             </button>
           )}
+          {buscarEn.map((b) => (
+            <span key={b.tramo} className="block text-xs font-normal text-slate-700" title="Las que venden ese boleto: compará el precio ahí y no en las que sólo operan un tramo">
+              <span className="text-slate-500">Buscar en{buscarEn.length > 1 ? ` (${b.tramo})` : ""}:</span> {b.aerolineas.map(nombre).join(", ")}
+            </span>
+          ))}
         </td>
         <td className="py-1.5 pr-3 tabular-nums text-slate-700">
           {r.distanciaKm.toLocaleString("es")} {r.desvioPct > 0 && <span className="text-xs text-slate-500">(+{r.desvioPct} %)</span>}
@@ -132,8 +141,13 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
       {abierta && (
         <tr className="border-b border-slate-200 bg-slate-50">
           <td colSpan={8} className="px-2 py-2 text-xs text-slate-700">
+            <ul className="mb-2 list-disc space-y-0.5 pl-4 text-sm text-slate-800" aria-label="En criollo">
+              {enCriollo.map((frase) => (
+                <li key={frase}>{frase}</li>
+              ))}
+            </ul>
             <p className="mb-1">
-              <span className="font-medium">Por qué:</span> {r.fundamento}
+              <span className="font-medium">La cuenta:</span> {r.fundamento}
             </p>
             <p className="mb-1">
               <span className="font-medium">Presión ida:</span> {r.presionIda.fundamento}

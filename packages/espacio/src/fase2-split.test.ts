@@ -26,14 +26,14 @@ describe("Fase 2 — boletos separados (split tickets), ASU→MAD con datos real
   const unicas = generarRutas(origenes, destinos, grafo, cfg.fase2, cfg.hubs).conservadas;
 
   // Con rutas vigentes (VRS) el separado sale por GRU y por GIG: GOL/JetSMART/LATAM hasta Brasil y TAP a
-  // Lisboa (la oferta que muestran Kiwi y Momondo). LATAM vende ASU→GRU→LIS en un boleto, pero esa conexión
-  // es Nivel 3 y no anula el separado con TAP.
+  // Lisboa (la oferta que muestran Kiwi y Momondo). LATAM vende ASU→GRU→LIS en un boleto (Nivel 2 desde la
+  // Fase 11) y convive con el separado: son opciones distintas con aerolíneas distintas.
   it("encuentra ASU→GRU/GIG (GOL/JetSMART/LATAM) + →LIS (TAP), el camino del proceso manual", () => {
     expect(() => z.array(Ruta).parse(separadas)).not.toThrow();
     const lis = separadas.filter((r) => r.origen === "ASU" && r.destino === "LIS");
     expect(lis.map((r) => r.via).sort()).toEqual(["EZE", "GIG", "GRU"]);
     expect(lis.find((r) => r.via === "GRU")).toMatchObject({ aerolineas: ["TP"], nivel: 1, escalas: 1, confianza: 0.4, tramoPrevio: { hub: "GRU", aerolineas: ["G3", "ZP"] } });
-    expect(unicas.some((u) => u.origen === "ASU" && u.destino === "LIS" && u.via === "GRU")).toBe(false); // LA vía GRU quedó en Nivel 3
+    expect(unicas.find((u) => u.origen === "ASU" && u.destino === "LIS" && u.via === "GRU")?.aerolineas).toEqual(["LA"]);
   });
 
   it("sólo propone boletos separados donde no hay boleto único, en hubs de la config y con tope por par", () => {

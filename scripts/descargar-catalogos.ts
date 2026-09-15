@@ -126,12 +126,15 @@ const procesarNombresOpenFlights = (lineas: string[][]) => {
   return nombres;
 };
 
-// Nombre de cada aerolínea del grafo: catálogo vigente primero, OpenFlights como respaldo.
+// Nombre de cada aerolínea del grafo: catálogo vigente primero, OpenFlights como respaldo. NOMBRES_EXTRA
+// corrige códigos cuyo dueño en OpenTravelData no es quien opera en VRS (WJ figura como Air Labrador) y
+// el nombre de marca cuando las filiales se pliegan a un código (LATAM Chile → LATAM, ver equivalencias).
+const NOMBRES_EXTRA: Record<string, string> = { WJ: "JetSMART Argentina", LA: "LATAM" };
 const nombrarAerolineasRutas = (rutas: RutaCompacta[], vigentes: Aerolinea[], respaldo: Map<string, string>) => {
   const porIata = new Map(vigentes.map((a) => [a.iata, a.nombre]));
   return [...new Set(rutas.map((r) => r[0]))]
     .sort()
-    .map((iata) => ({ iata, nombre: porIata.get(iata) ?? respaldo.get(iata) ?? iata }));
+    .map((iata) => ({ iata, nombre: NOMBRES_EXTRA[iata] ?? porIata.get(iata) ?? respaldo.get(iata) ?? iata }));
 };
 
 const guardar = async (archivo: string, contenido: unknown[]) => {

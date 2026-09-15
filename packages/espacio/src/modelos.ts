@@ -165,6 +165,7 @@ export const RutaPriorizada = z.object({
   distanciaDirectaKm: z.number().min(0), // ortodrómica origen → destino
   trasladoOrigenKm: z.number().min(0), // del aeropuerto pedido al alternativo (0 si es el pedido)
   trasladoDestinoKm: z.number().min(0),
+  trasladoAereo: z.boolean(), // el traslado supera `trasladoAereoDesdeKm`: cuenta como otro vuelo, no como tierra
   desvioPct: z.number().min(0),
   tramos: z.array(TramoCompetencia).min(1),
   competenciaMinima: z.number().int().min(1), // aerolíneas en el tramo más cerrado

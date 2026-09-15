@@ -10,6 +10,7 @@ const redondear = (n: number) => Math.round(n * 100) / 100;
 
 interface Indice {
   indice: number;
+  trasladoAereo: boolean;
   desglose: Record<string, number>;
   fundamento: string;
 }
@@ -36,6 +37,7 @@ const calcularIndice = (m: MedidaRuta, entrada: EntradaFase7, cfg: ConfigFase7):
   const desvio = m.distanciaDirectaKm > 0 && m.distanciaKm > m.distanciaDirectaKm ? `, +${Math.round(((m.distanciaKm - m.distanciaDirectaKm) / m.distanciaDirectaKm) * 100)} %` : "";
   return {
     indice,
+    trasladoAereo,
     desglose: {
       kmEquivalentes: Math.round(km),
       kmTraslado: Math.round(kmTraslado),
@@ -135,6 +137,7 @@ export const priorizarRutas = (entrada: EntradaFase7, cfg: ConfigFase7): RutaPri
       distanciaDirectaKm: m.distanciaDirectaKm,
       trasladoOrigenKm: m.trasladoOrigenKm,
       trasladoDestinoKm: m.trasladoDestinoKm,
+      trasladoAereo: idx.trasladoAereo,
       desvioPct: m.distanciaDirectaKm === 0 ? 0 : Math.max(0, Math.round(((m.distanciaKm - m.distanciaDirectaKm) / m.distanciaDirectaKm) * 100)),
       tramos: m.tramos,
       competenciaMinima: m.competenciaMinima,

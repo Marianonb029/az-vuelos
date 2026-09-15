@@ -20,6 +20,13 @@ Historia del producto: `docs/BRIEF.md` (brief original, lectura de precios en si
 
 Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y un número de peso en la decisión (1 = lo que más pesa).
 
+## Qué es el índice y cómo leer una fila
+
+- **Índice** = km equivalentes (distancia + tasas + traslado) × un factor por variable (competencia, low cost, presión de la fecha, escalas, boletos separados, visa, anticipación, estadía). Menor = más chance de tarifa baja. No es un precio ni una probabilidad: "un 12 % más caro que la primera" es lo que dice la cuenta con supuestos declarados en `config/espacio.json`.
+- **Buscar en:** las aerolíneas que venden ese boleto (o cada uno de los dos). Ahí se compara el precio; las demás de la columna de tramos sólo operan y sirven para medir competencia.
+- **Ver** despliega la explicación en criollo (una frase por variable) y debajo la cuenta exacta.
+- **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; el traslado se cobra en el índice (tierra ×0,6 km; más de 400 km cuenta como otro vuelo).
+
 ## Cómo se mide si el orden acierta
 
 1. Priorizá un par y una fecha; abrí "Ver" en tres o más filas, buscá cada una en un metabuscador con el enlace y anotá el precio visto.

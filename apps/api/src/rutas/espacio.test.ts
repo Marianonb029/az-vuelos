@@ -47,9 +47,10 @@ describe("GET /espacio/combinaciones", () => {
     expect(r.combinaciones.length).toBeGreaterThan(50);
     expect(r.combinaciones.length).toBeLessThanOrEqual(300);
     const mejor = r.combinaciones[0];
-    expect(mejor).toMatchObject({ origen: "EZE", destino: "MAD", nivelRuta: 1, confianza: "alta" });
+    expect(mejor).toMatchObject({ origen: "EZE", destino: "MAD", confianza: "alta" });
+    expect(mejor?.nivelRuta).toBeLessThanOrEqual(2);
     expect(r.combinaciones.some((c) => c.ventanaIda.desde === "2027-01-15" && c.aerolinea === "AR")).toBe(true); // la fecha pedida no se reemplaza
-    expect(r.combinaciones.some((c) => c.aerolinea === "TK" && c.confianza === "baja")).toBe(true);
+    expect(r.combinaciones.some((c) => c.aerolinea === "TK" && c.origen === "EZE" && c.via === "IST" && c.confianza === "alta")).toBe(true); // vende EZE→IST→MAD en un boleto
     expect(r.nombres.some((n) => n.iata === "TK")).toBe(true);
   });
 });

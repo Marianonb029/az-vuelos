@@ -399,6 +399,24 @@ Orden del dueño: *"implementa todo. La certeza es un objetivo entre las herrami
 
 **Lo que sigue siendo estimación** (y así se muestra): los factores de `fase7` hasta que la validación tenga varios pares; temporadas por región; tasas en km equivalentes; impacto de eventos por cantidad de Wikipedias. Lo que es medido: km, competencia por tramo (VRS), feriados, puentes, Carnaval y Semana Santa, anticipación, estadía, y —a partir de ahora— cuánto acierta el orden.
 
+## Fase 11 (15/09/2026) — dónde buscar, explicación en criollo y conexiones reales de una aerolínea
+
+Pedido: revisar el video de otro sistema de inferencia ("Meridiano": mismo objetivo, índice 0–100 con aportes ±N por variable, tarjetas por "hipótesis de ruta" con aerolínea y cómo buscarla), resolver dos ambigüedades (qué implica el índice; con qué criterio se eligen los aeropuertos alternativos), **listar las aerolíneas donde comparar precio en cada ruta** y **traducir a lenguaje informal** qué significa cada variable.
+
+Qué se vio en el video y qué se toma: Meridiano razona con patrones (fences 21/14/7, "6ª libertad", hubs) pero **sin dataset de rutas**: propone "Turkish vía IST" y "TAP vía LIS" desde Asunción, y ninguna de las dos vuela a ASU. Lo que sí vale de su presentación es nombrar en cada ruta la aerolínea a la que hay que ir y una lectura en lenguaje llano; eso se implementa acá sobre datos.
+
+- **`Buscar en:`** en cada fila (`dondeBuscar`): un boleto → las aerolíneas que venden el itinerario completo; dos boletos → las de cada tramo por separado. La columna de tramos sigue mostrando todas las que operan (competencia), pero la comparación de precios se hace donde dice "Buscar en".
+- **En criollo** (`explicarRuta`, `fase7-explicacion.ts`): al desplegar una fila, una frase por variable —km y desvío, traslado (tierra u otro vuelo), tasas, competencia en el tramo más cerrado con aviso de grupos, low cost según equipaje, presión de la fecha, boletos (directo / escala en el mismo boleto / dos boletos), visa, anticipación, estadía— y el índice como "% más caro que la primera". Sale de los mismos números que `desglose`; no agrega juicio. La cuenta técnica queda debajo como "La cuenta".
+- **Conexiones de una aerolínea con frecuencia real** (`fase2-rutas.ts`): la frecuencia proxy de una conexión en un boleto era `aerolíneas comunes × 7 × 0,5`, que dejaba en Nivel 3 (fuera del espacio) a LATAM ASU→GRU→MAD (15 números de vuelo hasta GRU, 6 a Madrid). Ahora es `Σ min(números de vuelo en cada tramo) × 7 × factorEscala` por aerolínea. Efecto: LATAM vía GRU/SCL/LIM entra en Nivel 1–2 para ASU→MAD; TK vía IST y EK vía DWC dejan de ser "gaps" para EZE (ya venden en un boleto); el espacio EZE→toda Europa pasa de ~170 a ~1.400 rutas N1–2 porque cada hub europeo abre decenas de destinos en un boleto (IB/UX vía MAD, LX vía ZRH, BA vía LHR). `maxRutas` sigue en 60 y el cálculo tarda ~2,5 s.
+- **Boleto único y separado conviven** (`fase2-split.ts`): antes, si había boleto único conservado por un hub no se generaba el separado; ahora se generan los dos (el separado sólo con aerolíneas que no venden el único). Son opciones distintas con aerolíneas distintas: LATAM en un boleto vs GOL + Iberia/Air Europa en dos.
+- **Hidden city fuera** (Fase 2 y split): escalar en el aeropuerto pedido para seguir a un alternativo (EZE→MAD→VLC "para ir a MAD") no es ruta; se filtra en la generación. Antes 15 de las 60 filas de ASU→MAD eran de ese tipo.
+- Dataset: WH (Webjet, absorbida por GOL en 2015; OpenTravelData asigna hoy el código a "West African Airlines") a `aerolineasExcluidas`; nombres de marca `NOMBRES_EXTRA` en el script (LA → "LATAM", WJ → "JetSMART Argentina").
+- `trasladoAereo` explícito en `RutaPriorizada` (antes sólo se deducía del desglose).
+
+**Ambigüedades resueltas (respuesta al dueño, también en README):**
+- *Qué implica el índice*: km equivalentes (distancia, tasas y traslado en la misma unidad) multiplicados por un factor por variable (competencia, low cost, presión, escalas, boletos separados, visa, anticipación, estadía). Cada factor es un supuesto declarado en `config/espacio.json` y aparece en `desglose`; "un 12 % más caro que la primera" es lo que dice la cuenta, no una tarifa. No es una probabilidad 0–100 ni suma puntos.
+- *Aeropuertos alternativos* (Fase 1): dentro de 2.000 km del pedido, medianos o grandes, con vuelos internacionales y al menos 21 salidas semanales (proxy VRS); hasta 15 orígenes y 250 destinos, ordenados por distancia y frecuencia. El traslado hasta el alternativo se paga en el índice: por tierra ×0,6 km, y por encima de 400 km como otro vuelo con su boleto.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

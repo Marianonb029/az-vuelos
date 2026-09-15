@@ -125,7 +125,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     }
     expect(rutas.map((r) => r.empate)).toEqual([...rutas.map((r) => r.empate)].sort((a, b) => a - b)); // grupos de empate crecientes
     const directa = rutas.find((r) => r.origen === "ASU" && r.via === null);
-    expect(directa).toMatchObject({ aerolineas: ["UX"], escalas: 0, boletos: 1, competenciaMinima: 1, competenciaTotal: 1, desvioPct: 0, familia: "directo→MAD", restriccion: null, trasladoOrigenKm: 0, trasladoDestinoKm: 0 });
+    expect(directa).toMatchObject({ aerolineas: ["UX"], escalas: 0, boletos: 1, competenciaMinima: 1, competenciaTotal: 1, desvioPct: 0, familia: "directo→MAD", restriccion: null, trasladoOrigenKm: 0, trasladoDestinoKm: 0, trasladoAereo: false });
     expect(directa?.distanciaKm).toBe(directa?.distanciaDirectaKm);
     expect(directa?.fundamento).toContain("1 aerolínea operan la ruta, 1 en el tramo más cerrado");
     expect(directa?.desglose.kmTasas).toBe(cfg.fase7.tasasAeropuerto["ASU"]);

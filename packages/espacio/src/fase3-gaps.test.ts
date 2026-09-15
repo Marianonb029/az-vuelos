@@ -36,7 +36,7 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(new Set(gaps.map((g) => g.aerolinea)).size).toBe(gaps.length);
   });
 
-  it("Gap 1 contiene Turkish, Ethiopian, Swiss, British Airways y Emirates", () => {
+  it("Gap 1 contiene Turkish, Ethiopian y Swiss (BA y EK ya venden desde EZE en un boleto Nivel 1–2: son rutas, no gaps)", () => {
     for (const iata of seed.esperado.gap1EZE) expect(porIata.get(iata)?.rol).toBe("gap_origen");
   });
 
@@ -47,9 +47,10 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     }
   });
 
-  it("TK opera en EZE con hub IST, prioridad alta y verificación pendiente", () => {
+  // TK vende EZE→IST→MAD en un boleto (Nivel 2) desde la Fase 11: desde EZE es ruta; el gap queda en SCL.
+  it("TK opera en SCL con hub IST, prioridad alta y verificación pendiente", () => {
     const tk = porIata.get("TK");
-    expect(tk?.operaEn).toEqual(["EZE"]);
+    expect(tk?.operaEn).toEqual(["SCL"]);
     expect(tk?.hub).toBe("IST");
     expect(tk?.prioridad).toBe("alta");
     expect(tk?.necesitaVerificacion).toBe(true);
@@ -58,14 +59,13 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(tk?.nombre).toBe("Turkish Airlines");
   });
 
-  it("ET y LX llegan vía GRU con boleto único; EK queda con prioridad baja sin verificación", () => {
+  it("ET y LX llegan vía GRU con boleto único; EK no es gap porque vende EZE→DWC→Europa en un boleto", () => {
     expect(porIata.get("ET")?.operaEn).toEqual(["GRU"]);
     expect(porIata.get("ET")?.hipotesis).toContain("EZE→GRU→ADD");
     expect(porIata.get("ET")?.requiereBoletosSeparados).toBe(false);
     expect(porIata.get("LX")?.operaEn).toEqual(["GRU"]);
-    expect(porIata.get("EK")?.prioridad).toBe("baja");
-    expect(porIata.get("EK")?.necesitaVerificacion).toBe(false);
-    expect(porIata.get("EK")?.estado).toBe("sin_verificar");
+    expect(porIata.get("EK")).toBeUndefined();
+    expect(conservadas.some((r) => r.origen === "EZE" && r.aerolineas.includes("EK"))).toBe(true);
   });
 
   it("las aerolíneas de EE.UU. salen condicionales con la restricción de visa", () => {

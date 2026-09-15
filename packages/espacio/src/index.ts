@@ -14,6 +14,8 @@ export { diaSemana, domingoDePascua, enCarnaval, enSemanaSanta, esUltimoDiaLibre
 export { competenciaEfectivaDe, factorCompetencia, factorPorDias, kmEquivalentes, medirRuta } from "./fase7-indice";
 export type { ConfigFase7, EntradaFase7, MedidaRuta } from "./fase7-indice";
 export { priorizarRutas } from "./fase7-ranking";
+export { dondeBuscar, explicarRuta } from "./fase7-explicacion";
+export type { ContextoExplicacion, DondeBuscar } from "./fase7-explicacion";
 export type { EntradaCalendario, Feriado } from "./fase5-calendario";
 export { generarCombinaciones } from "./fase6-combinaciones";
 export type { EntradaFase6 } from "./fase6-combinaciones";

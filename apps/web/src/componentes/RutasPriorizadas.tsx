@@ -176,6 +176,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                     variantes={variantes}
                     onVerFamilia={variantes > 0 ? () => setFamiliasAbiertas((s) => new Set([...s, r.familia])) : null}
                     empate={empates.has(r.empate) ? r.empate : null}
+                    mejorIndice={resultado.rutas[0]?.indice ?? 0}
                   />
                 ))}
               </tbody>

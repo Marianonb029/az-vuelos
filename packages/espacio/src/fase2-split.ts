@@ -13,11 +13,12 @@ const nivelDe = (vuelos: number, niveles: ConfigEspacio["fase2"]["niveles"]): Ni
 };
 
 // Boletos separados (split tickets): origen → hub con cualquier aerolínea, hub → destino con otra,
-// dos compras. Sólo cuando NO existe boleto único (ninguna aerolínea común a los dos tramos): si lo
-// hay, ya es una ruta de la Fase 2. Frecuencia = tramo más débil, sin `factorEscala`: no hay conexión
-// que garantizar, cada tramo se elige por separado.
+// dos compras. Las aerolíneas comunes a los dos tramos no entran: ésas venden el boleto único, que es
+// una ruta de la Fase 2 y se muestra aparte. Frecuencia = tramo más débil, sin `factorEscala`: no hay
+// conexión que garantizar, cada tramo se elige por separado.
 export const generarSplitTickets = (origenes: readonly CandidatoAeropuerto[], destinos: readonly CandidatoAeropuerto[], grafo: Grafo, config: ConfigSplit): Ruta[] => {
   const porRegistro = config.fase2.vuelosSemanalesPorRegistro;
+  const pedidos = new Set([...origenes, ...destinos].filter((c) => c.esSolicitado).map((c) => c.aeropuerto.iata));
   const rutas: Ruta[] = [];
   for (const o of origenes) {
     const origen = o.aeropuerto.iata;
@@ -26,16 +27,11 @@ export const generarSplitTickets = (origenes: readonly CandidatoAeropuerto[], de
       if (origen === destino) continue;
       const candidatas: Ruta[] = [];
       for (const hub of config.split.hubs) {
-        if (hub === origen || hub === destino) continue;
+        if (hub === origen || hub === destino || pedidos.has(hub)) continue;
         const ida = grafo.arista(origen, hub);
         const salida = grafo.arista(hub, destino);
         if (!ida || !salida || ida.operadas === 0 || salida.operadas === 0) continue;
-        // Boleto único posible (misma aerolínea en los dos tramos) y con frecuencia de Nivel 1–2: ya está en
-        // Fase 2 y no hace falta separar. Si esa conexión es Nivel 3–4 (una aerolínea con un vuelo aislado),
-        // el separado con las demás aerolíneas sigue valiendo: ASU→GRU (LATAM) + GRU→LIS (TAP).
         const comunes = ida.aerolineas.filter((a) => salida.aerolineasOperadoras.includes(a));
-        const unicoConservado = nivelDe(Math.round(comunes.length * porRegistro * config.fase2.factorEscala), config.fase2.niveles);
-        if (comunes.length > 0 && unicoConservado !== null && config.fase2.nivelesConservados.includes(unicoConservado)) continue;
         const operadorasSalida = salida.aerolineasOperadoras.filter((a) => !comunes.includes(a));
         const operadorasIda = ida.aerolineasOperadoras.filter((a) => !comunes.includes(a));
         if (operadorasSalida.length === 0 || operadorasIda.length === 0) continue;
