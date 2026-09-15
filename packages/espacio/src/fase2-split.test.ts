@@ -12,7 +12,7 @@ import rutasJson from "../../../data/rutas.json";
 
 const cfg = ConfigEspacio.parse(config);
 const aeropuertos = z.array(AeropuertoGeo).parse(aeropuertosJson);
-const grafo = new Grafo(z.array(RutaCompacta).parse(rutasJson), aeropuertos);
+const grafo = new Grafo(z.array(RutaCompacta).parse(rutasJson), aeropuertos, cfg.grafo.aerolineasExcluidas);
 const candidatos = (iata: string, rol: "origen" | "destino") => {
   const r = expandirAeropuertos(iata, rol, aeropuertos, grafo, cfg.fase1);
   if (!r.ok) throw new Error(r.motivo);

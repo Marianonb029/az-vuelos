@@ -129,11 +129,12 @@ const hojaCombinaciones = (libro: ExcelJS.Workbook, c: CorridaEspacio) => {
     { header: "Traslado", key: "traslado", width: 40 },
     { header: "Boletos separados", key: "separados", width: 16 },
     { header: "Boleto aparte", key: "aparte", width: 26 },
+    { header: "Restricción", key: "restriccion", width: 22 },
     { header: "Fundamento", key: "fundamento", width: 90 },
   ]);
   const nombres = new Map(c.combinaciones.nombres.map((n) => [n.iata, n.nombre]));
   for (const x of c.combinaciones.combinaciones) {
-    hoja.addRow({ puntaje: x.puntaje, origen: x.origen, destino: x.destino, aerolinea: x.aerolinea, nombre: nombres.get(x.aerolinea) ?? x.aerolinea, via: x.via ?? "directa", nivel: x.nivelRuta ?? "gap", desde: x.ventanaIda.desde, hasta: x.ventanaIda.hasta, confianza: x.confianza, traslado: x.notaTraslado ?? "", separados: x.requiereBoletosSeparados ? "sí" : "no", aparte: x.tramoPrevio ? `${x.origen}→${x.tramoPrevio.hub} con ${x.tramoPrevio.aerolineas.join("/")}` : "", fundamento: x.fundamento });
+    hoja.addRow({ puntaje: x.puntaje, origen: x.origen, destino: x.destino, aerolinea: x.aerolinea, nombre: nombres.get(x.aerolinea) ?? x.aerolinea, via: x.via ?? "directa", nivel: x.nivelRuta ?? "gap", desde: x.ventanaIda.desde, hasta: x.ventanaIda.hasta, confianza: x.confianza, traslado: x.notaTraslado ?? "", separados: x.requiereBoletosSeparados ? "sí" : "no", aparte: x.tramoPrevio ? `${x.origen}→${x.tramoPrevio.hub} con ${x.tramoPrevio.aerolineas.join("/")}` : "", restriccion: x.restriccion?.replace(/_/g, " ") ?? "", fundamento: x.fundamento });
   }
 };
 

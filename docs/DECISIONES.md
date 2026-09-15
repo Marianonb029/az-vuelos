@@ -213,6 +213,12 @@ El monto original también se redondea hacia arriba.
 - Caso del dueño resuelto: ASU→GRU (G3/JJ/PZ) + GRU→LIS (TP) aparece como ruta separada Nivel 2 y como combinación (puntaje 30: N2 +18, presión, −8 boletos separados, −10 por los 513 km LIS–MAD). También ASU→PTY (CM) + PTY→MAD (IB) y ASU→LIM (AV) + LIM→MAD (IB/UX).
 - Con ASU→MAD el tope de 300 combinaciones ya se alcanza (178 con boleto aparte): el orden por puntaje decide qué se ve; el tope es configurable.
 
+## Corrección (15/09/2026) — US Airways fuera del grafo y escalas en EE.UU. penalizadas
+
+- `config.grafo.aerolineasExcluidas: ["US"]`: US Airways se fusionó con American en 2015; sus registros de 2014 duplicaban cada conexión de AA vía MIA/DFW y las subían a Nivel 2 (dos "aerolíneas" = 7 vuelos/sem proxy). Sin US, esas conexiones quedan en Nivel 3 (persistidas). Efecto en la calibración de 6.2: el escenario "toda Europa" baja de 49 a 25 rutas N1–2; es la cifra honesta.
+- `config.fase6.restriccionesVia` + `pesos.penalizacionRestriccionVia: -20`: una escala en un hub de EE.UU. (MIA, JFK, EWR, ATL, IAH, DFW, ORD, LAX…) marca la combinación con `restriccion: "requiere_visa_eeuu_o_esta"`, la penaliza y lo muestra en rojo en las tablas y en el XLSX. No se elimina: es una opción válida para quien tiene visa.
+- ASU→MAD después del cambio: arriba quedan ET vía ADD y los boletos separados vía PTY (Copa + Iberia) y LIM (Avianca + Iberia/Air Europa); AA vía MIA baja al fondo y ya no aparece duplicada.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

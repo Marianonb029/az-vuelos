@@ -26,6 +26,7 @@ const comb = (id: string, aerolinea: string, puntaje: number, desde: string, has
   notaTraslado: origen === "EZE" ? null : `salida desde ${origen}, a 229 km del pedido`,
   requiereBoletosSeparados: false,
   tramoPrevio: null,
+  restriccion: null,
   confianza: "alta",
 });
 

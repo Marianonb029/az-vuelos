@@ -16,7 +16,7 @@ const cfg = ConfigEspacio.parse(config);
 const aeropuertos = z.array(AeropuertoGeo).parse(aeropuertosJson);
 const rutas = z.array(RutaCompacta).parse(rutasJson);
 const nombres = new Map(z.array(z.object({ iata: z.string(), nombre: z.string() })).parse(aerolineasRutasJson).map((a) => [a.iata, a.nombre]));
-const grafo = new Grafo(rutas, aeropuertos);
+const grafo = new Grafo(rutas, aeropuertos, cfg.grafo.aerolineasExcluidas);
 
 const candidatos = (iata: string, rol: "origen" | "destino") => {
   const r = expandirAeropuertos(iata, rol, aeropuertos, grafo, cfg.fase1);

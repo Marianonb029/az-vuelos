@@ -47,6 +47,8 @@ export const Corredor = z.object({
 });
 
 export const ConfigEspacio = z.object({
+  // Registros del dataset que no deben entrar al grafo (aerolíneas desaparecidas desde 2014).
+  grafo: z.object({ aerolineasExcluidas: z.array(IataAerolinea), nota: z.string() }),
   fase1: z.object({
     radioOrigenKm: z.number().positive(),
     radioDestinoKm: z.number().positive(),
@@ -82,6 +84,8 @@ export const ConfigEspacio = z.object({
   }),
   fase6: z.object({
     pesos: z.record(z.string(), z.number()),
+    // Escalas con condición para la persona (visa, ESTA): la combinación sigue, pero penalizada y marcada.
+    restriccionesVia: z.record(z.string(), z.array(IataAeropuerto)),
     kmPorPenalizacionTraslado: z.number().positive(),
     aerolineasPerfilBajoCosto: z.array(IataAerolinea),
     maxCombinaciones: z.number().int().positive(),

@@ -1,4 +1,8 @@
 {
+  "grafo": {
+    "aerolineasExcluidas": ["US"],
+    "nota": "US Airways se fusionó con American en 2015: sus registros de 2014 duplicaban cada ruta de AA"
+  },
   "fase1": {
     "radioOrigenKm": 2000,
     "radioDestinoKm": 2000,
@@ -91,7 +95,11 @@
       "penalizacionDistancia": -10,
       "bonoDescubrimientoGap": 10,
       "penalizacionBoletosSeparados": -8,
-      "penalizacionSinVerificar": -15
+      "penalizacionSinVerificar": -15,
+      "penalizacionRestriccionVia": -20
+    },
+    "restriccionesVia": {
+      "requiere_visa_eeuu_o_esta": ["MIA", "JFK", "EWR", "ATL", "IAH", "DFW", "ORD", "LAX", "SFO", "IAD", "BOS", "CLT", "PHL", "FLL", "MCO", "DTW", "MSP", "SEA"]
     },
     "kmPorPenalizacionTraslado": 500,
     "aerolineasPerfilBajoCosto": ["JA", "WJ", "FO", "G3", "AD", "VY", "FR", "U2", "W6", "TK", "ET"],

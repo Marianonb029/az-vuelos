@@ -78,6 +78,9 @@ const puntuar = (s: Semilla, ventana: Ventana, entrada: EntradaFase6, cfg: Confi
   const kmTraslado = (s.origen.esSolicitado ? 0 : s.origen.distanciaKm) + (s.destino.esSolicitado ? 0 : s.destino.distanciaKm);
   if (kmTraslado > 0) anotar("penalizacionDistancia", ((p["penalizacionDistancia"] ?? 0) * kmTraslado) / cfg.kmPorPenalizacionTraslado, `${kmTraslado} km de traslado`);
 
+  const restriccion = s.via === null ? null : (Object.entries(cfg.restriccionesVia).find(([, hubs]) => hubs.includes(s.via ?? ""))?.[0] ?? null);
+  if (restriccion !== null) anotar("penalizacionRestriccionVia", p["penalizacionRestriccionVia"] ?? 0, `vía ${s.via}: ${restriccion.replace(/_/g, " ")}`);
+
   const boletosSeparados = (s.gap?.requiereBoletosSeparados ?? false) || s.tramoPrevio !== null;
   if (boletosSeparados) anotar("penalizacionBoletosSeparados", p["penalizacionBoletosSeparados"] ?? 0, "boletos separados");
   if (s.gap) {
@@ -109,6 +112,7 @@ const puntuar = (s: Semilla, ventana: Ventana, entrada: EntradaFase6, cfg: Confi
     notaTraslado: traslados.length === 0 ? null : traslados.join("; "),
     requiereBoletosSeparados: boletosSeparados,
     tramoPrevio: s.tramoPrevio,
+    restriccion,
     confianza: s.gap && s.gap.estado !== "confirmada" ? "baja" : "alta",
   };
 };

@@ -114,6 +114,7 @@ export const Combinacion = z.object({
   notaTraslado: z.string().nullable(),
   requiereBoletosSeparados: z.boolean(),
   tramoPrevio: TramoPrevio.nullable(), // boletos separados por split ticket: qué comprar aparte
+  restriccion: z.string().nullable(), // p. ej. "requiere_visa_eeuu_o_esta" por la escala
   confianza: z.enum(["alta", "baja"]),
 });
 

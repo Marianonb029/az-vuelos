@@ -13,9 +13,11 @@ export class Grafo {
   private readonly salidas = new Map<string, Map<string, Arista>>();
   private readonly aeropuertos: ReadonlyMap<string, AeropuertoGeo>;
 
-  constructor(rutas: readonly RutaCompacta[], aeropuertos: readonly AeropuertoGeo[]) {
+  constructor(rutas: readonly RutaCompacta[], aeropuertos: readonly AeropuertoGeo[], aerolineasExcluidas: readonly string[] = []) {
     this.aeropuertos = new Map(aeropuertos.map((a) => [a.iata, a]));
+    const excluidas = new Set(aerolineasExcluidas);
     for (const [aerolinea, origen, destino, , codeshare] of rutas) {
+      if (excluidas.has(aerolinea)) continue;
       let porDestino = this.salidas.get(origen);
       if (!porDestino) {
         porDestino = new Map();

@@ -36,7 +36,8 @@ const Fila = ({ c, nombres, adaptadores, onVerificar }: { c: Combinacion; nombre
     <td className="py-1 pr-3 font-medium text-slate-900">
       {c.origen} → {c.destino}
       <span className="block text-xs font-normal text-slate-500">{c.via === null ? "directa" : `vía ${c.via}`}{c.nivelRuta === null ? " · hipótesis de gap" : ` · Nivel ${c.nivelRuta}`}
-                      {c.tramoPrevio && ` · boleto aparte ${c.origen}→${c.tramoPrevio.hub} con ${c.tramoPrevio.aerolineas.join("/")}`}</span>
+                      {c.tramoPrevio && ` · boleto aparte ${c.origen}→${c.tramoPrevio.hub} con ${c.tramoPrevio.aerolineas.join("/")}`}
+                      {c.restriccion && <span className="ml-1 rounded bg-red-100 px-1 text-red-800">{c.restriccion.replace(/_/g, " ")}</span>}</span>
     </td>
     <td className="py-1 pr-3 text-slate-700">
       <span title={nombres.get(c.aerolinea) ?? c.aerolinea}>{c.aerolinea}</span>

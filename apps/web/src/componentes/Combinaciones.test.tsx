@@ -15,6 +15,7 @@ const comb = (parcial: Partial<Combinacion> & Pick<Combinacion, "id" | "origen" 
   notaTraslado: null,
   requiereBoletosSeparados: false,
   tramoPrevio: null,
+  restriccion: null,
   confianza: "alta",
   ...parcial,
 });

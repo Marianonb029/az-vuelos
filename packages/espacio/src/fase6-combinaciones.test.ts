@@ -87,6 +87,15 @@ describe("Fase 6 — generarCombinaciones", () => {
     expect(s?.id).toBe("EZE-MAD-TP-GRU-2027-01-15"); // no choca con el gap de TP
   });
 
+  it("una escala en un hub con restricción (visa/ESTA) penaliza y marca la combinación", () => {
+    const conMiami = { ...entrada, rutas: [...entrada.rutas, ruta("EZE", "MAD", ["AA"], 2, "MIA")] };
+    const aa = generarCombinaciones(conMiami, cfg).find((c) => c.aerolinea === "AA" && c.ventanaIda.desde === "2027-01-15");
+    expect(aa?.restriccion).toBe("requiere_visa_eeuu_o_esta");
+    expect(aa?.desglose["penalizacionRestriccionVia"]).toBe(-20);
+    expect(aa?.fundamento).toContain("vía MIA: requiere visa eeuu o esta -20");
+    expect(buscar("EZE", "BCN", "IB", "2027-01-15")?.restriccion).toBeNull(); // vía MAD
+  });
+
   it("respeta el tope de combinaciones y deduplica por (origen, destino, aerolínea, ventana)", () => {
     const conDuplicado = { ...entrada, rutas: [...entrada.rutas, ruta("EZE", "MAD", ["AR"], 2, "GRU")] };
     const r = generarCombinaciones(conDuplicado, cfg);

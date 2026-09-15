@@ -13,7 +13,7 @@ import seed from "../../../data/seed/eze-mad-2027.json";
 const cfg = ConfigEspacio.parse(config);
 const aeropuertos = z.array(AeropuertoGeo).parse(aeropuertosJson);
 const rutas = z.array(RutaCompacta).parse(rutasJson);
-const grafo = new Grafo(rutas, aeropuertos);
+const grafo = new Grafo(rutas, aeropuertos, cfg.grafo.aerolineasExcluidas);
 
 const candidatos = (iata: string, rol: "origen" | "destino") => {
   const r = expandirAeropuertos(iata, rol, aeropuertos, grafo, cfg.fase1);
@@ -70,12 +70,13 @@ describe("Fase 2 — generarRutas (datasets reales)", () => {
     }
   });
 
-  it("calibración: con destinos de toda Europa (como el proceso manual) hay ~230 destinos y 40–80 rutas N1–2", () => {
+  it("calibración: con destinos de toda Europa (como el proceso manual) hay ~230 destinos y 20–80 rutas N1–2", () => {
     const europa = new Set(cfg.regiones.europa);
     const destinosEuropa = aeropuertos.filter((a) => europa.has(a.pais) && a.tipo === "grande").map((a, i) => comoDestino(a.iata, i + 1));
     expect(destinosEuropa.length).toBeGreaterThanOrEqual(seed.esperado.destinosAlcanzables - 10);
     const r = generarRutas(origenes, destinosEuropa, grafo, cfg.fase2, cfg.hubs);
-    expect(r.conservadas.length).toBeGreaterThanOrEqual(40);
+    // Sin US Airways (excluida del grafo) las conexiones AA vía MIA bajan a Nivel 3: quedan ~25 rutas N1–2.
+    expect(r.conservadas.length).toBeGreaterThanOrEqual(20);
     expect(r.conservadas.length).toBeLessThanOrEqual(seed.esperado.rutasNivel12.max);
   });
 });
