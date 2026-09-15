@@ -22,8 +22,9 @@ const resultado: ResultadoEspacio = {
   ],
   destinos: [{ aeropuerto: geo("MAD", "ES"), rol: "destino", esSolicitado: true, distanciaKm: 0, salidasSemanales: 324, posicion: 1 }],
   rutas: {
-    conservadas: [{ origen: "EZE", destino: "MAD", aerolineas: ["AR", "IB", "UX"], vuelosSemanales: 21, escalas: 0, via: null, nivel: 1, etiquetaNivel: "Máxima", fuente: "dataset", confianza: 0.7 }],
-    descartadas: [{ origen: "EZE", destino: "MAD", aerolineas: ["AF"], vuelosSemanales: 4, escalas: 1, via: "CDG", nivel: 3, etiquetaNivel: "Media", fuente: "dataset", confianza: 0.5 }],
+    conservadas: [{ origen: "EZE", destino: "MAD", aerolineas: ["AR", "IB", "UX"], vuelosSemanales: 21, escalas: 0, via: null, nivel: 1, etiquetaNivel: "Máxima", fuente: "dataset", confianza: 0.7, tramoPrevio: null }],
+    descartadas: [{ origen: "EZE", destino: "MAD", aerolineas: ["AF"], vuelosSemanales: 4, escalas: 1, via: "CDG", nivel: 3, etiquetaNivel: "Media", fuente: "dataset", confianza: 0.5, tramoPrevio: null }],
+    separadas: [],
   },
   gaps: [
     { aerolinea: "TK", nombre: "Turkish Airlines", operaEn: ["EZE"], cubreRutasObjetivo: true, hipotesis: "EZE→IST→destino. Vía IST", hub: "IST", prioridad: "alta", requiereBoletosSeparados: false, necesitaVerificacion: true, estado: "pendiente", rol: "gap_origen" },
@@ -65,7 +66,7 @@ describe("EspacioBusqueda", () => {
     fireEvent.click(screen.getByRole("button", { name: "Explorar espacio" }));
 
     await waitFor(() => expect(screen.getByTestId("resumen-espacio")).toBeTruthy());
-    expect(screen.getByTestId("resumen-espacio").textContent).toContain("2 orígenes · 1 destinos · 1 rutas Nivel 1–2 (1 pares) · 1 persistidas Nivel 3–4 · 2 gaps");
+    expect(screen.getByTestId("resumen-espacio").textContent).toContain("2 orígenes · 1 destinos · 1 rutas Nivel 1–2 (1 pares) · 1 persistidas Nivel 3–4 · 0 boletos separados · 2 gaps");
     expect(screen.getByText("MVD · 229 km")).toBeTruthy();
     expect(screen.getByText("N1 Máxima")).toBeTruthy();
     expect(screen.getByTitle("Aerolineas Argentinas").textContent).toContain("adaptador");

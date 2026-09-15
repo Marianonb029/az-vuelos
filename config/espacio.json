@@ -20,6 +20,10 @@
     "vuelosSemanalesPorRegistro": 7,
     "factorEscala": 0.5
   },
+  "split": {
+    "hubs": ["GRU", "GIG", "BOG", "PTY", "LIM", "SCL", "EZE", "MEX"],
+    "maxHubsPorPar": 3
+  },
   "hubs": [
     { "aerolineas": ["TK"], "hubs": ["IST"], "via": [], "cubreRegiones": ["europa_toda"], "hipotesis": "Vía IST alcanza prácticamente cualquier aeropuerto europeo, incluidos Nivel 3-4", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },
     { "aerolineas": ["ET"], "hubs": ["ADD"], "via": ["GRU"], "cubreRegiones": ["europa_principal"], "hipotesis": "EZE→GRU→ADD→Europa. Alta frecuencia de tarifas promocionales desde Buenos Aires", "prioridad": "alta", "requiereFeederA": [], "aerolineasFeeder": [], "restriccion": null, "requiereBoletosSeparados": false },

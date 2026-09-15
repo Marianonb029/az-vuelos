@@ -73,6 +73,7 @@ export const SeleccionCombinaciones = ({ resultado, adaptadores, seleccion, onCa
                     <span className="block text-xs font-normal text-slate-500">
                       {c.via === null ? "directa" : `vía ${c.via}`}
                       {c.nivelRuta === null ? " · hipótesis de gap" : ` · Nivel ${c.nivelRuta}`}
+                      {c.tramoPrevio && ` · boleto aparte ${c.origen}→${c.tramoPrevio.hub} con ${c.tramoPrevio.aerolineas.join("/")}`}
                       {c.notaTraslado && ` · ${c.notaTraslado}`}
                     </span>
                   </td>

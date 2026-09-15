@@ -65,6 +65,11 @@ export const ConfigEspacio = z.object({
     // Calibración (ver DECISIONES, Fase 6.2): fracción de la frecuencia del tramo débil que rinde una conexión.
     factorEscala: z.number().positive().max(1),
   }),
+  // Boletos separados: hubs intermedios donde se puede cambiar de aerolínea comprando dos boletos.
+  split: z.object({
+    hubs: z.array(IataAeropuerto).min(1),
+    maxHubsPorPar: z.number().int().positive(), // cuántos hubs distintos se conservan por (origen, destino)
+  }),
   hubs: z.array(ReglaHub),
   regiones: z.record(z.string(), z.array(z.string().length(2))),
   fase5: z.object({

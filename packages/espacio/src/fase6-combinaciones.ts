@@ -1,10 +1,11 @@
 import type { ConfigEspacio } from "./configuracion";
-import type { CandidatoAeropuerto, Combinacion, GapAerolinea, PuntajeDia, Ruta, Ventana } from "./modelos";
+import type { CandidatoAeropuerto, Combinacion, GapAerolinea, PuntajeDia, Ruta, TramoPrevio, Ventana } from "./modelos";
 
 export interface EntradaFase6 {
   origenes: readonly CandidatoAeropuerto[];
   destinos: readonly CandidatoAeropuerto[];
-  rutas: readonly Ruta[]; // Nivel 1–2
+  rutas: readonly Ruta[]; // Nivel 1–2, boleto único
+  separadas: readonly Ruta[]; // boletos separados (split tickets)
   gaps: readonly GapAerolinea[];
   ventanaPedida: Ventana; // la fecha (o rango) de ida que pidió la persona: siempre se conserva
   calendarios: ReadonlyMap<string, readonly PuntajeDia[]>; // por aeropuerto de origen
@@ -26,6 +27,7 @@ interface Semilla {
   nivel: Ruta["nivel"] | null;
   via: string | null;
   gap: GapAerolinea | null;
+  tramoPrevio: TramoPrevio | null;
 }
 
 const semillasDeRutas = (entrada: EntradaFase6): Semilla[] => {
@@ -33,11 +35,11 @@ const semillasDeRutas = (entrada: EntradaFase6): Semilla[] => {
   const origenes = porIata(entrada.origenes);
   const destinos = porIata(entrada.destinos);
   const semillas: Semilla[] = [];
-  for (const r of entrada.rutas) {
+  for (const r of [...entrada.rutas, ...entrada.separadas]) {
     const origen = origenes.get(r.origen);
     const destino = destinos.get(r.destino);
     if (!origen || !destino) continue;
-    for (const aerolinea of r.aerolineas) semillas.push({ origen, destino, aerolinea, nivel: r.nivel, via: r.via, gap: null });
+    for (const aerolinea of r.aerolineas) semillas.push({ origen, destino, aerolinea, nivel: r.nivel, via: r.via, gap: null, tramoPrevio: r.tramoPrevio });
   }
   return semillas;
 };
@@ -51,7 +53,7 @@ const semillasDeGaps = (entrada: EntradaFase6): Semilla[] => {
     if (g.rol !== "gap_origen" || !g.cubreRutasObjetivo || g.estado === "descartada") continue;
     const origen = entrada.origenes.find((o) => g.operaEn.includes(o.aeropuerto.iata)) ?? entrada.origenes.find((o) => o.esSolicitado);
     if (!origen) continue;
-    semillas.push({ origen, destino, aerolinea: g.aerolinea, nivel: null, via: g.hub, gap: g });
+    semillas.push({ origen, destino, aerolinea: g.aerolinea, nivel: null, via: g.hub, gap: g, tramoPrevio: null });
   }
   return semillas;
 };
@@ -76,7 +78,7 @@ const puntuar = (s: Semilla, ventana: Ventana, entrada: EntradaFase6, cfg: Confi
   const kmTraslado = (s.origen.esSolicitado ? 0 : s.origen.distanciaKm) + (s.destino.esSolicitado ? 0 : s.destino.distanciaKm);
   if (kmTraslado > 0) anotar("penalizacionDistancia", ((p["penalizacionDistancia"] ?? 0) * kmTraslado) / cfg.kmPorPenalizacionTraslado, `${kmTraslado} km de traslado`);
 
-  const boletosSeparados = s.gap?.requiereBoletosSeparados ?? false;
+  const boletosSeparados = (s.gap?.requiereBoletosSeparados ?? false) || s.tramoPrevio !== null;
   if (boletosSeparados) anotar("penalizacionBoletosSeparados", p["penalizacionBoletosSeparados"] ?? 0, "boletos separados");
   if (s.gap) {
     anotar("bonoDescubrimientoGap", p["bonoDescubrimientoGap"] ?? 0, "descubierta por gap");
@@ -90,8 +92,9 @@ const puntuar = (s: Semilla, ventana: Ventana, entrada: EntradaFase6, cfg: Confi
     s.destino.esSolicitado ? null : `llegada a ${s.destino.aeropuerto.iata}, a ${s.destino.distanciaKm} km del pedido`,
   ].filter((t): t is string => t !== null);
 
+  const notaSplit = s.tramoPrevio ? `. Boleto aparte ${s.origen.aeropuerto.iata}→${s.tramoPrevio.hub} con ${s.tramoPrevio.aerolineas.join("/")}` : "";
   return {
-    id: `${s.origen.aeropuerto.iata}-${s.destino.aeropuerto.iata}-${s.aerolinea}-${ventana.desde}`,
+    id: `${s.origen.aeropuerto.iata}-${s.destino.aeropuerto.iata}-${s.aerolinea}-${s.tramoPrevio ? `${s.tramoPrevio.hub}-` : ""}${ventana.desde}`,
     origen: s.origen.aeropuerto.iata,
     destino: s.destino.aeropuerto.iata,
     aerolinea: s.aerolinea,
@@ -101,16 +104,18 @@ const puntuar = (s: Semilla, ventana: Ventana, entrada: EntradaFase6, cfg: Confi
     ventanaVuelta: null,
     puntaje,
     desglose,
-    fundamento: `${notas.join(" · ")} = ${Math.round(total)}${s.gap ? `. Hipótesis: ${s.gap.hipotesis}` : ""}`,
+    fundamento: `${notas.join(" · ")} = ${Math.round(total)}${s.gap ? `. Hipótesis: ${s.gap.hipotesis}` : ""}${notaSplit}`,
     requiereTrasladoTerrestre: traslados.length > 0,
     notaTraslado: traslados.length === 0 ? null : traslados.join("; "),
     requiereBoletosSeparados: boletosSeparados,
+    tramoPrevio: s.tramoPrevio,
     confianza: s.gap && s.gap.estado !== "confirmada" ? "baja" : "alta",
   };
 };
 
 // Fase 6: ruta × aerolínea × ventana (la pedida más las verdes del origen), puntuadas 0–100 con los
-// pesos de config; deduplicadas por (origen, destino, aerolínea, ventana) quedándose con la mejor ruta.
+// pesos de config; deduplicadas por (origen, destino, aerolínea, hub del boleto aparte, ventana)
+// quedándose con la mejor ruta. Los boletos separados y los gaps también entran, penalizados.
 export const generarCombinaciones = (entrada: EntradaFase6, cfg: ConfigEspacio["fase6"]): Combinacion[] => {
   const semillas = [...semillasDeRutas(entrada), ...semillasDeGaps(entrada)];
   const vistas = new Map<string, Combinacion>();

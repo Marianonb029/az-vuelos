@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Aeropuerto, Busqueda } from "@az/core";
 import { busquedaIda } from "@az/core/fixtures";
 import type { Combinacion, ResultadoCombinaciones, ResultadoEspacio } from "@az/espacio";
-import { BusquedaGuiada, aNuevaBusqueda } from "./BusquedaGuiada";
+import { BusquedaGuiada, aNuevasBusquedas } from "./BusquedaGuiada";
 
 const aeropuertos: Aeropuerto[] = [
   { iata: "EZE", nombre: "Ministro Pistarini International Airport", ciudad: "Buenos Aires", pais: "Argentina" },
@@ -25,6 +25,7 @@ const comb = (id: string, aerolinea: string, puntaje: number, desde: string, has
   requiereTrasladoTerrestre: origen !== "EZE",
   notaTraslado: origen === "EZE" ? null : `salida desde ${origen}, a 229 km del pedido`,
   requiereBoletosSeparados: false,
+  tramoPrevio: null,
   confianza: "alta",
 });
 
@@ -34,7 +35,7 @@ const espacio: ResultadoEspacio = {
   calculadoEn: "2026-09-14T15:00:00.000Z",
   origenes: [{ aeropuerto: geo("EZE", "AR"), rol: "origen", esSolicitado: true, distanciaKm: 0, salidasSemanales: 75, posicion: 1 }],
   destinos: [{ aeropuerto: geo("MAD", "ES"), rol: "destino", esSolicitado: true, distanciaKm: 0, salidasSemanales: 324, posicion: 1 }],
-  rutas: { conservadas: [], descartadas: [] },
+  rutas: { conservadas: [], descartadas: [], separadas: [] },
   gaps: [],
   nombres: [],
 };
@@ -57,12 +58,18 @@ const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-describe("aNuevaBusqueda", () => {
+describe("aNuevasBusquedas", () => {
   it("recorta la ventana de ida a 30 días y sólo lleva vuelta si es posterior a la ida", () => {
     const larga = comb("x", "AR", 50, "2027-02-01", "2027-03-20");
-    expect(aNuevaBusqueda(larga, "bodega", null)).toMatchObject({ tipo: "ida", equipaje: "bodega", rangoIda: { desde: "2027-02-01", hasta: "2027-03-02" }, rangoVuelta: null });
-    expect(aNuevaBusqueda(larga, "carry_on", { desde: "2027-03-10", hasta: "2027-03-12" })).toMatchObject({ tipo: "ida_y_vuelta", rangoVuelta: { desde: "2027-03-10", hasta: "2027-03-12" } });
-    expect(aNuevaBusqueda(larga, "carry_on", { desde: "2027-01-10", hasta: "2027-01-12" }).tipo).toBe("ida"); // vuelta anterior a la ida: se descarta
+    expect(aNuevasBusquedas(larga, "bodega", null, new Set())).toEqual([expect.objectContaining({ tipo: "ida", equipaje: "bodega", rangoIda: { desde: "2027-02-01", hasta: "2027-03-02" }, rangoVuelta: null })]);
+    expect(aNuevasBusquedas(larga, "carry_on", { desde: "2027-03-10", hasta: "2027-03-12" }, new Set())[0]).toMatchObject({ tipo: "ida_y_vuelta", rangoVuelta: { desde: "2027-03-10", hasta: "2027-03-12" } });
+    expect(aNuevasBusquedas(larga, "carry_on", { desde: "2027-01-10", hasta: "2027-01-12" }, new Set())[0]?.tipo).toBe("ida"); // vuelta anterior a la ida: se descarta
+  });
+
+  it("un boleto separado son dos búsquedas: tramo previo con la aerolínea que tenga adaptador y tramo principal", () => {
+    const split: Combinacion = { ...comb("s", "TP", 40, "2027-01-25", "2027-01-28", "ASU"), via: "GRU", tramoPrevio: { hub: "GRU", aerolineas: ["G3", "JJ"] }, requiereBoletosSeparados: true };
+    expect(aNuevasBusquedas(split, "carry_on", null, new Set(["JJ"])).map((b) => [b.aerolineaIata, b.origenIata, b.destinoIata])).toEqual([["JJ", "ASU", "GRU"], ["TP", "GRU", "MAD"]]);
+    expect(aNuevasBusquedas(split, "carry_on", null, new Set())[0]?.aerolineaIata).toBe("G3");
   });
 });
 

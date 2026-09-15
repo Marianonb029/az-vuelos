@@ -71,13 +71,13 @@ const TablaRutas = ({ rutas, nombres, adaptadores }: { rutas: Ruta[]; nombres: R
           <th className="py-1 pr-3">Nivel</th>
           <th className="py-1 pr-3">Ruta</th>
           <th className="py-1 pr-3">Vía</th>
-          <th className="py-1 pr-3">Aerolíneas (boleto único)</th>
+          <th className="py-1 pr-3">Aerolíneas</th>
           <th className="py-1 pr-3 text-right">Vuelos/sem</th>
         </tr>
       </thead>
       <tbody>
         {rutas.map((r) => (
-          <tr key={`${r.origen}-${r.destino}-${r.via ?? "directa"}`} className="border-b border-slate-100">
+          <tr key={`${r.origen}-${r.destino}-${r.via ?? "directa"}-${r.tramoPrevio ? "split" : "unico"}`} className="border-b border-slate-100">
             <td className="py-1 pr-3">
               <Etiqueta clase={NIVEL[r.nivel]}>{`N${r.nivel} ${r.etiquetaNivel}`}</Etiqueta>
             </td>
@@ -86,6 +86,11 @@ const TablaRutas = ({ rutas, nombres, adaptadores }: { rutas: Ruta[]; nombres: R
             </td>
             <td className="py-1 pr-3 text-slate-600">{r.via ?? "directa"}</td>
             <td className="py-1 pr-3 text-slate-700">
+              {r.tramoPrevio && (
+                <span className="mr-2 text-xs text-amber-800">
+                  {r.origen}→{r.tramoPrevio.hub} con <Aerolineas iatas={r.tramoPrevio.aerolineas} nombres={nombres} adaptadores={adaptadores} /> (boleto aparte) · {r.tramoPrevio.hub}→{r.destino} con
+                </span>
+              )}
               <Aerolineas iatas={r.aerolineas} nombres={nombres} adaptadores={adaptadores} />
             </td>
             <td className="py-1 pr-3 text-right tabular-nums text-slate-700">{r.vuelosSemanales}</td>
@@ -135,14 +140,14 @@ export const ResultadosEspacio = ({ resultado, adaptadores }: Props) => {
   const nombres = new Map(resultado.nombres.map((n) => [n.iata, n.nombre]));
   const gapsOrigen = resultado.gaps.filter((g) => g.rol === "gap_origen");
   const feeders = resultado.gaps.filter((g) => g.rol === "feeder_destino");
-  const { conservadas, descartadas } = resultado.rutas;
+  const { conservadas, descartadas, separadas } = resultado.rutas;
   const pares = new Set(conservadas.map((r) => `${r.origen}-${r.destino}`)).size;
 
   return (
     <div className="grid gap-6">
       <p className="text-sm text-slate-600" data-testid="resumen-espacio">
         {resultado.origenes.length} orígenes · {resultado.destinos.length} destinos · {conservadas.length} rutas Nivel 1–2 ({pares} pares) · {descartadas.length} persistidas
-        Nivel 3–4 · {resultado.gaps.length} gaps · calculado {fechaHoraCorta(resultado.calculadoEn)}
+        Nivel 3–4 · {separadas.length} boletos separados · {resultado.gaps.length} gaps · calculado {fechaHoraCorta(resultado.calculadoEn)}
       </p>
 
       <section aria-label="Aeropuertos alternativos" className="grid gap-3 md:grid-cols-2">
@@ -165,6 +170,14 @@ export const ResultadosEspacio = ({ resultado, adaptadores }: Props) => {
             <TablaRutas rutas={descartadas} nombres={nombres} adaptadores={adaptadores} />
           </div>
         )}
+      </section>
+
+      <section aria-label="Boletos separados">
+        <h3 className="mb-2 text-sm font-medium text-slate-700">Boletos separados Nivel 1–2 ({separadas.length})</h3>
+        <p className="mb-2 text-xs text-slate-500">
+          Dos compras: origen → hub con una aerolínea y hub → destino con otra, sólo donde no existe boleto único. Sin protección de conexión: conviene dejar margen entre vuelos.
+        </p>
+        {separadas.length === 0 ? <p className="text-sm text-slate-500">Sin boletos separados con el dataset actual.</p> : <TablaRutas rutas={separadas} nombres={nombres} adaptadores={adaptadores} />}
       </section>
 
       <section aria-label="Gaps de aerolíneas">

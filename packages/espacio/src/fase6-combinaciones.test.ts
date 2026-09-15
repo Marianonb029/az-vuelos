@@ -10,7 +10,8 @@ import config from "../../../config/espacio.json";
 const cfg = ConfigEspacio.parse(config).fase6;
 const geo = (iata: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad: iata, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true });
 const cand = (iata: string, pais: string, rol: "origen" | "destino", esSolicitado: boolean, distanciaKm: number): CandidatoAeropuerto => ({ aeropuerto: geo(iata, pais), rol, esSolicitado, distanciaKm, salidasSemanales: 10, posicion: 1 });
-const ruta = (origen: string, destino: string, aerolineas: string[], nivel: 1 | 2, via: string | null = null): Ruta => ({ origen, destino, aerolineas, vuelosSemanales: nivel === 1 ? 21 : 7, escalas: via === null ? 0 : 1, via, nivel, etiquetaNivel: "x", fuente: "dataset", confianza: 0.7 });
+const ruta = (origen: string, destino: string, aerolineas: string[], nivel: 1 | 2, via: string | null = null): Ruta => ({ origen, destino, aerolineas, vuelosSemanales: nivel === 1 ? 21 : 7, escalas: via === null ? 0 : 1, via, nivel, etiquetaNivel: "x", fuente: "dataset", confianza: 0.7, tramoPrevio: null });
+const split = (origen: string, hub: string, feeders: string[], destino: string, aerolineas: string[]): Ruta => ({ ...ruta(origen, destino, aerolineas, 2, hub), confianza: 0.4, tramoPrevio: { hub, aerolineas: feeders } });
 const dia = (fecha: string, presion: number): PuntajeDia => ({ fecha, aeropuerto: "EZE", presion, etiquetas: [], banda: presion <= 33 ? "verde" : presion <= 66 ? "amarillo" : "rojo", fundamento: "" });
 const gapTk: GapAerolinea = { aerolinea: "TK", nombre: "Turkish", operaEn: ["EZE"], cubreRutasObjetivo: true, hipotesis: "Vía IST", hub: "IST", prioridad: "alta", requiereBoletosSeparados: false, necesitaVerificacion: true, estado: "pendiente", rol: "gap_origen" };
 const gapTp: GapAerolinea = { ...gapTk, aerolinea: "TP", nombre: "TAP", operaEn: ["GRU"], hub: "LIS", requiereBoletosSeparados: true };
@@ -23,6 +24,7 @@ const entrada: EntradaFase6 = {
   origenes,
   destinos,
   rutas: [ruta("EZE", "MAD", ["AR", "IB"], 1), ruta("EZE", "BCN", ["IB"], 2, "MAD"), ruta("MVD", "MAD", ["UX"], 2)],
+  separadas: [split("EZE", "GRU", ["G3", "JJ"], "MAD", ["TP"])],
   gaps: [gapTk, gapTp, feederVy],
   ventanaPedida: { desde: "2027-01-15", hasta: "2027-01-16" },
   calendarios: new Map([["EZE", calendarioEze], ["MVD", calendarioEze.map((d) => ({ ...d, aeropuerto: "MVD" }))]]),
@@ -34,10 +36,10 @@ const buscar = (origen: string, destino: string, aerolinea: string, desde: strin
 describe("Fase 6 — generarCombinaciones", () => {
   it("ruta × aerolínea × ventana (pedida + verdes del origen), válidas y ordenadas por puntaje", () => {
     expect(() => z.array(Combinacion).parse(combinaciones)).not.toThrow();
-    // EZE: (AR, IB, IB→BCN) × 2 ventanas = 6; MVD: UX × 1 ventana = 1; gaps: TK × 2, TP × 2 = 4.
-    expect(combinaciones).toHaveLength(11);
+    // EZE: (AR, IB, IB→BCN) × 2 ventanas = 6; MVD: UX × 1 = 1; gaps: TK × 2, TP × 2 = 4; split TP vía GRU × 2 = 2.
+    expect(combinaciones).toHaveLength(13);
     expect(combinaciones.map((c) => c.puntaje)).toEqual([...combinaciones.map((c) => c.puntaje)].sort((a, b) => b - a));
-    expect(new Set(combinaciones.map((c) => c.id)).size).toBe(11);
+    expect(new Set(combinaciones.map((c) => c.id)).size).toBe(13);
   });
 
   it("la fecha pedida nunca se reemplaza: aparece junto a la ventana verde, con menos puntaje por presión", () => {
@@ -71,16 +73,24 @@ describe("Fase 6 — generarCombinaciones", () => {
     expect(tk?.confianza).toBe("baja");
     expect(tk?.desglose).toEqual({ presionInversa: 10, perfilPrecioAerolinea: 15, aeropuertoSolicitado: 12, bonoDescubrimientoGap: 10, penalizacionSinVerificar: -15 });
     expect(tk?.fundamento).toContain("Hipótesis: Vía IST");
-    const tp = buscar("EZE", "MAD", "TP", "2027-01-15"); // opera en GRU (no candidato): cae al origen pedido
+    const tp = combinaciones.find((c) => c.aerolinea === "TP" && c.ventanaIda.desde === "2027-01-15" && c.tramoPrevio === null); // gap: opera en GRU (no candidato), cae al origen pedido
     expect(tp?.requiereBoletosSeparados).toBe(true);
     expect(tp?.desglose["penalizacionBoletosSeparados"]).toBe(-8);
     expect(combinaciones.some((c) => c.aerolinea === "VY")).toBe(false); // los feeders no generan combinación propia
   });
 
+  it("los boletos separados entran con nivel, penalización y el tramo previo explícito, sin bono de gap", () => {
+    const s = combinaciones.find((c) => c.tramoPrevio !== null && c.ventanaIda.desde === "2027-01-15");
+    expect(s).toMatchObject({ origen: "EZE", destino: "MAD", aerolinea: "TP", via: "GRU", nivelRuta: 2, requiereBoletosSeparados: true, confianza: "alta", tramoPrevio: { hub: "GRU", aerolineas: ["G3", "JJ"] } });
+    expect(s?.desglose).toEqual({ nivelRuta: 18, presionInversa: 10, aeropuertoSolicitado: 12, penalizacionBoletosSeparados: -8 });
+    expect(s?.fundamento).toContain("Boleto aparte EZE→GRU con G3/JJ");
+    expect(s?.id).toBe("EZE-MAD-TP-GRU-2027-01-15"); // no choca con el gap de TP
+  });
+
   it("respeta el tope de combinaciones y deduplica por (origen, destino, aerolínea, ventana)", () => {
     const conDuplicado = { ...entrada, rutas: [...entrada.rutas, ruta("EZE", "MAD", ["AR"], 2, "GRU")] };
     const r = generarCombinaciones(conDuplicado, cfg);
-    expect(r).toHaveLength(11);
+    expect(r).toHaveLength(13);
     expect(r.find((c) => c.id === "EZE-MAD-AR-2027-01-15")?.nivelRuta).toBe(1); // se queda con la mejor
     expect(generarCombinaciones(entrada, { ...cfg, maxCombinaciones: 3 })).toHaveLength(3);
   });

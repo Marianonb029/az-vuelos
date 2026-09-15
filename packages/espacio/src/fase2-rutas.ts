@@ -68,6 +68,7 @@ export const generarRutas = (
       etiquetaNivel: config.niveles[nivel].etiqueta,
       fuente: "dataset",
       confianza: via === null ? 0.7 : 0.5,
+      tramoPrevio: null,
     };
     (config.nivelesConservados.includes(nivel) ? conservadas : descartadas).push(ruta);
   };

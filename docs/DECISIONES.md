@@ -205,6 +205,14 @@ El monto original también se redondea hacia arriba.
 - Límite que sigue: fuera de las reglas de hub, el motor **no arma boletos separados** entre aerolíneas sin relación (Prompt 2 de la Fase 5, "split tickets"). Es la próxima pieza si el dueño la prioriza: para cada origen, tramo 1 a un hub intermedio (GRU, GIG, BOG, PTY, LIM, SCL) con cualquier aerolínea + tramo 2 hub→destino con otra, marcado como boletos separados.
 - Ruido del dataset visible en ASU: `US` (US Airways, absorbida por AA en 2015) sigue contando como aerolínea vía MIA y duplica combinaciones AA/US.
 
+## Fase 6.10 (15/09/2026) — boletos separados (split tickets, Prompt 2 de la Fase 5)
+
+- `generarSplitTickets`: para cada (origen, destino) y cada hub de `config.split.hubs` (GRU, GIG, BOG, PTY, LIM, SCL, EZE, MEX), tramo 1 origen→hub con cualquier aerolínea y tramo 2 hub→destino con otra, **sólo donde no existe boleto único** (ninguna aerolínea común entre los dos tramos; si la hay, ya es ruta de la Fase 2). Frecuencia = tramo más débil sin `factorEscala` (no hay conexión que garantizar: cada tramo se elige aparte); mismos niveles 1–2; tope de 3 hubs por par; `confianza 0.4`.
+- Modelo: `Ruta.tramoPrevio` y `Combinacion.tramoPrevio` (`{ hub, aerolineas }`), `ResultadoEspacio.rutas.separadas`. En combinaciones entran con nivel y −8 de boletos separados, sin bono de gap, id con el hub para no chocar con el gap de la misma aerolínea.
+- **Verificación:** un boleto separado son **dos búsquedas** (tramo previo con la aerolínea que tenga adaptador, o la primera; y tramo principal). Se muestran como dos filas en el Paso 3.
+- Caso del dueño resuelto: ASU→GRU (G3/JJ/PZ) + GRU→LIS (TP) aparece como ruta separada Nivel 2 y como combinación (puntaje 30: N2 +18, presión, −8 boletos separados, −10 por los 513 km LIS–MAD). También ASU→PTY (CM) + PTY→MAD (IB) y ASU→LIM (AV) + LIM→MAD (IB/UX).
+- Con ASU→MAD el tope de 300 combinaciones ya se alcanza (178 con boleto aparte): el orden por puntaje decide qué se ve; el tope es configurable.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

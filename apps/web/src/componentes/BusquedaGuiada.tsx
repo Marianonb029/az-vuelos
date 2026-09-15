@@ -29,12 +29,20 @@ interface Plan {
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // Una combinación se verifica como búsqueda de precios: su ventana de ida (recortada al tope del
-// formulario) y, si la persona pidió vuelta, ese rango. Nunca se inventa una vuelta.
-export const aNuevaBusqueda = (c: Combinacion, equipaje: EquipajeSolicitado, vuelta: RangoFechas | null): NuevaBusqueda => {
+// formulario) y, si la persona pidió vuelta, ese rango. Nunca se inventa una vuelta. Un boleto
+// separado son dos búsquedas: el tramo previo (origen → hub, con la aerolínea que tenga adaptador o la
+// primera) y el tramo principal (hub → destino).
+export const aNuevasBusquedas = (c: Combinacion, equipaje: EquipajeSolicitado, vuelta: RangoFechas | null, adaptadores: ReadonlySet<string>): NuevaBusqueda[] => {
   const hasta = sumarDias(c.ventanaIda.desde, MAX_DIAS_RANGO - 1) < c.ventanaIda.hasta ? sumarDias(c.ventanaIda.desde, MAX_DIAS_RANGO - 1) : c.ventanaIda.hasta;
   const rangoIda = { desde: c.ventanaIda.desde, hasta };
   const conVuelta = vuelta !== null && vuelta.hasta >= rangoIda.desde;
-  return { tipo: conVuelta ? "ida_y_vuelta" : "ida", aerolineaIata: c.aerolinea, origenIata: c.origen, destinoIata: c.destino, equipaje, rangoIda, rangoVuelta: conVuelta ? vuelta : null };
+  const base = { tipo: conVuelta ? ("ida_y_vuelta" as const) : ("ida" as const), equipaje, rangoIda, rangoVuelta: conVuelta ? vuelta : null };
+  if (c.tramoPrevio === null) return [{ ...base, aerolineaIata: c.aerolinea, origenIata: c.origen, destinoIata: c.destino }];
+  const feeder = c.tramoPrevio.aerolineas.find((a) => adaptadores.has(a)) ?? c.tramoPrevio.aerolineas[0] ?? c.aerolinea;
+  return [
+    { ...base, aerolineaIata: feeder, origenIata: c.origen, destinoIata: c.tramoPrevio.hub },
+    { ...base, aerolineaIata: c.aerolinea, origenIata: c.tramoPrevio.hub, destinoIata: c.destino },
+  ];
 };
 
 // Búsqueda guiada: un formulario, y de ahí el espacio de búsqueda, la selección de combinaciones y la
@@ -94,7 +102,9 @@ export const BusquedaGuiada = ({ aeropuertos, adaptadores, nombres, metabuscador
     setError(null);
     try {
       const creadas: Busqueda[] = [];
-      for (const c of elegidas) creadas.push(await crearBusqueda(aNuevaBusqueda(c, equipaje, tipo === "ida_y_vuelta" ? rangoVuelta : null)));
+      for (const c of elegidas) {
+        for (const nueva of aNuevasBusquedas(c, equipaje, tipo === "ida_y_vuelta" ? rangoVuelta : null, adaptadores)) creadas.push(await crearBusqueda(nueva));
+      }
       setBusquedas(creadas);
     } catch (err: unknown) {
       setError(`No se pudieron lanzar las verificaciones: ${describirError(err)}`);

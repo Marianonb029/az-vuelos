@@ -12,6 +12,7 @@ import {
   expandirAeropuertos,
   generarCombinaciones,
   generarRutas,
+  generarSplitTickets,
   ventanasVerdes,
 } from "@az/espacio";
 import type { CorridaEspacio, Feriado, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, Ventana } from "@az/espacio";
@@ -50,8 +51,9 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     const d = expandirAeropuertos(destino, "destino", aeropuertos, grafo, config.fase1);
     if (!d.ok) return d;
     const generadas = generarRutas(o.candidatos, d.candidatos, grafo, config.fase2, config.hubs);
+    const separadas = generarSplitTickets(o.candidatos, d.candidatos, grafo, config);
     const gaps = analizarGaps({ origenes: o.candidatos, destinos: d.candidatos, ...generadas, nombres }, grafo, config);
-    const mencionadas = new Set([...generadas.conservadas, ...generadas.descartadas].flatMap((r) => r.aerolineas));
+    const mencionadas = new Set([...generadas.conservadas, ...generadas.descartadas, ...separadas].flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? [])]));
     return {
       ok: true,
       resultado: {
@@ -60,7 +62,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
         calculadoEn: new Date().toISOString(),
         origenes: o.candidatos,
         destinos: d.candidatos,
-        rutas: generadas,
+        rutas: { ...generadas, separadas },
         gaps,
         nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
       },
@@ -87,8 +89,8 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     if (!destinoGeo) return { ok: false, motivo: noEsta(destino) };
     const calendarios = new Map(origenes.map((o) => [o.aeropuerto.iata, calcularCalendario({ desde: rango.desde, hasta: rango.hasta, origen: o.aeropuerto, destino: destinoGeo, feriados }, config)]));
     const verdes = new Map([...calendarios].map(([iata, puntajes]) => [iata, ventanasVerdes(puntajes, config.fase5.minDiasRachaVerde)]));
-    const lista = generarCombinaciones({ origenes, destinos, rutas: rutas.conservadas, gaps, ventanaPedida, calendarios, ventanasVerdes: verdes }, config.fase6);
-    const mencionadas = new Set(lista.map((c) => c.aerolinea));
+    const lista = generarCombinaciones({ origenes, destinos, rutas: rutas.conservadas, separadas: rutas.separadas, gaps, ventanaPedida, calendarios, ventanasVerdes: verdes }, config.fase6);
+    const mencionadas = new Set(lista.flatMap((c) => [c.aerolinea, ...(c.tramoPrevio?.aerolineas ?? [])]));
     return {
       ok: true,
       resultado: {

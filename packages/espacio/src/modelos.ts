@@ -41,10 +41,14 @@ export const CandidatoAeropuerto = z.object({
 
 export const Nivel = z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]);
 
+// Boletos separados: el primer tramo (origen → hub) se compra aparte, a otra aerolínea. Sin protección
+// de conexión: el riesgo lo asume la persona (Prompt 2 de la Fase 5, "split tickets").
+export const TramoPrevio = z.object({ hub: IataAeropuerto, aerolineas: z.array(IataAerolinea).min(1) });
+
 export const Ruta = z.object({
   origen: IataAeropuerto,
   destino: IataAeropuerto,
-  aerolineas: z.array(IataAerolinea).min(1),
+  aerolineas: z.array(IataAerolinea).min(1), // las que venden el boleto (en boletos separados: el tramo hub → destino)
   vuelosSemanales: z.number().int().min(0),
   escalas: z.number().int().min(0).max(1),
   via: IataAeropuerto.nullable(),
@@ -52,6 +56,7 @@ export const Ruta = z.object({
   etiquetaNivel: z.string(),
   fuente: z.enum(["dataset", "scrapeado", "verificacion_en_vivo"]),
   confianza: z.number().min(0).max(1),
+  tramoPrevio: TramoPrevio.nullable(), // null: boleto único
 });
 
 // ---------------------------------------------------------------------------
@@ -108,6 +113,7 @@ export const Combinacion = z.object({
   requiereTrasladoTerrestre: z.boolean(),
   notaTraslado: z.string().nullable(),
   requiereBoletosSeparados: z.boolean(),
+  tramoPrevio: TramoPrevio.nullable(), // boletos separados por split ticket: qué comprar aparte
   confianza: z.enum(["alta", "baja"]),
 });
 
@@ -123,7 +129,7 @@ export const ResultadoEspacio = z.object({
   calculadoEn: z.iso.datetime(),
   origenes: z.array(CandidatoAeropuerto),
   destinos: z.array(CandidatoAeropuerto),
-  rutas: z.object({ conservadas: z.array(Ruta), descartadas: z.array(Ruta) }),
+  rutas: z.object({ conservadas: z.array(Ruta), descartadas: z.array(Ruta), separadas: z.array(Ruta) }),
   gaps: z.array(GapAerolinea),
   nombres: z.array(NombreAerolinea), // aerolíneas mencionadas en rutas y gaps
 });
@@ -168,6 +174,7 @@ export type Rol = z.infer<typeof Rol>;
 export type CandidatoAeropuerto = z.infer<typeof CandidatoAeropuerto>;
 export type Nivel = z.infer<typeof Nivel>;
 export type Ruta = z.infer<typeof Ruta>;
+export type TramoPrevio = z.infer<typeof TramoPrevio>;
 export type GapAerolinea = z.infer<typeof GapAerolinea>;
 export type Banda = z.infer<typeof Banda>;
 export type PuntajeDia = z.infer<typeof PuntajeDia>;
