@@ -15,7 +15,6 @@ const Consulta = z
 interface Dependencias {
   espacio: () => ServicioEspacio;
   feriados: ServicioFeriados;
-  registrar: (r: ResultadoRutas) => void; // historial de priorizaciones
   tendencia: (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null) => Tendencia | null; // última lectura de Google Flights
 }
 
@@ -55,7 +54,6 @@ export const rutasPriorizadas = (app: FastifyInstance, dep: Dependencias) => {
     const t = dep.tendencia(origen, destino, fechaIda, fechaVuelta);
     const avisoTendencia = t === null ? [`Sin lectura de Google Flights para este par y fecha: \`pnpm tendencia ${origen} ${destino} ${fechaIda}${fechaVuelta ? ` ${fechaVuelta}` : ""}\` la agrega`] : [`Google Flights (${t.leidoEn.slice(0, 10)}): precios ${t.etiqueta === "tipica" ? "típicos" : t.etiqueta === "baja" ? "bajos" : "altos"} para ${origen}→${destino} respecto de sus 12 meses${t.rangoTipicoUsd ? ` (rango típico USD ${t.rangoTipicoUsd.desde}–${t.rangoTipicoUsd.hasta})` : ""}`];
     const resultado = { ...r.resultado, avisos: [...r.resultado.avisos, ...avisoTendencia], rutas: r.resultado.rutas.map((ruta) => ({ ...ruta, enlaces: enlacesDe(ruta, fechaIda, fechaVuelta) })) };
-    dep.registrar(resultado);
     return resultado;
   });
 };

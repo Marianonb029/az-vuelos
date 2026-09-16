@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ResultadoRutas } from "@az/espacio";
 import { RutasPriorizadas } from "./componentes/RutasPriorizadas";
 import { Tablero } from "./componentes/Tablero";
 import { TableroDatos } from "./componentes/TableroDatos";
@@ -9,13 +10,14 @@ type Pestana = "rutas" | "tablero" | "datos";
 
 const PESTANAS: { id: Pestana; titulo: string; para: string }[] = [
   { id: "rutas", titulo: "Rutas", para: "Rutas ordenadas por chance de tarifa baja para una fecha, con enlaces a los metabuscadores" },
-  { id: "tablero", titulo: "Tablero", para: "Resumen de lo que se buscó y de lo que salió arriba, y validación del orden contra precios vistos" },
+  { id: "tablero", titulo: "Tablero", para: "Resumen de la última priorización: qué se armó, qué se descartó y por dónde conviene empezar a buscar" },
   { id: "datos", titulo: "Datos", para: "Glosario de lo que se ve en Rutas y ficha de cada dato: fuente, última actualización y exactitud" },
 ];
 
-// Tres pestañas: la salida (Rutas), el resumen de búsquedas y resultados (Tablero) y el glosario con la ficha de cada dato (Datos). Nada lee precios (DECISIONES 9.3).
+// Tres pestañas: la salida (Rutas), el resumen de la última priorización (Tablero) y el glosario con la ficha de cada dato (Datos). Nada lee precios ni guarda registros (DECISIONES 9.3, 13).
 export const App = () => {
   const [pestana, setPestana] = useState<Pestana>("rutas");
+  const [resultado, setResultado] = useState<ResultadoRutas | null>(null);
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -39,10 +41,10 @@ export const App = () => {
       </header>
 
       <section aria-label="Rutas priorizadas" hidden={pestana !== "rutas"}>
-        <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} />
+        <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setResultado} />
       </section>
       <section aria-label="Tablero" hidden={pestana !== "tablero"}>
-        <Tablero visible={pestana === "tablero"} />
+        <Tablero resultado={resultado} />
       </section>
       <section aria-label="Datos" hidden={pestana !== "datos"}>
         <TableroDatos visible={pestana === "datos"} />

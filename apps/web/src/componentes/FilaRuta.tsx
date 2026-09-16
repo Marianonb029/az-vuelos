@@ -1,9 +1,6 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
-import type { NuevaObservacion } from "@az/core";
 import { dondeBuscar, explicarRuta } from "@az/espacio";
 import type { PuntajeDia, ResultadoRutas, RutaPriorizada } from "@az/espacio";
-import { registrarObservacion } from "../lib/api";
 
 const BANDA: Record<PuntajeDia["banda"], string> = { verde: "bg-emerald-100 text-emerald-800", amarillo: "bg-amber-100 text-amber-800", rojo: "bg-red-100 text-red-800" };
 
@@ -45,46 +42,6 @@ const Revisado = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
 );
 
 export const rutaTexto = (r: RutaPriorizada) => [r.origen, ...(r.tramoPrevio && r.tramoPrevio.hub !== r.via ? [r.tramoPrevio.hub] : []), ...(r.via === null ? [] : [r.via]), r.destino].join(" → ");
-const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
-
-// Anotar el precio que la persona vio en un metabuscador para esta fila: alimenta la validación del índice.
-const FormularioObservacion = ({ r, resultado }: { r: RutaPriorizada; resultado: ResultadoRutas }) => {
-  const [precio, setPrecio] = useState("");
-  const [fuente, setFuente] = useState(r.enlaces[0]?.id ?? "otro");
-  const [estado, setEstado] = useState<string | null>(null);
-  const enviar = async (e: FormEvent) => {
-    e.preventDefault();
-    const monto = Number(precio);
-    if (!Number.isFinite(monto) || monto <= 0) return setEstado("Ingresá el precio en USD");
-    const nueva: NuevaObservacion = { origen: resultado.origen, destino: resultado.destino, fechaIda: resultado.fechaIda, fechaVuelta: resultado.fechaVuelta, rutaOrigen: r.origen, rutaVia: r.via, rutaDestino: r.destino, boletos: r.boletos, indice: r.indice, posicion: r.posicion, precioUsd: monto, fuente, nota: "" };
-    try {
-      await registrarObservacion(nueva);
-      setEstado(`Anotado USD ${monto} (${fuente}); se suma a la validación del orden`);
-      setPrecio("");
-    } catch (err: unknown) {
-      setEstado(`No se pudo anotar: ${describirError(err)}`);
-    }
-  };
-  const fuentes = [...new Map(r.enlaces.map((e) => [e.id, e.nombre])).entries()];
-  return (
-    <form onSubmit={(e) => void enviar(e)} aria-label={`Anotar precio visto para ${rutaTexto(r)}`} className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-      <span className="font-medium">Precio visto:</span>
-      <input type="number" min="1" step="1" inputMode="numeric" value={precio} onChange={(e) => setPrecio(e.target.value)} placeholder="USD" aria-label="Precio visto en USD" className="w-24 rounded border border-slate-300 px-2 py-0.5" />
-      <select value={fuente} onChange={(e) => setFuente(e.target.value)} aria-label="Dónde lo viste" className="rounded border border-slate-300 px-2 py-0.5">
-        {fuentes.map(([id, nombre]) => (
-          <option key={id} value={id}>
-            {nombre}
-          </option>
-        ))}
-        <option value="otro">otro</option>
-      </select>
-      <button type="submit" className="rounded border border-slate-400 bg-white px-2 py-0.5 hover:bg-slate-100">
-        Anotar
-      </button>
-      {estado && <span className="text-slate-600">{estado}</span>}
-    </form>
-  );
-};
 
 interface Props {
   r: RutaPriorizada;
@@ -96,8 +53,7 @@ interface Props {
 }
 
 // Una fila por ruta: dónde buscar y una columna por variable (compras, competencia, distancia, tarifa, fecha,
-// anticipación), cada una contada en criollo; sin número que resuma. Desplegable: la cuenta, los tramos, enlaces y
-// el campo para anotar el precio visto.
+// anticipación), cada una contada en criollo; sin número que resuma. Desplegable: la cuenta, los tramos y enlaces.
 export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFamilia }: Props) => {
   const [abierta, setAbierta] = useState(false);
   const nombre = (iata: string) => nombres.get(iata) ?? iata;
@@ -203,7 +159,6 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
                 ))}
               </p>
             )}
-            <FormularioObservacion r={r} resultado={resultado} />
           </td>
         </tr>
       )}

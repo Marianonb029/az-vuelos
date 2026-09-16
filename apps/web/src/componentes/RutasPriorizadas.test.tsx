@@ -62,10 +62,11 @@ const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
 };
 
 describe("RutasPriorizadas", () => {
-  it("pide las rutas con equipaje, agrupa por familia, muestra una columna por variable, el embudo, y permite anotar un precio visto", async () => {
+  it("pide las rutas con equipaje, agrupa por familia, muestra una columna por variable y avisa el resultado al tablero", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(resultado) } as unknown as Response);
     vi.stubGlobal("fetch", fetchMock);
-    render(<RutasPriorizadas aeropuertos={aeropuertos} hoy="2026-09-15" />);
+    const onResultado = vi.fn();
+    render(<RutasPriorizadas aeropuertos={aeropuertos} hoy="2026-09-15" onResultado={onResultado} />);
     elegir("Origen", "ASU", /ASU/);
     elegir("Destino", "MAD", /MAD/);
     fireEvent.click(screen.getByRole("radio", { name: "Con valija" }));
@@ -89,25 +90,18 @@ describe("RutasPriorizadas", () => {
     filas = filasDe(tabla);
     expect(filas).toHaveLength(3);
     expect(filas[1]?.textContent).toContain("POA → GRU → MAD");
-    expect(screen.getByTestId("operaciones").textContent).toContain("en la lista");
+    expect(onResultado).toHaveBeenCalledWith(expect.objectContaining({ origen: "ASU", destino: "MAD" }));
 
     fireEvent.click(screen.getAllByRole("button", { name: "Ver" })[0] as HTMLElement);
     expect(screen.getByText(/9500 km volados/)).toBeTruthy();
     expect(screen.getByText(/grupos: IAG, TP/)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Kayak ASU→GRU" }).getAttribute("href")).toBe("https://www.kayak.com/flights/ASU-GRU/2027-02-16");
 
-    fetchMock.mockResolvedValueOnce({ ok: true, status: 201, json: () => Promise.resolve({ id: "1", registradoEn: "2026-09-15T12:00:00.000Z", origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, rutaOrigen: "ASU", rutaVia: "GRU", rutaDestino: "MAD", boletos: 2, indice: 5100, posicion: 1, precioUsd: 772, fuente: "kayak", nota: "" }) } as unknown as Response);
-    fireEvent.change(screen.getByLabelText("Precio visto en USD"), { target: { value: "772" } });
-    fireEvent.click(screen.getByRole("button", { name: "Anotar" }));
-    await waitFor(() => expect(screen.getByText(/Anotado USD 772/)).toBeTruthy());
-    const [url, init] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
-    expect(url).toBe("/api/observaciones");
-    expect(JSON.parse(String(init.body))).toMatchObject({ rutaOrigen: "ASU", rutaVia: "GRU", rutaDestino: "MAD", boletos: 2, indice: 5100, posicion: 1, precioUsd: 772, fuente: "kayak" });
   });
 
   it("valida fechas: la vuelta no puede ser anterior a la ida", () => {
     vi.stubGlobal("fetch", vi.fn());
-    render(<RutasPriorizadas aeropuertos={aeropuertos} hoy="2026-09-15" />);
+    render(<RutasPriorizadas aeropuertos={aeropuertos} hoy="2026-09-15" onResultado={vi.fn()} />);
     fireEvent.click(screen.getByRole("radio", { name: "Ida y vuelta" }));
     fireEvent.change(screen.getByLabelText("Fecha de ida"), { target: { value: "2027-02-16" } });
     fireEvent.change(screen.getByLabelText("Fecha de vuelta"), { target: { value: "2027-02-01" } });

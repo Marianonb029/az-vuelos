@@ -16,7 +16,7 @@ Historia del producto: `docs/BRIEF.md` (brief original, lectura de precios en si
 | Pestaña | Para qué sirve |
 |---|---|
 | **Rutas** | Origen, destino y fecha → tabla ordenada por índice con km, competencia, aerolíneas por tramo, presión de ida/vuelta y enlaces. Debajo, desplegable con el espacio de búsqueda que hay detrás: cuándo volar (calendario de presión), boletos separados por hub, rutas con boleto único, aeropuertos alternativos y gaps. |
-| **Tablero** | Resumen de lo buscado (pares, fechas, equipaje, orden) y de lo que salió arriba (hubs, aerolíneas, dos boletos, alternativos, presión), **validación del orden** contra los precios anotados (correlación, acierto top 5) e historial de priorizaciones. |
+| **Tablero** | Resumen de la última priorización (no guarda registro): combinaciones, compras, aerolíneas y hubs por los que empezar a buscar, tramo que fija el precio, puertas alternativas y cómo se llega al destino, y el embudo de lo que entró y se descartó. |
 | **Datos** | Glosario de cada término de Rutas y la ficha de cada dato: fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. Lo 'aproximado' y 'supuesto' es estático (config) y no se actualiza solo. |
 
 Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y un número de peso en la decisión (1 = lo que más pesa).
@@ -29,17 +29,8 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 - **Cómo se armó la lista** (bloque 2): cada recorte del espacio de búsqueda con su cantidad y su criterio.
 - **Dos boletos con conexión**: el segundo boleto puede tener su propia escala vendida junta (ASU→GRU con GOL + TAP GRU→LIS→MAD; ASU→PTY + KLM PTY→AMS→MAD): lo que los sitios de las aerolíneas muestran como "1 transbordo" desde el hub.
 - **Buscar en:** las aerolíneas que venden ese boleto (o cada uno de los dos). Ahí se compara el precio; las demás de la columna de tramos sólo operan y sirven para medir competencia.
-- **Fecha**: la banda (verde ≤33, amarillo 34–66, rojo ≥67) y cada señal que sumó o restó con su fuente (feriados Nager.Date por país, fines de semana largos, temporadas de config, eventos de Wikidata/config, día de la semana), también en la ciudad de la escala. **Ver** muestra además qué se revisó y no sumó (feriados y eventos de cada país y ciudad del viaje), y la cuenta exacta del índice.
+- **Fecha**: la banda (verde ≤33, amarillo 34–66, rojo ≥67) y cada señal que sumó o restó con su fuente (feriados Nager.Date por país, fines de semana largos, temporadas de config, eventos de Wikidata/config, día de la semana), también en la ciudad de la escala. **Ver** muestra además qué se revisó y no sumó (feriados y eventos de cada país y ciudad del viaje), la cuenta exacta del índice y los enlaces a los metabuscadores.
 - **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; los 6 con más salidas entran siempre (GRU, GIG, SCL para ASU), el resto por distancia. A más de 400 km el traslado es otro vuelo, con sus aerolíneas y su boleto; si no hay vuelo, la ruta no es alcanzable.
-
-## Cómo se mide si el orden acierta
-
-1. Priorizá un par y una fecha; abrí "Ver" en tres o más filas, buscá cada una en un metabuscador con el enlace y anotá el precio visto.
-2. En **Datos → Validación** aparece la correlación índice↔precio por consulta, cuántas veces el más barato cayó en el top 5 y cuánto vale un punto de índice en USD.
-3. `pnpm calibrar` propone factores de `fase7` que maximizan esa correlación (escribe `config/espacio.calibrado.json`, no pisa nada). Con pocas consultas es sobreajuste: juntá varios pares antes de copiarla.
-4. `pnpm importar-observaciones` carga como semilla los precios leídos en fases anteriores (SQLite local).
-
-Estado al 15/09/2026: con 50 precios ubicados de 3 consultas el índice de partida da correlación −0.19; la calibración sube a +0.66 cambiando dos factores. Es la única cifra de "certeza" que existe y hay que seguir alimentándola.
 
 ## Señales y comandos
 
@@ -48,8 +39,7 @@ Estado al 15/09/2026: con 50 precios ubicados de 3 consultas el índice de parti
 | `pnpm catalogos` | Rutas vigentes (VRS) y aeropuertos (OurAirports), ~40 s |
 | `pnpm eventos` | Eventos masivos confirmados (Wikidata), ~2 min |
 | `pnpm tendencia ASU MAD 2027-02-25` | Lee en Google Flights si los precios del par están bajos / típicos / altos respecto de 12 meses (usa el Chrome instalado; no acepta consentimiento) |
-| `pnpm importar-observaciones` | Semilla de precios observados desde la base vieja |
-| `pnpm calibrar` | Propuesta de factores calibrados con las observaciones |
+| `pnpm corroborar ASU GRU MAD` | Compara, por aeropuerto, las aerolíneas de Wikipedia (Airlines and destinations) contra las de VRS; el resultado aparece en Datos |
 
 La API corre el refresco automático una vez por día para lo que venció (`pnpm catalogos`, `pnpm eventos`).
 
@@ -83,7 +73,7 @@ pnpm test
 
 ## Limitaciones conocidas
 
-- El índice no es un precio. Sus factores son supuestos hasta que la validación (Datos) tenga varios pares; `pnpm calibrar` los ajusta con lo observado.
+- El índice no es un precio. Sus factores son supuestos declarados en `config/espacio.json`; se cambian con decisión documentada en `docs/DECISIONES.md`.
 - Las rutas de VRS no traen horarios ni fecha de última observación: pueden quedar números de vuelo discontinuados y tramos sueltos de aerolíneas de largo radio. Corroborado contra Kiwi.com en cinco tramos ASU/GRU/EZE→MAD/LIS: ninguna aerolínea faltante (DECISIONES, ajuste del 15/09).
 - Las temporadas por región son ventanas fijas por mes y día; Año Nuevo Lunar y Ramadán son móviles y sólo aproximados. Sin fuente abierta de calendarios escolares de todos los países.
 - Los eventos masivos son los que tienen ítem en Wikidata con fecha exacta (día): Eurovisión 2027 quedó afuera por tener fecha sólo de mes.

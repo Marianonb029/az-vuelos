@@ -16,6 +16,7 @@ import { Toggle } from "./Toggle";
 interface Props {
   aeropuertos: readonly Aeropuerto[];
   hoy: string;
+  onResultado: (r: ResultadoRutas | null) => void; // el Tablero resume la última priorización
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -37,7 +38,7 @@ const agrupar = (rutas: readonly RutaPriorizada[], abiertas: ReadonlySet<string>
 };
 
 // Pestaña Rutas: la salida principal. Ordena rutas por chance de tarifa baja sin leer ningún precio.
-export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
+export const RutasPriorizadas = ({ aeropuertos, hoy, onResultado }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [tipo, setTipo] = useState<"ida" | "ida_y_vuelta">("ida");
@@ -71,9 +72,12 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
     setErrorEspacio(null);
     setFamiliasAbiertas(new Set());
     try {
-      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipajeElegido, ordenElegido));
+      const r = await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipajeElegido, ordenElegido);
+      setResultado(r);
+      onResultado(r);
     } catch (err: unknown) {
       setResultado(null);
+      onResultado(null);
       setError(`No se pudieron priorizar las rutas: ${describirError(err)}`);
     } finally {
       setCargando(false);
@@ -222,30 +226,6 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                     )}
                     <FilaRuta r={r} resultado={resultado} nombres={nombres} bajoCosto={bajoCosto} variantes={variantes} onVerFamilia={variantes > 0 ? () => setFamiliasAbiertas((s) => new Set([...s, r.familia])) : null} />
                   </Fragment>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Bloque>
-      )}
-      {resultado && (
-        <Bloque orden={2} titulo="Cómo se armó la lista: qué entró, qué se descartó y por qué" objetivo="Cada recorte con su cantidad y su criterio, para ver que no se pierdan rutas por una regla mal puesta. Los criterios viven en config/espacio.json.">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm" data-testid="operaciones">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="py-1 pr-3">Paso</th>
-                  <th className="py-1 pr-3 text-right">Rutas</th>
-                  <th className="py-1">Criterio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {resultado.operaciones.map((o) => (
-                  <tr key={o.paso} className="border-b border-slate-100 align-top">
-                    <td className="py-1 pr-3 font-medium text-slate-900">{o.paso}</td>
-                    <td className="py-1 pr-3 text-right tabular-nums">{o.cantidad.toLocaleString("es")}</td>
-                    <td className="py-1 text-xs text-slate-600">{o.detalle}</td>
-                  </tr>
                 ))}
               </tbody>
             </table>

@@ -18,9 +18,8 @@
     "lint": "eslint .",
     "catalogos": "tsx scripts/descargar-catalogos.ts",
     "eventos": "tsx scripts/actualizar-eventos.ts",
-    "importar-observaciones": "tsx scripts/importar-observaciones.ts",
-    "calibrar": "tsx scripts/calibrar.ts",
-    "tendencia": "tsx scripts/tendencias.ts"
+    "tendencia": "tsx scripts/tendencias.ts",
+    "corroborar": "tsx scripts/corroborar-wikipedia.ts"
   },
   "dependencies": {
     "@az/core": "workspace:*",

@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { EntradaHistorial, FuenteDato, Observacion, ResultadoValidacion } from "@az/core";
-import type { NuevaObservacion } from "@az/core";
+import { FuenteDato } from "@az/core";
 import { ResultadoCalendario, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
 import type { OrdenRutas } from "@az/espacio";
 
@@ -22,9 +21,6 @@ export const obtenerRutas = (origen: string, destino: string, fechaIda: string, 
   pedir(ResultadoRutas, `/rutas?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}${fechaVuelta === null ? "" : `&fechaVuelta=${fechaVuelta}`}&equipaje=${equipaje}&orden=${orden}`);
 
 // Validación del índice: precios vistos por la persona y qué tan bien los ordena el índice.
-export const registrarObservacion = (nueva: NuevaObservacion) => pedir(Observacion, "/observaciones", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(nueva) });
-export const obtenerValidacion = () => pedir(ResultadoValidacion, "/validacion");
-export const obtenerHistorial = () => pedir(z.array(EntradaHistorial), "/historial");
 
 // Espacio de búsqueda (aeropuertos alternativos, rutas, boletos separados, gaps) y calendario de presión.
 export const obtenerEspacio = (origen: string, destino: string) => pedir(ResultadoEspacio, `/espacio?origen=${origen}&destino=${destino}`);

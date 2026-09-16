@@ -161,9 +161,9 @@
       "MEX"
     ],
     "maxHubsPorPar": 3,
-    "maxConexionesPorPar": 12,
+    "maxConexionesPorPar": 100,
     "maxConexionesPorParAlternativo": 2,
-    "maxConexionesPorHub": 3
+    "maxConexionesPorHub": 30
   },
   "hubs": [
     {
@@ -1222,9 +1222,9 @@
       "regionesMercado": ["europa_toda", "sudamerica", "centroamerica_caribe", "norteamerica", "asia", "medio_oriente", "oceania", "africa"]
     },
     "empateTolerancia": 0.02,
-    "maxRutas": 150,
+    "maxRutas": 300,
     "cercania": {
-      "rutasPorDestinoPedido": 10,
+      "rutasPorDestinoPedido": 100,
       "rutasPorDestinoAlternativo": 3,
       "destinosAlternativosPorOrigen": 8,
       "destinosAlternativosHub": 4

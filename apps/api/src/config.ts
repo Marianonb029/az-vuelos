@@ -8,8 +8,6 @@ export const config = {
   raizRepo: REPO,
   directorioDatos: resolve(REPO, "data"),
   rutaConfigEspacio: resolve(REPO, "config", "espacio.json"),
-  // Lo que escribe la app (no son datasets): observaciones de precios e historial de priorizaciones.
-  rutaObservaciones: resolve(REPO, "data", "local", "observaciones.json"),
-  rutaHistorial: resolve(REPO, "data", "local", "historial.json"),
+  // Lo único que la app lee fuera de los datasets: la tendencia de Google Flights que deja `pnpm tendencia`.
   rutaTendencias: resolve(REPO, "data", "local", "tendencias.json"),
 };
