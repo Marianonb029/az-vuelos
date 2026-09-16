@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dondeBuscar, explicarRuta } from "./fase7-explicacion";
 import type { RutaPriorizada } from "./modelos";
 
-const presion = (p: number): RutaPriorizada["presionIda"] => ({ fecha: "2027-01-19", aeropuerto: "ASU", presion: p, etiquetas: [], banda: p < 30 ? "verde" : p < 60 ? "amarillo" : "rojo", fundamento: "" });
+const presion = (p: number): RutaPriorizada["presionIda"] => ({ fecha: "2027-01-19", aeropuerto: "ASU", presion: p, etiquetas: [], banda: p < 30 ? "verde" : p < 60 ? "amarillo" : "rojo", fundamento: "", senales: [], revisado: [] });
 
 const base: RutaPriorizada = {
   posicion: 1,

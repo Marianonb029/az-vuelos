@@ -27,7 +27,7 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 - **Columnas**: una por variable, contada en criollo — compras y escalas, competencia (aerolíneas por tramo y corredor de largo radio), distancia y traslado, tarifa de la aerolínea (low cost / hub conector / red), fecha, anticipación y estadía. No hay precio ni número resumen; con eso se decide dónde buscar.
 - **Cómo se armó la lista** (bloque 2): cada recorte del espacio de búsqueda con su cantidad y su criterio.
 - **Buscar en:** las aerolíneas que venden ese boleto (o cada uno de los dos). Ahí se compara el precio; las demás de la columna de tramos sólo operan y sirven para medir competencia.
-- **Ver** despliega la explicación en criollo (una frase por variable) y debajo la cuenta exacta.
+- **Fecha**: la banda (verde ≤33, amarillo 34–66, rojo ≥67) y cada señal que sumó o restó con su fuente (feriados Nager.Date por país, fines de semana largos, temporadas de config, eventos de Wikidata/config, día de la semana), también en la ciudad de la escala. **Ver** muestra además qué se revisó y no sumó (feriados y eventos de cada país y ciudad del viaje), y la cuenta exacta del índice.
 - **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; los 6 con más salidas entran siempre (GRU, GIG, SCL para ASU), el resto por distancia. A más de 400 km el traslado es otro vuelo, con sus aerolíneas y su boleto; si no hay vuelo, la ruta no es alcanzable.
 
 ## Cómo se mide si el orden acierta

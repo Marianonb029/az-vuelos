@@ -450,6 +450,15 @@ Disparador: la ruta más barata observada para ASU→MAD 19/01/2027 (GOL ASU→G
 - **Embudo de operaciones** (bloque 2 de Rutas, `operaciones` en `GET /rutas`): orígenes y destinos candidatos con el criterio, rutas de un boleto por nivel, descartadas por nivel, separadas, no alcanzables, repetidas, plegadas, recortadas por tope, en la lista. Cada paso con cantidad y regla, para que un recorte por mal criterio se vea. El "ERROR: ASU→EZE→LIS está y ASU→GRU→LIS no" del dueño era exactamente eso: el tope de 60 aplicado después del orden por cercanía dejaba afuera rutas con GRU; ahora ASU→GRU→LIS→MAD está (#11) y el embudo dice cuántas se recortaron y por qué.
 - **Datos**: variables nuevas con fuente y exactitud (competencia de corredor, perfil de aerolínea, aeropuertos alternativos con hubs asegurados y traslado como tramo, tasas internacionales, grupos tarifarios y códigos excluidos).
 
+## Fase 12.1 (15/09/2026) — la fecha, señal por señal, y qué se revisó sin sumar
+
+Pedido: más información sobre la fecha y la temporada, por qué una fecha es roja, amarilla o verde, y poder controlar que las fechas y eventos que se toman en cuenta sean los que de verdad mueven el precio, incluidos los de las ciudades y países de cada ruta.
+
+- `PuntajeDia` trae ahora `senales` (nombre, puntos, fuente: "Nager.Date PY 2027", "config fase5.corredores (SA_EU_verano_austral)", "Wikidata", "calendario") y `revisado`: lo que se miró y **no** sumó, para controlar por omisión: feriados de cada país del viaje (cuántos hay en el año, si hay uno ese día y los dos próximos), eventos conocidos en cada ciudad de escala y destino (cuántos hay con fecha y los próximos), temporada regional o del corredor cuando ninguna ventana cubre el día, el día de la semana cuando no tiene efecto, y la regla de banda (verde ≤33, amarillo 34–66, rojo ≥67 sobre la suma −50…100).
+- **La escala entra en la presión**: feriado, fin de semana largo y evento en la ciudad del hub (pesos nuevos `feriadoEscala 10`, `finDeSemanaLargoEscala 8`, `eventoMayorEscala 15`, menores que en origen/destino porque es tránsito, pero el feeder al hub sí lo siente: Carnaval en Brasil encarece ASU→GRU). `paisesDelEspacio` pide a Nager.Date también los países de las escalas. Ida y vuelta se puntúan con el hub de cada ruta.
+- Columna **Fecha**: la banda y debajo cada señal con sus puntos (rojo suma, verde resta) y su fuente; "Ver" muestra el bloque "Revisado" de ida y de vuelta.
+- Límites que quedan a la vista: la temporada del corredor SA→Europa es la serie 2022–2025 del SPEC (config con fuente), los eventos son los que tienen ítem en Wikidata con fecha y país más los de config, y no hay hora del día ni tarifa histórica real. Si falta un feriado o evento, se ve en "Revisado" y se carga en `config/espacio.json → fase5.eventos` con su fuente.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

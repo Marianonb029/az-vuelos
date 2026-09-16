@@ -84,6 +84,14 @@ export const GapAerolinea = z.object({
 
 export const Banda = z.enum(["verde", "amarillo", "rojo"]);
 
+// Una señal que sumó (o restó) presión ese día, con su fuente, para que la persona pueda controlarla.
+export const SenalDia = z.object({
+  nombre: z.string().min(1), // "feriado en origen: Día de los Héroes"
+  puntos: z.number(),
+  fuente: z.string().min(1), // "Nager.Date PY 2027", "config fase5.corredores", "Wikidata", "calendario"
+});
+export type SenalDia = z.infer<typeof SenalDia>;
+
 export const PuntajeDia = z.object({
   fecha: FechaIso,
   aeropuerto: IataAeropuerto,
@@ -91,6 +99,8 @@ export const PuntajeDia = z.object({
   etiquetas: z.array(z.string()),
   banda: Banda,
   fundamento: z.string(),
+  senales: z.array(SenalDia), // lo que sumó, con puntos y fuente
+  revisado: z.array(z.string()), // qué se miró y no sumó (feriados de cada país, eventos de cada ciudad, temporadas) y cómo se lee la banda
 });
 
 // ---------------------------------------------------------------------------

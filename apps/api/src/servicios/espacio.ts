@@ -156,13 +156,22 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     if (!destinoGeo || !origenGeo) return { ok: false, motivo: noEsta(destino) };
     // La presión de ida se puntúa saliendo de cada origen candidato hacia el destino pedido; la de vuelta,
     // saliendo de cada destino candidato hacia el origen pedido (día de regreso).
-    const presionIda = (o: string) => {
-      const a = aeropuerto(o);
-      return a ? puntuarDia(fechaIda, { desde: fechaIda, hasta: fechaIda, origen: a, destino: destinoGeo, feriados, sentido: "ida" }, config) : null;
+    const cachePresion = new Map<string, ReturnType<typeof puntuarDia> | null>();
+    const presionIda = (o: string, escala: string | null) => {
+      const clave = `${o}|${escala ?? ""}`;
+      if (!cachePresion.has(clave)) {
+        const a = aeropuerto(o);
+        cachePresion.set(clave, a ? puntuarDia(fechaIda, { desde: fechaIda, hasta: fechaIda, origen: a, destino: destinoGeo, escala: escala ? (aeropuerto(escala) ?? null) : null, feriados, sentido: "ida" }, config) : null);
+      }
+      return cachePresion.get(clave) ?? null;
     };
-    const presionVuelta = fechaVuelta === null ? null : (d: string) => {
-      const a = aeropuerto(d);
-      return a ? puntuarDia(fechaVuelta, { desde: fechaVuelta, hasta: fechaVuelta, origen: a, destino: origenGeo, feriados, sentido: "vuelta" }, config) : null;
+    const presionVuelta = fechaVuelta === null ? null : (d: string, escala: string | null) => {
+      const clave = `vuelta|${d}|${escala ?? ""}`;
+      if (!cachePresion.has(clave)) {
+        const a = aeropuerto(d);
+        cachePresion.set(clave, a ? puntuarDia(fechaVuelta, { desde: fechaVuelta, hasta: fechaVuelta, origen: a, destino: origenGeo, escala: escala ? (aeropuerto(escala) ?? null) : null, feriados, sentido: "vuelta" }, config) : null);
+      }
+      return cachePresion.get(clave) ?? null;
     };
     const { rutas: lista, operaciones: embudo } = priorizarConDetalle({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, hoy: ahora().toISOString().slice(0, 10), fechaIda, fechaVuelta, equipaje, orden, presionIda, presionVuelta }, config);
     const r2 = e.resultado.rutas;
@@ -200,7 +209,9 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     },
     paisesDelEspacio: (origen, destino) => {
       const e = explorar(origen, destino);
-      return e.ok ? [...new Set([...e.resultado.origenes, ...e.resultado.destinos].map((c) => c.aeropuerto.pais))] : null;
+      if (!e.ok) return null;
+      const escalas = [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas].flatMap((r) => [r.via, r.tramoPrevio?.hub ?? null]).filter((x): x is string => x !== null);
+      return [...new Set([...[...e.resultado.origenes, ...e.resultado.destinos].map((c) => c.aeropuerto.pais), ...escalas.map((x) => aeropuerto(x)?.pais).filter((x): x is string => x !== undefined)])];
     },
     paisesDe: (origen, destino) => {
       const o = aeropuerto(origen);

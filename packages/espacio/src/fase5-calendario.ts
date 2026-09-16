@@ -1,7 +1,7 @@
 import { expandirRango, sumarDias } from "@az/core";
 import type { ConfigEspacio, Corredor, Evento } from "./configuracion";
 import { diaSemana, esUltimoDiaLibre, finDeSemanaLargoDe, temporadasDe } from "./fase5-demanda";
-import type { AeropuertoGeo, Banda, PuntajeDia, Ventana } from "./modelos";
+import type { AeropuertoGeo, Banda, PuntajeDia, SenalDia, Ventana } from "./modelos";
 
 export interface Feriado {
   fecha: string; // AAAA-MM-DD
@@ -14,7 +14,8 @@ export interface EntradaCalendario {
   hasta: string;
   origen: AeropuertoGeo; // de donde sale el vuelo que se puntúa (en la vuelta, el destino del viaje)
   destino: AeropuertoGeo;
-  feriados: readonly Feriado[]; // ya traídos por la API (Nager.Date) para ambos países
+  escala?: AeropuertoGeo | null; // hub de la ruta: sus feriados, puentes y eventos también mueven el tramo
+  feriados: readonly Feriado[]; // ya traídos por la API (Nager.Date) para los países del espacio
   sentido?: "ida" | "vuelta"; // la vuelta suma el efecto "día de regreso" (domingo, último día libre)
 }
 
@@ -56,64 +57,98 @@ const bandaDe = (presion: number, bandas: ConfigEspacio["fase5"]["bandas"]): Ban
 export const puntuarDia = (iso: string, entrada: EntradaCalendario, cfg: ConfigCalendario, corredor: Corredor | null = corredorDe(cfg, entrada.origen, entrada.destino)): PuntajeDia => {
   const { pesos, eventos } = cfg.fase5;
   const { origen, destino, feriados } = entrada;
+  const escala = entrada.escala ?? null;
   const etiquetas: string[] = [];
   const partes: string[] = [];
+  const senales: SenalDia[] = [];
+  const revisado: string[] = [];
   let total = 0;
-  const sumar = (puntos: number, etiqueta: string) => {
+  const sumar = (puntos: number, etiqueta: string, fuente: string) => {
     total += puntos;
     etiquetas.push(etiqueta);
+    senales.push({ nombre: etiqueta, puntos: Math.round(puntos), fuente });
     partes.push(`${etiqueta} ${puntos > 0 ? "+" : ""}${Math.round(puntos)}`);
   };
+  const anio = iso.slice(0, 4);
+  const lugares = [{ rol: "origen", a: origen }, ...(escala ? [{ rol: "escala", a: escala }] : []), { rol: "destino", a: destino }] as const;
+  const paises = [...new Set(lugares.map((l) => l.a.pais))];
 
+  // Feriados: el día exacto en cada país; si no hay, ±2 días.
   const feriadoEn = (pais: string) => feriados.find((f) => f.fecha === iso && f.pais === pais);
   const fo = feriadoEn(origen.pais);
   const fd = feriadoEn(destino.pais);
-  if (fo) sumar(pesos["feriadoOrigen"] ?? 0, `feriado en origen: ${fo.nombre}`);
-  if (fd) sumar(pesos["feriadoDestino"] ?? 0, `feriado en destino: ${fd.nombre}`);
+  const fe = escala && escala.pais !== origen.pais && escala.pais !== destino.pais ? feriadoEn(escala.pais) : undefined;
+  if (fo) sumar(pesos["feriadoOrigen"] ?? 0, `feriado en origen: ${fo.nombre}`, `Nager.Date ${origen.pais} ${anio}`);
+  if (fd) sumar(pesos["feriadoDestino"] ?? 0, `feriado en destino: ${fd.nombre}`, `Nager.Date ${destino.pais} ${anio}`);
+  if (fe && escala) sumar(pesos["feriadoEscala"] ?? 0, `feriado en la escala (${escala.iata}): ${fe.nombre}`, `Nager.Date ${escala.pais} ${anio}`);
   if (!fo && !fd) {
     const cerca = [-2, -1, 1, 2].map((d) => sumarDias(iso, d)).some((f) => feriados.some((x) => x.fecha === f && (x.pais === origen.pais || x.pais === destino.pais)));
-    if (cerca) sumar(pesos["adyacenteAFeriado"] ?? 0, "adyacente a feriado");
+    if (cerca) sumar(pesos["adyacenteAFeriado"] ?? 0, "adyacente a feriado", "Nager.Date");
+  }
+  for (const pais of paises) {
+    const delAnio = feriados.filter((f) => f.pais === pais && f.fecha.startsWith(anio));
+    const proximos = delAnio.filter((f) => f.fecha > iso).slice(0, 2).map((f) => `${f.fecha.slice(5)} ${f.nombre}`);
+    revisado.push(`feriados ${pais} (Nager.Date ${anio}, ${delAnio.length} en el año): ${feriadoEn(pais) ? `el ${iso.slice(5)} es ${feriadoEn(pais)?.nombre}` : `ninguno el ${iso.slice(5)}`}${proximos.length ? `; próximos: ${proximos.join(", ")}` : ""}`);
   }
 
   // Fin de semana largo: un feriado en lunes o viernes dispara la salida desde el jueves previo.
-  const puente = finDeSemanaLargoDe(iso, feriados, [origen.pais]) ?? finDeSemanaLargoDe(iso, feriados, [destino.pais]);
+  const puente = finDeSemanaLargoDe(iso, feriados, [origen.pais]) ?? finDeSemanaLargoDe(iso, feriados, [destino.pais]) ?? (escala ? finDeSemanaLargoDe(iso, feriados, [escala.pais]) : null);
   if (puente) {
-    const enOrigen = puente.feriado.pais === origen.pais;
-    sumar(pesos[enOrigen ? "finDeSemanaLargoOrigen" : "finDeSemanaLargoDestino"] ?? 0, `fin de semana largo en ${enOrigen ? "origen" : "destino"}: ${puente.feriado.nombre} cae ${puente.diaFeriado === "lun" ? "lunes" : "viernes"}`);
+    const rol = puente.feriado.pais === origen.pais ? "origen" : puente.feriado.pais === destino.pais ? "destino" : "escala";
+    const peso = rol === "origen" ? pesos["finDeSemanaLargoOrigen"] : rol === "destino" ? pesos["finDeSemanaLargoDestino"] : pesos["finDeSemanaLargoEscala"];
+    sumar(peso ?? 0, `fin de semana largo en ${rol}: ${puente.feriado.nombre} cae ${puente.diaFeriado === "lun" ? "lunes" : "viernes"}`, `Nager.Date ${puente.feriado.pais} ${anio}`);
   }
   if (entrada.sentido === "vuelta") {
-    if (esUltimoDiaLibre(iso, feriados, [origen.pais, destino.pais])) sumar(pesos["regresoUltimoDiaLibre"] ?? 0, "regreso el último día libre");
-    else if (diaSemana(iso) === "dom") sumar(pesos["regresoDomingo"] ?? 0, "regreso en domingo");
+    if (esUltimoDiaLibre(iso, feriados, [origen.pais, destino.pais])) sumar(pesos["regresoUltimoDiaLibre"] ?? 0, "regreso el último día libre", "calendario");
+    else if (diaSemana(iso) === "dom") sumar(pesos["regresoDomingo"] ?? 0, "regreso en domingo", "calendario");
   }
   // Temporadas por región/continente (config con fuente): pesan más en el país de salida. Si hay un
   // corredor específico para el par, sus ventanas mandan y la región no se suma (evita contar dos veces).
   for (const rol of corredor ? [] : (["origen", "destino"] as const)) {
     const a = rol === "origen" ? origen : destino;
     const factor = pesos[rol === "origen" ? "temporadaRegionalOrigen" : "temporadaRegionalDestino"] ?? 0;
-    for (const t of temporadasDe(a.pais, iso, cfg)) sumar((cfg.fase5.presionEstacional[t.ventana.presion] ?? 0) * factor, `temporada ${t.ventana.presion} en ${rol} (${t.temporada.region}): ${t.ventana.nota}`);
+    const temporadas = temporadasDe(a.pais, iso, cfg);
+    for (const t of temporadas) sumar((cfg.fase5.presionEstacional[t.ventana.presion] ?? 0) * factor, `temporada ${t.ventana.presion} en ${rol} (${t.temporada.region}): ${t.ventana.nota}`, `config fase5.demandaRegional · ${t.temporada.region}`);
+    if (temporadas.length === 0) revisado.push(`temporada en ${rol} (${a.pais}): ninguna ventana regional cubre el ${iso.slice(5)}`);
   }
 
+  const ciudades = lugares.filter((l) => l.rol !== "origen");
   for (const e of eventos) {
     if (e.tipo === "receso") {
-      if (e.pais === origen.pais && eventoCubre(e, iso)) sumar(pesos["recesoEscolarOrigen"] ?? 0, `receso en origen: ${e.nombre}`);
-      if (e.pais === destino.pais && eventoCubre(e, iso)) sumar(pesos["recesoEscolarDestino"] ?? 0, `receso en destino: ${e.nombre}`);
-    } else if (enCiudad(e, destino)) {
-      if (eventoCubre(e, iso)) sumar((pesos["eventoMayorDestino"] ?? 0) * factorImpacto(e.impacto), `evento en destino: ${e.nombre}`);
+      if (e.pais === origen.pais && eventoCubre(e, iso)) sumar(pesos["recesoEscolarOrigen"] ?? 0, `receso en origen: ${e.nombre}`, "config fase5.eventos");
+      if (e.pais === destino.pais && eventoCubre(e, iso)) sumar(pesos["recesoEscolarDestino"] ?? 0, `receso en destino: ${e.nombre}`, "config fase5.eventos");
+      continue;
+    }
+    for (const l of ciudades) {
+      if (!enCiudad(e, l.a)) continue;
+      const peso = (l.rol === "destino" ? pesos["eventoMayorDestino"] : pesos["eventoMayorEscala"]) ?? 0;
+      if (eventoCubre(e, iso)) sumar(peso * factorImpacto(e.impacto), `evento en ${l.rol}${l.rol === "escala" ? ` (${l.a.iata})` : ""}: ${e.nombre}`, e.fuente ?? "config fase5.eventos");
       else if (eventoTentativoEnMes(e, iso)) etiquetas.push(`${e.nombre} (tentativo, sin fecha)`);
     }
+  }
+  for (const l of ciudades) {
+    const conocidos = eventos.filter((e) => e.tipo !== "receso" && enCiudad(e, l.a));
+    const eseDia = conocidos.filter((e) => eventoCubre(e, iso));
+    const proximos = conocidos.filter((e) => e.desde !== null && e.desde > iso).sort((a, b) => (a.desde ?? "").localeCompare(b.desde ?? "")).slice(0, 2).map((e) => `${e.desde?.slice(5)} ${e.nombre}`);
+    revisado.push(`eventos en ${l.a.ciudad} (${l.rol}; ${conocidos.length} conocidos con fecha o mes): ${eseDia.length ? eseDia.map((e) => e.nombre).join(", ") : `ninguno el ${iso.slice(5)}`}${proximos.length ? `; próximos: ${proximos.join(", ")}` : ""}`);
   }
 
   const dia = diaSemana(iso);
   if (corredor) {
     const efecto = corredor.efectoDiaSemana[dia];
-    if (efecto !== undefined) sumar(efecto, `día ${dia} (corredor ${corredor.nombre})`);
+    if (efecto !== undefined) sumar(efecto, `día ${dia} (corredor ${corredor.nombre})`, "config fase5.corredores");
     const ventana = ventanaDe(corredor, iso);
-    if (ventana) sumar(cfg.fase5.presionEstacional[ventana.presion] ?? 0, `temporada ${ventana.presion}: ${ventana.nota}`);
+    if (ventana) sumar(cfg.fase5.presionEstacional[ventana.presion] ?? 0, `temporada ${ventana.presion}: ${ventana.nota}`, `config fase5.corredores (${corredor.nombre})`);
+    else revisado.push(`temporada del corredor ${corredor.nombre}: ninguna ventana cubre el ${iso.slice(5)}`);
   } else if (dia === "vie" || dia === "sab" || dia === "dom") {
-    sumar(pesos["salidaFinDeSemana"] ?? 0, "salida en fin de semana");
+    sumar(pesos["salidaFinDeSemana"] ?? 0, "salida en fin de semana", "calendario");
   } else if (dia === "mar" || dia === "mie") {
-    sumar(pesos["salidaEntreSemana"] ?? 0, "salida entre semana");
+    sumar(pesos["salidaEntreSemana"] ?? 0, "salida entre semana", "calendario");
+  } else {
+    revisado.push(`día ${dia}: ni fin de semana ni martes/miércoles, sin efecto`);
   }
+  const b = cfg.fase5.bandas;
+  revisado.push(`banda: verde hasta ${b.verde[1]}, amarillo ${b.amarillo[0]}–${b.amarillo[1]}, rojo desde ${b.rojo[0]} (suma de señales, −50…100)`);
 
   const presion = Math.max(-50, Math.min(100, Math.round(total))); // negativo = valle: los días baratos se distinguen
   return {
@@ -123,6 +158,8 @@ export const puntuarDia = (iso: string, entrada: EntradaCalendario, cfg: ConfigC
     etiquetas,
     banda: bandaDe(presion, cfg.fase5.bandas),
     fundamento: partes.length === 0 ? "Sin factores de presión conocidos" : `${partes.join(" · ")} = ${Math.round(total)} (−50…100: ${presion})`,
+    senales,
+    revisado,
   };
 };
 

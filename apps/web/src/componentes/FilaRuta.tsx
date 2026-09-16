@@ -13,6 +13,37 @@ const Presion = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
   </span>
 );
 
+// Cada señal que movió la presión ese día, con puntos y fuente; sin señales, se dice.
+const Senales = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
+  <span className="block">
+    <Presion p={p} titulo={titulo} />
+    <ul className="mt-0.5 list-none pl-0">
+      {p.senales.length === 0 && <li className="text-slate-500">sin señales ese día</li>}
+      {p.senales.map((s) => (
+        <li key={s.nombre} title={`Fuente: ${s.fuente}`}>
+          <span className={`font-semibold tabular-nums ${s.puntos > 0 ? "text-red-700" : s.puntos < 0 ? "text-emerald-700" : "text-slate-500"}`}>
+            {s.puntos > 0 ? "+" : ""}
+            {s.puntos}
+          </span>{" "}
+          {s.nombre} <span className="text-slate-400">({s.fuente})</span>
+        </li>
+      ))}
+    </ul>
+  </span>
+);
+
+// Lo que se miró y no sumó (feriados por país, eventos por ciudad, temporadas, día) y cómo se lee la banda.
+const Revisado = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
+  <p className="mb-1">
+    <span className="font-medium">Revisado para la {titulo} ({p.fecha}, salida {p.aeropuerto}):</span>
+    <ul className="list-disc pl-4">
+      {p.revisado.map((x) => (
+        <li key={x}>{x}</li>
+      ))}
+    </ul>
+  </p>
+);
+
 export const rutaTexto = (r: RutaPriorizada) => (r.via === null ? `${r.origen} → ${r.destino}` : `${r.origen} → ${r.via} → ${r.destino}`);
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -129,11 +160,11 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
           {e.distancia}
         </td>
         <td className={celda}>{e.tarifa}</td>
-        <td className={celda}>
-          <span className="mb-1 block">
-            <Presion p={r.presionIda} titulo="ida" /> {r.presionVuelta && <Presion p={r.presionVuelta} titulo="vuelta" />}
-          </span>
-          {e.fecha}
+        <td className={`${celda} min-w-[18rem]`}>
+          <Senales p={r.presionIda} titulo="ida" />
+          {r.presionVuelta && <Senales p={r.presionVuelta} titulo="vuelta" />}
+          <span className="mt-1 block">{e.fecha}</span>
+          <span className="block text-slate-400">Qué se revisó y no sumó: en "Ver".</span>
         </td>
         <td className={celda}>{e.anticipacion}</td>
         <td className="py-1.5">
@@ -157,6 +188,8 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
                 </>
               )}
             </p>
+            <Revisado p={r.presionIda} titulo="ida" />
+            {r.presionVuelta && <Revisado p={r.presionVuelta} titulo="vuelta" />}
             <p className="mb-1">
               <span className="font-medium">Tramos:</span> {r.tramos.map((t) => `${t.origen}→${t.destino} (${t.km} km${t.traslado ? ", vuelo aparte" : ""}): ${t.aerolineas.map(nombre).join(", ") || "sin datos"} · grupos: ${t.grupos.join(", ") || "—"}${t.competenciaCorredor !== null ? ` · corredor ${t.competenciaCorredor} (par ${t.competenciaPar})` : ""}`).join(" · ")}
             </p>

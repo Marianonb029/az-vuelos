@@ -77,7 +77,7 @@ describe("Fase 5 — calcularCalendario (EZE→MAD, verano austral 2027)", () =>
   });
 
   it("ventanasVerdes exige la racha mínima y corta en días no verdes", () => {
-    const p = (fecha: string, banda: PuntajeDia["banda"]): PuntajeDia => ({ fecha, aeropuerto: "EZE", presion: 0, etiquetas: [], banda, fundamento: "" });
+    const p = (fecha: string, banda: PuntajeDia["banda"]): PuntajeDia => ({ fecha, aeropuerto: "EZE", presion: 0, etiquetas: [], banda, fundamento: "", senales: [], revisado: [] });
     const serie = [p("2027-03-01", "verde"), p("2027-03-02", "verde"), p("2027-03-03", "rojo"), p("2027-03-04", "verde"), p("2027-03-05", "verde"), p("2027-03-06", "verde")];
     expect(ventanasVerdes(serie, 3)).toEqual([{ desde: "2027-03-04", hasta: "2027-03-06" }]);
     expect(ventanasVerdes(serie, 2)).toHaveLength(2);

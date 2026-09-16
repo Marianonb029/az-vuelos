@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
 
-const presion = { fecha: "2027-02-16", aeropuerto: "ASU", presion: 12, etiquetas: ["salida entre semana"], banda: "verde" as const, fundamento: "salida entre semana -8 = -8 (−50…100: 12)" };
+const presion = { fecha: "2027-02-16", aeropuerto: "ASU", presion: 12, etiquetas: ["salida entre semana"], banda: "verde" as const, fundamento: "salida entre semana -8 = -8 (−50…100: 12)", senales: [{ nombre: "salida entre semana", puntos: -8, fuente: "calendario" }], revisado: ["feriados PY (Nager.Date 2027, 12 en el año): ninguno el 02-16"] };
 const comun = { destino: "MAD", escalas: 1, bajoCosto: true, conector: false, restriccion: null, presionIda: presion, presionVuelta: null, anticipacionDias: 154, estadiaDias: null, desglose: { kmEquivalentes: 6100 }, posicionMin: 1, posicionMax: 3 };
 const ruta = (extra: Partial<RutaPriorizada> & Pick<RutaPriorizada, "posicion" | "origen" | "via" | "boletos" | "indice" | "familia" | "empate">): RutaPriorizada => ({
   ...comun,

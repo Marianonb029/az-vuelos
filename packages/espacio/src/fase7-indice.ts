@@ -16,8 +16,8 @@ export interface EntradaFase7 {
   fechaVuelta: string | null; // para la estadía
   equipaje: "mano" | "valija"; // con valija la ventaja low cost desaparece
   orden: OrdenRutas; // índice puro, o menos tramos y más cerca primero
-  presionIda: (origen: string) => PuntajeDia | null; // presión del día de ida saliendo de ese aeropuerto
-  presionVuelta: ((destino: string) => PuntajeDia | null) | null; // null: viaje sólo de ida
+  presionIda: (origen: string, escala: string | null) => PuntajeDia | null; // presión del día de ida saliendo de ese aeropuerto, con el hub de la ruta
+  presionVuelta: ((destino: string, escala: string | null) => PuntajeDia | null) | null; // null: viaje sólo de ida
 }
 
 export type ConfigFase7 = Pick<ConfigEspacio, "fase7" | "fase6" | "grafo" | "regiones">;
@@ -156,9 +156,9 @@ export const medirRuta = (r: Ruta, entrada: EntradaFase7, cfg: ConfigFase7): Med
   const volados = tramosDe(r, entrada.grafo, cfg);
   const o = entrada.grafo.aeropuerto(r.origen);
   const d = entrada.grafo.aeropuerto(r.destino);
-  const presionIda = entrada.presionIda(r.origen);
+  const presionIda = entrada.presionIda(r.origen, r.via ?? r.tramoPrevio?.hub ?? null);
   if (!volados || !o || !d || !presionIda) return null;
-  const presionVuelta = entrada.presionVuelta === null ? null : entrada.presionVuelta(r.destino);
+  const presionVuelta = entrada.presionVuelta === null ? null : entrada.presionVuelta(r.destino, r.via ?? r.tramoPrevio?.hub ?? null);
   if (entrada.presionVuelta !== null && presionVuelta === null) return null;
   const so = entrada.grafo.aeropuerto(entrada.solicitado.origen);
   const sd = entrada.grafo.aeropuerto(entrada.solicitado.destino);

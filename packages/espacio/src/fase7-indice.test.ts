@@ -88,7 +88,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
   const generadas = generarRutas(o.candidatos, d.candidatos, grafo, cfg.fase2, cfg.hubs);
   const separadas = generarSplitTickets(o.candidatos, d.candidatos, grafo, cfg);
   const madrid = geo("MAD");
-  const presionIda = (origen: string) => puntuarDia("2027-02-16", { desde: "2027-02-16", hasta: "2027-02-16", origen: geo(origen), destino: madrid, feriados }, cfg);
+  const presionIda = (origen: string, escala: string | null = null) => puntuarDia("2027-02-16", { desde: "2027-02-16", hasta: "2027-02-16", origen: geo(origen), destino: madrid, escala: escala ? geo(escala) : null, feriados }, cfg);
   const entrada = { solicitado: { origen: "ASU", destino: "MAD" }, rutas: [...generadas.conservadas, ...separadas].filter((r) => r.destino === "MAD"), grafo, hoy: "2026-09-15", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano" as const, orden: "indice" as const, presionIda, presionVuelta: null };
   const rutas = priorizarRutas(entrada, cfg);
 
@@ -178,7 +178,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(tarde?.indice).toBeGreaterThan(base.indice);
     const conValija = mismo(priorizarRutas({ ...entrada, equipaje: "valija" }, cfg));
     expect(conValija?.desglose.factorBajoCosto).toBe(cfg.fase7.factorBajoCostoConValija);
-    const conVuelta = mismo(priorizarRutas({ ...entrada, fechaVuelta: "2027-02-18", presionVuelta: () => presionIda("ASU") }, cfg));
+    const conVuelta = mismo(priorizarRutas({ ...entrada, fechaVuelta: "2027-02-18", presionVuelta: () => presionIda("ASU", null) }, cfg));
     expect(conVuelta?.estadiaDias).toBe(2);
     expect(conVuelta?.desglose.factorEstadia).toBe(1.2);
     const viaMiami = rutas.find((r) => r.via === "MIA" || r.tramoPrevio?.hub === "MIA");

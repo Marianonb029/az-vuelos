@@ -10,6 +10,8 @@ const dia = (fecha: string, presion: number, banda: "verde" | "amarillo" | "rojo
   etiquetas: [],
   banda,
   fundamento,
+  senales: [],
+  revisado: [],
 });
 
 const resultado: ResultadoCalendario = {
