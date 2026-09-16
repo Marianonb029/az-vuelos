@@ -100,7 +100,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
       const a = simples[i - 1];
       const b = simples[i];
       if (!a || !b) throw new Error("fila");
-      const clave = (r: typeof a) => [r.trasladoOrigenKm, r.trasladoDestinoKm, -r.competenciaMinima, -r.competenciaTotal, r.tramosTotales, r.indice];
+      const clave = (r: typeof a) => [r.trasladoOrigenKm, Number(r.trasladoDestinoKm > 0)];
       const ka = clave(a);
       const kb = clave(b);
       const primeraDistinta = ka.findIndex((v, k) => v !== kb[k]);

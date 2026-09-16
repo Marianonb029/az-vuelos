@@ -501,6 +501,15 @@ Pedido: en ASU→LIM→MAD el tramo LIM→MAD listaba IB, LA, PU, UX y una captu
 - Lo que no se refresca solo (config: corredores de tarifas, temporadas regionales, grupos tarifarios, perfiles, hubs, tasas, factores) queda marcado "aproximada"/"supuesto" en Datos (Fase 12.2), con la validación por precios anotados como único mecanismo de corrección.
 - Segunda fuente para corroborar rutas (pendiente, propuesta): un script mensual que lea la tabla "Airlines and destinations" de Wikipedia (API de MediaWiki, pública, sin anti-bot) para los aeropuertos de las rutas consultadas y marque en Datos las aerolíneas que una fuente tiene y la otra no. No cambia el orden; sirve para detectar huecos como el de VCP o códigos reasignados. Se hace si el dueño lo aprueba.
 
+## Fase 12.4 (15/09/2026) — cercanía como recorrido: por aeropuerto de salida, primero el destino pedido y después cada alternativo con cómo se llega
+
+Pedido: que el orden por cercanía sirva para decidir en este recorrido: desde el aeropuerto de origen, las rutas al destino pedido; después, desde ese mismo origen, las rutas a cada destino alternativo (ASU–LIS, ASU–CDG, ASU–AMS…) y cómo se llega desde ahí al destino pedido; recién entonces el siguiente origen más cercano, y así.
+
+- **El tope se reparte por grupo** (`fase7.cercania`): por aeropuerto de salida, hasta 10 rutas al destino pedido y 3 a cada destino alternativo, con los 8 alternativos de mejor ruta (índice con el traslado incluido) **más los 4 hubs con más salidas** (CDG, AMS, BCN, PMI para MAD) que entran siempre: son las puertas por las que se llega barato con un vuelo aparte y la persona quiere verlas aunque su índice no sea de los más bajos. Antes el tope global por índice dejaba afuera CDG y AMS.
+- **Los alternativos se ordenan por su mejor ruta, no por km**: Zaragoza está a 249 km de Madrid pero se llega mal (Emirates carguero vía Dubái); Lisboa está a 513 km y se llega barato con TAP.
+- **Subcabecera por destino** dentro de cada aeropuerto de salida: "→ MAD, el destino pedido" o "→ LIS, alternativo a 513 km de MAD · para llegar a MAD: vuelo aparte con Orbest, Avianca, easyJet Europe, Ryanair, Iberia, TAP, easyJet, Air Europa, Vueling, Air Nostrum" (o "por tierra (tren o bus)" cuando el traslado es de menos de 400 km). La cabecera de origen dice con qué aerolíneas se llega al alternativo de salida.
+- La sección "recortadas por tope" del embudo explica esta regla cuando el orden es por cercanía.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

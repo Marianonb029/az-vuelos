@@ -199,7 +199,24 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                       <tr className="bg-slate-100">
                         <td colSpan={9} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
                           Desde {r.origen}
-                          {r.trasladoOrigenKm === 0 ? " (el aeropuerto pedido)" : ` — a ${r.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}${r.trasladoAereo ? ", con vuelo aparte" : ", por tierra"}`} · {filas.filter((f) => f.r.origen === r.origen).length} rutas: primero a {resultado.destino}, después a sus alternativos por distancia
+                          {r.trasladoOrigenKm === 0 ? " (el aeropuerto pedido)" : ` — a ${r.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}${r.tramos.some((t) => t.traslado && t.destino === r.origen) ? ` (vuelo aparte con ${r.tramos.find((t) => t.traslado && t.destino === r.origen)?.aerolineas.map((a) => nombres.get(a) ?? a).join(", ")})` : ", por tierra"}`} · {filas.filter((f) => f.r.origen === r.origen).length} rutas: primero a {resultado.destino}, después a sus alternativos por distancia
+                        </td>
+                      </tr>
+                    )}
+                    {porCercania && (filas[i - 1]?.r.origen !== r.origen || filas[i - 1]?.r.destino !== r.destino) && (
+                      <tr className="bg-slate-50">
+                        <td colSpan={9} className="px-4 py-1 text-xs text-slate-700">
+                          {r.trasladoDestinoKm === 0 ? (
+                            <span className="font-semibold">→ {r.destino}, el destino pedido</span>
+                          ) : (
+                            <>
+                              <span className="font-semibold">→ {r.destino}, alternativo a {r.trasladoDestinoKm.toLocaleString("es")} km de {resultado.destino}</span> · para llegar a {resultado.destino}:{" "}
+                              {(() => {
+                                const t = r.tramos.find((x) => x.traslado && x.origen === r.destino);
+                                return t ? `vuelo aparte con ${t.aerolineas.map((a) => nombres.get(a) ?? a).join(", ")} (${t.aerolineas.length} aerolíneas)` : "por tierra (tren o bus)";
+                              })()}
+                            </>
+                          )}
                         </td>
                       </tr>
                     )}

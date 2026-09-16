@@ -147,6 +147,14 @@ export const ConfigEspacio = z.object({
     }),
     empateTolerancia: z.number().min(0), // filas cuyo índice difiere menos que esto se muestran como empate
     maxRutas: z.number().int().positive(),
+    // Orden por cercanía: el tope se reparte por grupo (origen, destino) para que cada aeropuerto de salida muestre
+    // primero cómo llegar al destino pedido y después a cada alternativo, en vez de las N mejores por índice.
+    cercania: z.object({
+      rutasPorDestinoPedido: z.number().int().positive(), // por aeropuerto de salida, hacia el destino pedido
+      rutasPorDestinoAlternativo: z.number().int().positive(), // por aeropuerto de salida, hacia cada destino alternativo
+      destinosAlternativosPorOrigen: z.number().int().min(0), // cuántos destinos alternativos (los de mejor ruta, con el traslado incluido) por aeropuerto de salida
+      destinosAlternativosHub: z.number().int().min(0), // además, los N alternativos con más salidas (CDG, AMS, LHR, FRA): siempre a la vista
+    }),
     nota: z.string(),
   }),
   fase6: z.object({

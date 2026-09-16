@@ -86,15 +86,27 @@ interface Candidata {
   trasladoDestino: number;
   aerolineas: number; // aerolíneas distintas que operan la ruta
   aerolineasTramoCerrado: number; // aerolíneas en el tramo con menos: es el que fija el precio
+  destino: string;
+  mejorIndiceDestino: number; // menor índice de las rutas del mismo (origen, destino): ordena los destinos alternativos
 }
 
 // Orden "indice": menor índice primero. Orden "cercania": origen pedido primero y después por distancia; dentro
-// de cada origen el destino pedido y después por distancia; entre iguales más aerolíneas en el tramo más cerrado
-// (sumar aerolíneas de tres tramos inflaría las rutas largas), después en toda la ruta, menos tramos y recién el índice.
+// de cada origen el destino pedido y después los alternativos, ordenados por la mejor ruta que llega a cada uno
+// (no por km: Zaragoza está cerca de Madrid pero se llega mal; Lisboa está más lejos y se llega barato); entre
+// iguales más aerolíneas en el tramo más cerrado (sumar aerolíneas de tres tramos inflaría las rutas largas),
+// después en toda la ruta, menos tramos y recién el índice.
 const ordenar = (lista: Candidata[], orden: OrdenRutas) =>
   [...lista].sort(
     (a, b) =>
-      (orden === "cercania" ? a.trasladoOrigen - b.trasladoOrigen || a.trasladoDestino - b.trasladoDestino || b.aerolineasTramoCerrado - a.aerolineasTramoCerrado || b.aerolineas - a.aerolineas || a.tramos - b.tramos : 0) ||
+      (orden === "cercania"
+        ? a.trasladoOrigen - b.trasladoOrigen ||
+          Number(a.trasladoDestino > 0) - Number(b.trasladoDestino > 0) ||
+          a.mejorIndiceDestino - b.mejorIndiceDestino ||
+          a.destino.localeCompare(b.destino) ||
+          b.aerolineasTramoCerrado - a.aerolineasTramoCerrado ||
+          b.aerolineas - a.aerolineas ||
+          a.tramos - b.tramos
+        : 0) ||
       a.indice - b.indice ||
       a.km - b.km ||
       a.origen.localeCompare(b.origen),
@@ -103,7 +115,44 @@ const ordenar = (lista: Candidata[], orden: OrdenRutas) =>
 // Tramos totales: los medidos (incluido el traslado aéreo con vuelo) más el traslado aéreo sin vuelo en el dataset.
 const tramosTotalesDe = (m: MedidaRuta, idx: Indice) => m.tramos.length + (idx.trasladoAereo && !m.tramos.some((t) => t.traslado) ? 1 : 0);
 
-const candidata = (m: MedidaRuta, idx: Indice): Candidata => ({ clave: claveDe(m), indice: idx.indice, km: m.distanciaKm, origen: m.ruta.origen, tramos: tramosTotalesDe(m, idx), trasladoOrigen: m.trasladoOrigenKm, trasladoDestino: m.trasladoDestinoKm, aerolineas: m.competenciaTotal, aerolineasTramoCerrado: m.competenciaMinima });
+const candidata = (m: MedidaRuta, idx: Indice): Candidata => ({ clave: claveDe(m), indice: idx.indice, km: m.distanciaKm, origen: m.ruta.origen, tramos: tramosTotalesDe(m, idx), trasladoOrigen: m.trasladoOrigenKm, trasladoDestino: m.trasladoDestinoKm, aerolineas: m.competenciaTotal, aerolineasTramoCerrado: m.competenciaMinima, destino: m.ruta.destino, mejorIndiceDestino: idx.indice });
+
+// Cercanía: recorre los aeropuertos de salida del más cercano al pedido; en cada uno toma las mejores por índice
+// hacia el destino pedido y luego hacia los destinos alternativos más cercanos al pedido, hasta el tope global.
+const elegirPorCercania = (candidatas: Candidata[], medidas: MedidaRuta[], entrada: EntradaFase7, cfg: ConfigFase7): Set<string> => {
+  const c7 = cfg.fase7.cercania;
+  const porClave = new Map(medidas.map((m) => [claveDe(m), m]));
+  const grupos = new Map<string, Candidata[]>();
+  for (const c of ordenar(candidatas, "indice")) {
+    const m = porClave.get(c.clave);
+    if (!m) continue;
+    const k = `${c.trasladoOrigen}|${m.ruta.origen}|${c.trasladoDestino}|${m.ruta.destino}`;
+    grupos.set(k, [...(grupos.get(k) ?? []), c]);
+  }
+  const porOrigen = new Map<string, { trasladoOrigen: number; destinos: { trasladoDestino: number; rutas: Candidata[] }[] }>();
+  for (const [k, rutas] of grupos) {
+    const [to = "0", origen = "", td = "0"] = k.split("|");
+    const g = porOrigen.get(origen) ?? { trasladoOrigen: Number(to), destinos: [] };
+    g.destinos.push({ trasladoDestino: Number(td), rutas });
+    porOrigen.set(origen, g);
+  }
+  const elegidas = new Set<string>();
+  for (const g of [...porOrigen.values()].sort((a, b) => a.trasladoOrigen - b.trasladoOrigen)) {
+    const mejor = (d: { rutas: Candidata[] }) => d.rutas[0]?.indice ?? Infinity; // las rutas vienen ordenadas por índice
+    const pedido = g.destinos.filter((d) => d.trasladoDestino === 0);
+    const candidatosAlt = g.destinos.filter((d) => d.trasladoDestino > 0);
+    // Los grandes hubs cercanos al destino (CDG, AMS, LHR, FRA…) entran siempre aunque su mejor ruta no sea de las
+    // más baratas: son las puertas por las que se llega barato con un vuelo aparte, y la persona quiere verlas.
+    const salidas = (d: { rutas: Candidata[] }) => entrada.grafo.registrosSalientes(d.rutas[0]?.destino ?? "");
+    const hubs = [...candidatosAlt].sort((a, b) => salidas(b) - salidas(a)).slice(0, c7.destinosAlternativosHub);
+    const mejores = [...candidatosAlt].sort((a, b) => mejor(a) - mejor(b)).slice(0, c7.destinosAlternativosPorOrigen);
+    const alternativos = [...new Set([...mejores, ...hubs])];
+    for (const d of pedido) for (const c of d.rutas.slice(0, c7.rutasPorDestinoPedido)) elegidas.add(c.clave);
+    for (const d of alternativos) for (const c of d.rutas.slice(0, c7.rutasPorDestinoAlternativo)) elegidas.add(c.clave);
+    if (elegidas.size >= cfg.fase7.maxRutas) break;
+  }
+  return new Set(ordenar(candidatas.filter((c) => elegidas.has(c.clave)), "cercania").slice(0, cfg.fase7.maxRutas).map((c) => c.clave));
+};
 
 export interface ResultadoPriorizacion {
   rutas: RutaPriorizada[];
@@ -145,9 +194,20 @@ export const priorizarConDetalle = (entrada: EntradaFase7, cfg: ConfigFase7): Re
   // El tope por índice se aplica antes de ordenar: en cualquier orden se muestran las mismas N mejores por índice.
   // Las rutas entre los aeropuertos pedidos (sin traslado) no se recortan: son la referencia contra la que se compara.
   const candidatas = medidas.map((m) => candidata(m, base.get(claveDe(m)) ?? calcularIndice(m, entrada, cfg)));
+  const mejorPorGrupo = new Map<string, number>();
+  for (const c of candidatas) mejorPorGrupo.set(`${c.origen}|${c.destino}`, Math.min(mejorPorGrupo.get(`${c.origen}|${c.destino}`) ?? Infinity, c.indice));
+  for (const c of candidatas) c.mejorIndiceDestino = mejorPorGrupo.get(`${c.origen}|${c.destino}`) ?? c.indice;
   const pedidas = new Set(candidatas.filter((c) => c.trasladoOrigen === 0 && c.trasladoDestino === 0).map((c) => c.clave));
-  const elegidas = new Set([...pedidas, ...ordenar(candidatas, "indice").slice(0, cfg.fase7.maxRutas).map((x) => x.clave)]);
-  operaciones.push({ paso: "recortadas por tope", cantidad: Math.max(0, medidas.length - elegidas.size), detalle: `quedan las ${cfg.fase7.maxRutas} de menor índice (fase7.maxRutas) más todas las que van del origen pedido al destino pedido (${pedidas.size}); el orden elegido se aplica sobre ésas` });
+  const elegidas = entrada.orden === "cercania" ? elegirPorCercania(candidatas, medidas, entrada, cfg) : new Set([...pedidas, ...ordenar(candidatas, "indice").slice(0, cfg.fase7.maxRutas).map((x) => x.clave)]);
+  const c7 = cfg.fase7.cercania;
+  operaciones.push({
+    paso: "recortadas por tope",
+    cantidad: Math.max(0, medidas.length - elegidas.size),
+    detalle:
+      entrada.orden === "cercania"
+        ? `por aeropuerto de salida: hasta ${c7.rutasPorDestinoPedido} rutas al destino pedido y ${c7.rutasPorDestinoAlternativo} a cada uno de los ${c7.destinosAlternativosPorOrigen} destinos alternativos con mejor ruta (traslado incluido) más los ${c7.destinosAlternativosHub} hubs con más salidas, las de menor índice en cada grupo, hasta ${cfg.fase7.maxRutas} en total`
+        : `quedan las ${cfg.fase7.maxRutas} de menor índice (fase7.maxRutas) más todas las que van del origen pedido al destino pedido (${pedidas.size}); el orden elegido se aplica sobre ésas`,
+  });
   medidas = medidas.filter((m) => elegidas.has(claveDe(m)));
   const orden = ordenar(candidatas.filter((c) => elegidas.has(c.clave)), entrada.orden);
   // Robustez (puesto mín–máx al mover cada factor ±20 %): retirada en la Fase 12.2. Costaba diez rankings por
