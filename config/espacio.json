@@ -160,7 +160,10 @@
       "EZE",
       "MEX"
     ],
-    "maxHubsPorPar": 3
+    "maxHubsPorPar": 3,
+    "maxConexionesPorPar": 12,
+    "maxConexionesPorParAlternativo": 2,
+    "maxConexionesPorHub": 3
   },
   "hubs": [
     {

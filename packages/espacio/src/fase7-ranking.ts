@@ -74,7 +74,7 @@ const claveDe = (m: MedidaRuta) => `${m.ruta.origen}|${m.ruta.via ?? ""}|${m.rut
 const claveViaje = (m: MedidaRuta) => `${[m.tramos[0]?.origen ?? "", ...m.tramos.map((t) => t.destino)].join(">")}|${m.boletos + m.tramos.filter((t) => t.traslado).length}`;
 
 // Familia: misma estrategia con distinto origen (mismo hub o directo, mismo destino, misma cantidad de boletos).
-const familiaDe = (m: MedidaRuta) => `${m.ruta.via ?? "directo"}→${m.ruta.destino}${m.boletos === 2 ? " (2 boletos)" : ""}`;
+const familiaDe = (m: MedidaRuta) => `${m.ruta.tramoPrevio && m.ruta.tramoPrevio.hub !== m.ruta.via ? `${m.ruta.tramoPrevio.hub}→` : ""}${m.ruta.via ?? "directo"}→${m.ruta.destino}${m.boletos === 2 ? " (2 boletos)" : ""}`;
 
 interface Candidata {
   clave: string;
@@ -85,15 +85,16 @@ interface Candidata {
   trasladoOrigen: number; // km del origen pedido al alternativo (0 = el pedido)
   trasladoDestino: number;
   aerolineas: number; // aerolíneas distintas que operan la ruta
+  aerolineasTramoCerrado: number; // aerolíneas en el tramo con menos: es el que fija el precio
 }
 
 // Orden "indice": menor índice primero. Orden "cercania": origen pedido primero y después por distancia; dentro
-// de cada origen el destino pedido y después por distancia; entre iguales más aerolíneas (más competencia),
-// menos tramos y recién el índice.
+// de cada origen el destino pedido y después por distancia; entre iguales más aerolíneas en el tramo más cerrado
+// (sumar aerolíneas de tres tramos inflaría las rutas largas), después en toda la ruta, menos tramos y recién el índice.
 const ordenar = (lista: Candidata[], orden: OrdenRutas) =>
   [...lista].sort(
     (a, b) =>
-      (orden === "cercania" ? a.trasladoOrigen - b.trasladoOrigen || a.trasladoDestino - b.trasladoDestino || b.aerolineas - a.aerolineas || a.tramos - b.tramos : 0) ||
+      (orden === "cercania" ? a.trasladoOrigen - b.trasladoOrigen || a.trasladoDestino - b.trasladoDestino || b.aerolineasTramoCerrado - a.aerolineasTramoCerrado || b.aerolineas - a.aerolineas || a.tramos - b.tramos : 0) ||
       a.indice - b.indice ||
       a.km - b.km ||
       a.origen.localeCompare(b.origen),
@@ -102,7 +103,7 @@ const ordenar = (lista: Candidata[], orden: OrdenRutas) =>
 // Tramos totales: los medidos (incluido el traslado aéreo con vuelo) más el traslado aéreo sin vuelo en el dataset.
 const tramosTotalesDe = (m: MedidaRuta, idx: Indice) => m.tramos.length + (idx.trasladoAereo && !m.tramos.some((t) => t.traslado) ? 1 : 0);
 
-const candidata = (m: MedidaRuta, idx: Indice): Candidata => ({ clave: claveDe(m), indice: idx.indice, km: m.distanciaKm, origen: m.ruta.origen, tramos: tramosTotalesDe(m, idx), trasladoOrigen: m.trasladoOrigenKm, trasladoDestino: m.trasladoDestinoKm, aerolineas: m.competenciaTotal });
+const candidata = (m: MedidaRuta, idx: Indice): Candidata => ({ clave: claveDe(m), indice: idx.indice, km: m.distanciaKm, origen: m.ruta.origen, tramos: tramosTotalesDe(m, idx), trasladoOrigen: m.trasladoOrigenKm, trasladoDestino: m.trasladoDestinoKm, aerolineas: m.competenciaTotal, aerolineasTramoCerrado: m.competenciaMinima });
 
 export interface ResultadoPriorizacion {
   rutas: RutaPriorizada[];

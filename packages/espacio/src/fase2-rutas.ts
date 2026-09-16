@@ -38,7 +38,7 @@ const frecuenciaConEscala = (grafo: Grafo, origen: string, via: string, destino:
   return { aerolineas: comunes, vuelosSemanales: Math.round(numeros * config.vuelosSemanalesPorRegistro * config.factorEscala) };
 };
 
-const esHub = (iata: string, hubs: ReadonlySet<string>, grafo: Grafo, config: ConfigEspacio["fase2"]) =>
+export const esHub = (iata: string, hubs: ReadonlySet<string>, grafo: Grafo, config: ConfigEspacio["fase2"]) =>
   hubs.has(iata) || grafo.registrosSalientes(iata) * config.vuelosSemanalesPorRegistro >= config.minSalidasSemanalesHub;
 
 // Fase 2: rutas directas y con 1 escala entre cada par (origen candidato, destino candidato),

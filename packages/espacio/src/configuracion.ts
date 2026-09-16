@@ -100,6 +100,9 @@ export const ConfigEspacio = z.object({
   // Boletos separados: hubs intermedios donde se puede cambiar de aerolínea comprando dos boletos.
   split: z.object({
     hubs: z.array(IataAeropuerto).min(1),
+    maxConexionesPorPar: z.number().int().min(0), // segundos boletos con conexión (hub→hub2→destino) hacia el destino pedido
+    maxConexionesPorParAlternativo: z.number().int().min(0), // ídem hacia un destino alternativo
+    maxConexionesPorHub: z.number().int().min(1), // por hub de salida, para repartir el cupo entre hubs
     maxHubsPorPar: z.number().int().positive(), // cuántos hubs distintos se conservan por (origen, destino)
   }),
   hubs: z.array(ReglaHub),

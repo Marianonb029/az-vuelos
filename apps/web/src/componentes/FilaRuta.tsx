@@ -44,7 +44,7 @@ const Revisado = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
   </p>
 );
 
-export const rutaTexto = (r: RutaPriorizada) => (r.via === null ? `${r.origen} → ${r.destino}` : `${r.origen} → ${r.via} → ${r.destino}`);
+export const rutaTexto = (r: RutaPriorizada) => [r.origen, ...(r.tramoPrevio && r.tramoPrevio.hub !== r.via ? [r.tramoPrevio.hub] : []), ...(r.via === null ? [] : [r.via]), r.destino].join(" → ");
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // Anotar el precio que la persona vio en un metabuscador para esta fila: alimenta la validación del índice.

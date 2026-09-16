@@ -96,19 +96,29 @@ const regionMercadoDe = (pais: string, cfg: ConfigFase7): string | null => cfg.f
 
 // Competencia de corredor de un tramo de largo radio: grupos que vuelan largo radio desde el origen del
 // tramo a cualquier aeropuerto del continente del destino, ponderados por sus números de vuelo.
+// El corredor depende sólo de (origen, región): se calcula una vez por grafo y se reutiliza en las miles de rutas.
+const cacheCorredor = new WeakMap<Grafo, Map<string, number>>();
+
 export const competenciaCorredorDe = (origen: string, destino: string, grafo: Grafo, cfg: ConfigFase7): number | null => {
   const a = grafo.aeropuerto(origen);
   const b = grafo.aeropuerto(destino);
   if (!a || !b || distanciaKm(a, b) < cfg.fase7.competencia.largoRadioDesdeKm) return null;
   const region = regionMercadoDe(b.pais, cfg);
   if (region === null) return null;
+  const cache = cacheCorredor.get(grafo) ?? new Map<string, number>();
+  cacheCorredor.set(grafo, cache);
+  const clave = `${origen}|${region}|${cfg.fase7.competencia.largoRadioDesdeKm}|${cfg.fase7.competencia.vuelosPorAerolineaPleno}|${cfg.fase7.competencia.pesoMinimoAerolinea}`;
+  const previa = cache.get(clave);
+  if (previa !== undefined) return previa;
   const vuelos: Record<string, number> = {};
   for (const arista of grafo.salidasDe(origen)) {
     const d = grafo.aeropuerto(arista.destino);
     if (!d || regionMercadoDe(d.pais, cfg) !== region || distanciaKm(a, d) < cfg.fase7.competencia.largoRadioDesdeKm) continue;
     for (const [iata, n] of Object.entries(arista.vuelosPorAerolinea)) vuelos[iata] = (vuelos[iata] ?? 0) + n;
   }
-  return Math.round(competenciaEfectivaDe(vuelos, cfg) * 100) / 100;
+  const valor = Math.round(competenciaEfectivaDe(vuelos, cfg) * 100) / 100;
+  cache.set(clave, valor);
+  return valor;
 };
 
 const tramoDe = (a: AeropuertoGeo, b: AeropuertoGeo, grafo: Grafo, cfg: ConfigFase7, traslado: boolean): TramoCompetencia => {
@@ -131,7 +141,8 @@ const tramoDe = (a: AeropuertoGeo, b: AeropuertoGeo, grafo: Grafo, cfg: ConfigFa
 };
 
 const tramosDe = (r: Ruta, grafo: Grafo, cfg: ConfigFase7): TramoCompetencia[] | null => {
-  const paradas = [r.origen, ...(r.via === null ? [] : [r.via]), r.destino];
+  const hub = r.tramoPrevio?.hub;
+  const paradas = [r.origen, ...(hub !== undefined && hub !== r.via ? [hub] : []), ...(r.via === null ? [] : [r.via]), r.destino];
   const tramos: TramoCompetencia[] = [];
   for (let i = 0; i < paradas.length - 1; i++) {
     const a = grafo.aeropuerto(paradas[i] ?? "");

@@ -51,7 +51,7 @@ export const Ruta = z.object({
   destino: IataAeropuerto,
   aerolineas: z.array(IataAerolinea).min(1), // las que venden el boleto (en boletos separados: el tramo hub → destino)
   vuelosSemanales: z.number().int().min(0),
-  escalas: z.number().int().min(0).max(1),
+  escalas: z.number().int().min(0).max(2), // 2: boleto aparte hasta el hub y segundo boleto con conexión (hub→hub2→destino)
   via: IataAeropuerto.nullable(),
   nivel: Nivel,
   etiquetaNivel: z.string(),

@@ -95,12 +95,12 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
   it("orden 'cercania': origen pedido y destino pedido primero, después por distancia; entre iguales más aerolíneas y menos tramos", () => {
     const simples = priorizarRutas({ ...entrada, orden: "cercania" }, cfg);
     expect(simples[0]).toMatchObject({ origen: "ASU", destino: "MAD", trasladoOrigenKm: 0, trasladoDestinoKm: 0, posicion: 1 });
-    expect(simples[0]?.competenciaTotal).toBeGreaterThanOrEqual(simples[1]?.competenciaTotal ?? 0); // entre ASU→MAD, más aerolíneas primero
+    expect(simples[0]?.competenciaMinima).toBeGreaterThanOrEqual(simples[1]?.competenciaMinima ?? 0); // entre ASU→MAD, más aerolíneas en el tramo más cerrado primero
     for (let i = 1; i < simples.length; i++) {
       const a = simples[i - 1];
       const b = simples[i];
       if (!a || !b) throw new Error("fila");
-      const clave = (r: typeof a) => [r.trasladoOrigenKm, r.trasladoDestinoKm, -r.competenciaTotal, r.tramosTotales, r.indice];
+      const clave = (r: typeof a) => [r.trasladoOrigenKm, r.trasladoDestinoKm, -r.competenciaMinima, -r.competenciaTotal, r.tramosTotales, r.indice];
       const ka = clave(a);
       const kb = clave(b);
       const primeraDistinta = ka.findIndex((v, k) => v !== kb[k]);
@@ -109,11 +109,15 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     // El traslado aéreo cuenta como un tramo más, con sus aerolíneas (GRU→LIS→MAD con TAP más el vuelo ASU→GRU aparte
     // no es "más simple" que ASU→GRU→MAD). "EZE→MAD con vuelo aparte" se pliega en "ASU→EZE→MAD en dos boletos"
     // (misma secuencia y compras). VCP (sin vuelo de pasajeros desde ASU) ya no es alcanzable.
-    const gru = rutas.find((r) => r.origen === "GRU" && r.via === "LIS" && r.destino === "MAD");
-    expect(gru?.trasladoAereo).toBe(true);
-    expect(gru?.tramosTotales).toBe(3);
-    expect(gru?.tramos[0]).toMatchObject({ origen: "ASU", destino: "GRU", traslado: true });
-    expect(gru?.tramos[0]?.aerolineas).toContain("LA");
+    const conTraslado = rutas.find((r) => r.trasladoAereo && r.tramos[0]?.traslado === true && r.tramos[0]?.origen === "ASU");
+    expect(conTraslado).toBeDefined();
+    expect(conTraslado?.tramosTotales).toBe(conTraslado?.tramos.length);
+    expect((conTraslado?.tramos[0]?.aerolineas ?? []).length).toBeGreaterThan(0);
+    // "GRU→LIS→MAD con vuelo aparte ASU→GRU" se pliega en "ASU→GRU + TAP GRU→LIS→MAD" (dos boletos, misma secuencia).
+    const tap = rutas.find((r) => r.tramoPrevio?.hub === "GRU" && r.via === "LIS" && r.destino === "MAD");
+    expect(tap?.aerolineas).toEqual(["TP"]);
+    expect(tap?.escalas).toBe(2);
+    expect(tap?.tramos.map((t) => t.destino)).toEqual(["GRU", "LIS", "MAD"]);
     expect(simples.some((r) => r.origen === "EZE" && r.via === null && r.destino === "MAD")).toBe(false);
     expect(simples.some((r) => r.origen === "VCP")).toBe(false);
   });

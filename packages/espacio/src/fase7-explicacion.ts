@@ -25,7 +25,7 @@ export const dondeBuscar = (r: RutaPriorizada): DondeBuscar[] => {
       ? [{ tramo: r.via === null ? `${r.origen}→${r.destino}` : `${r.origen}→${r.via}→${r.destino}`, aerolineas: r.aerolineas }]
       : [
           { tramo: `boleto 1: ${r.origen}→${r.tramoPrevio.hub}`, aerolineas: r.tramoPrevio.aerolineas },
-          { tramo: `boleto 2: ${r.tramoPrevio.hub}→${r.destino}`, aerolineas: r.aerolineas },
+          { tramo: `boleto 2: ${r.tramoPrevio.hub}→${r.via !== null && r.via !== r.tramoPrevio.hub ? `${r.via}→` : ""}${r.destino}`, aerolineas: r.aerolineas },
         ];
   return [...previos, ...principal, ...posteriores];
 };
@@ -75,7 +75,10 @@ const explicarPresion = (r: RutaPriorizada): string => {
 };
 
 const explicarBoletos = (r: RutaPriorizada, ctx: ContextoExplicacion): string => {
-  if (r.tramoPrevio !== null) return `Dos boletos separados: ${r.origen}→${r.tramoPrevio.hub} con ${lista(r.tramoPrevio.aerolineas, ctx.nombre)} y ${r.tramoPrevio.hub}→${r.destino} con ${lista(r.aerolineas, ctx.nombre)}. Suele salir más barato, pero la conexión corre por tu cuenta: dejá varias horas o una noche en ${r.tramoPrevio.hub} y contá con retirar y volver a despachar la valija.`;
+  if (r.tramoPrevio !== null) {
+    const conexion = r.via !== null && r.via !== r.tramoPrevio.hub ? ` (con escala en ${r.via}, en el mismo boleto: esa conexión sí está protegida)` : "";
+    return `Dos boletos separados: ${r.origen}→${r.tramoPrevio.hub} con ${lista(r.tramoPrevio.aerolineas, ctx.nombre)} y ${r.tramoPrevio.hub}→${r.destino} con ${lista(r.aerolineas, ctx.nombre)}${conexion}. Suele salir más barato, pero el cambio en ${r.tramoPrevio.hub} corre por tu cuenta: dejá varias horas o una noche y contá con retirar y volver a despachar la valija.`;
+  }
   if (r.via === null) return `Directo con ${lista(r.aerolineas, ctx.nombre)}: sin escalas ni sorpresas.`;
   return `Una escala en ${r.via} vendida en el mismo boleto por ${lista(r.aerolineas, ctx.nombre)}: si perdés la conexión, la aerolínea te reubica.`;
 };

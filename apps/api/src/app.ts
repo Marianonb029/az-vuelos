@@ -40,7 +40,7 @@ export const crearApp = (op: OpcionesApp) => {
         equipaje: r.equipaje,
         orden: r.orden,
         rutas: r.rutas.length,
-        primeras: r.rutas.slice(0, 10).map((x) => ({ posicion: x.posicion, ruta: `${x.origen}→${x.via ? `${x.via}→` : ""}${x.destino}${x.boletos === 2 ? " (2 boletos)" : ""}`, indice: x.indice, presionIda: x.presionIda.presion, aerolineas: [...new Set([...(x.tramoPrevio?.aerolineas ?? []), ...x.aerolineas])] })),
+        primeras: r.rutas.slice(0, 10).map((x) => ({ posicion: x.posicion, ruta: `${[x.origen, ...(x.tramoPrevio && x.tramoPrevio.hub !== x.via ? [x.tramoPrevio.hub] : []), ...(x.via ? [x.via] : []), x.destino].join("→")}${x.boletos === 2 ? " (2 boletos)" : ""}`, indice: x.indice, presionIda: x.presionIda.presion, aerolineas: [...new Set([...(x.tramoPrevio?.aerolineas ?? []), ...x.aerolineas])] })),
       }),
   });
   rutasEspacio(app, op.espacio, op.feriados);
