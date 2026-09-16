@@ -459,6 +459,32 @@ Pedido: más información sobre la fecha y la temporada, por qué una fecha es r
 - Columna **Fecha**: la banda y debajo cada señal con sus puntos (rojo suma, verde resta) y su fuente; "Ver" muestra el bloque "Revisado" de ida y de vuelta.
 - Límites que quedan a la vista: la temporada del corredor SA→Europa es la serie 2022–2025 del SPEC (config con fuente), los eventos son los que tienen ítem en Wikidata con fecha y país más los de config, y no hay hora del día ni tarifa histórica real. Si falta un feriado o evento, se ve en "Revisado" y se carga en `config/espacio.json → fase5.eventos` con su fuente.
 
+## Fase 12.2 (15/09/2026) — Datos como glosario, pestaña Tablero, y auditoría de lo estático y de lo que no cambia la salida
+
+**1. Qué había en Datos y qué queda.** Tenía tres bloques: (a) la ficha de cada dato (fuente, última actualización, exactitud, refresco, vencido); (b) la validación del índice contra precios anotados; (c) el historial de priorizaciones. (b) y (c) no son "datos" sino resultados de uso, y se mudan al Tablero. (a) se mantiene porque es lo que responde "¿de dónde salió esto y cuán viejo es?" para cada columna de Rutas, y se le antepone un **glosario**: cada término de la tabla (Buscar en, 2 boletos, vuelo aparte, familia, corredor, grupos que fijan precio, low cost, hub conector, tarifa de red, km y desvío, tasas, presión y banda, anticipación y estadía, visa, la cuenta, precio visto) con su significado en una frase y de qué dato sale.
+
+**2. Tablero (pestaña nueva).** Sobre el historial (cada priorización con par, fechas, equipaje, orden y sus diez primeras rutas con las aerolíneas de "Buscar en") resume: cuántas priorizaciones, pares distintos, rango de fechas de ida, ida y vuelta, valija, % por cercanía; pares y meses más buscados; y sobre los top 10: % con dos boletos, % con aeropuerto alternativo, presión media del día de ida, hubs más frecuentes, aerolíneas donde más se manda a buscar, aeropuertos de salida, primer puesto más repetido. Debajo, la validación contra precios vistos y el historial. `EntradaHistorial` suma `orden` y `primeras[].aerolineas` (con default para las entradas viejas).
+
+**3. Qué es estático y puede envejecer mal** (todo vive en `config/espacio.json`, exactitud "aproximada" o "supuesto" en Datos):
+- `fase5.corredores` (SA→Europa): ventanas de temporada y efecto por día de semana sacados de la serie de tarifas 2022–2025 del SPEC. Es la señal de fecha que más pesa (±30) y no se refresca con ningún comando; si el mercado cambió, la banda miente. Riesgo alto.
+- `fase5.demandaRegional`: temporadas por región con fuente (calendarios escolares), sin actualización automática. Riesgo medio (cambian poco).
+- `fase5.eventos` de config (ferias tentativas 2027 sin fecha, recesos): a mano. Los de Wikidata sí se refrescan (`pnpm eventos`, mensual). Riesgo medio.
+- `fase7.tasasAeropuerto/tasasPais`: orden de magnitud público, sin fecha. Riesgo bajo (pesan poco).
+- `fase7` factores (competencia, low cost, conector, escalas, separados, anticipación, estadía): supuestos, se mueven sólo con `pnpm calibrar` sobre precios anotados. Hoy calibrados con 39 observaciones de dos pares: riesgo alto mientras no haya más.
+- `grafo.gruposTarifarios`, `fase6.aerolineasPerfilBajoCosto/Conector`, `split.hubs`, `hubs` (reglas de hub), `fase6.restriccionesVia`, `grafo.aerolineasExcluidas`: listas a mano (alianzas, compras, hubs nuevos, cargueras nuevas). Riesgo medio: una fusión o una ruta nueva no se refleja hasta editarlas.
+- Datasets: rutas VRS (mensual, sin días de operación ni horarios: una ruta que vuela dos veces por semana parece diaria), aeropuertos OurAirports (semestral), eventos Wikidata (mensual). Feriados vienen en vivo (Nager.Date).
+
+**Acciones del proceso que no cambiaban la salida** (y qué se hizo):
+- **Robustez** (puesto mín–máx moviendo cada factor ±20 %): diez rankings por consulta y ya no se mostraba desde que la tabla pasó a columnas. Retirada (`posicionMin/Max` = posición; `robustezVariacion` fuera de config).
+- **Fase 3 (gaps)** se calculaba en cada `/rutas` y sólo la usan `/espacio` y las combinaciones de la Fase 6. Ahora `/rutas` explora sin gaps.
+- **Empates** (≈): se calculan y no se muestran; son baratos y quedan en la API por si vuelven a la tabla.
+- **Fase 6 (combinaciones × ventana)** y el calendario de ventanas verdes: sólo en el desplegable "espacio de búsqueda" y en `/espacio`; no intervienen en el orden de Rutas.
+- **Rutas Nivel 3–4** (`descartadas`): se generan y sólo sirven a los gaps; no entran al ranking.
+- `pnpm tendencia` (Google Flights): sólo produce un aviso del par, no reordena.
+- **Equipaje** sólo cambia el factor low cost: en rutas sin low cost el orden es idéntico con mano o valija.
+- `factorRestriccionVia`: sólo actúa si la escala está en `restriccionesVia` (hubs de EE.UU.); para Sudamérica→Europa casi nunca.
+- Tiempo de `/rutas` ASU→MAD: ~1,6 s antes, ~1,35 s después de retirar robustez y gaps. El grueso sigue siendo la Fase 2 (2.500 rutas de un boleto + 590 separadas sobre 18 × 250 pares) y medir 3.100 rutas; la primera consulta tras arrancar tarda ~5 s por la carga de los datasets.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

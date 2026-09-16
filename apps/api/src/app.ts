@@ -38,8 +38,9 @@ export const crearApp = (op: OpcionesApp) => {
         fechaIda: r.fechaIda,
         fechaVuelta: r.fechaVuelta,
         equipaje: r.equipaje,
+        orden: r.orden,
         rutas: r.rutas.length,
-        primeras: r.rutas.slice(0, 10).map((x) => ({ posicion: x.posicion, ruta: `${x.origen}→${x.via ? `${x.via}→` : ""}${x.destino}${x.boletos === 2 ? " (2 boletos)" : ""}`, indice: x.indice, presionIda: x.presionIda.presion })),
+        primeras: r.rutas.slice(0, 10).map((x) => ({ posicion: x.posicion, ruta: `${x.origen}→${x.via ? `${x.via}→` : ""}${x.destino}${x.boletos === 2 ? " (2 boletos)" : ""}`, indice: x.indice, presionIda: x.presionIda.presion, aerolineas: [...new Set([...(x.tramoPrevio?.aerolineas ?? []), ...x.aerolineas])] })),
       }),
   });
   rutasEspacio(app, op.espacio, op.feriados);

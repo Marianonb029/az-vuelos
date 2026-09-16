@@ -16,7 +16,8 @@ Historia del producto: `docs/BRIEF.md` (brief original, lectura de precios en si
 | Pestaña | Para qué sirve |
 |---|---|
 | **Rutas** | Origen, destino y fecha → tabla ordenada por índice con km, competencia, aerolíneas por tramo, presión de ida/vuelta y enlaces. Debajo, desplegable con el espacio de búsqueda que hay detrás: cuándo volar (calendario de presión), boletos separados por hub, rutas con boleto único, aeropuertos alternativos y gaps. |
-| **Datos** | Cada variable de la priorización con su fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció; **validación del índice** contra los precios anotados (correlación, acierto top 5, USD por punto) e historial de priorizaciones. |
+| **Tablero** | Resumen de lo buscado (pares, fechas, equipaje, orden) y de lo que salió arriba (hubs, aerolíneas, dos boletos, alternativos, presión), **validación del orden** contra los precios anotados (correlación, acierto top 5) e historial de priorizaciones. |
+| **Datos** | Glosario de cada término de Rutas y la ficha de cada dato: fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. Lo 'aproximado' y 'supuesto' es estático (config) y no se actualiza solo. |
 
 Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y un número de peso en la decisión (1 = lo que más pesa).
 

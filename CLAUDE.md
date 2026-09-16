@@ -6,7 +6,7 @@ Ordena rutas aéreas por chance de tarifa baja **sin leer precios**: índice de 
 
 pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquema)
 
-- `apps/web` — React 18 + Vite + Tailwind v4. Dos pestañas: Rutas y Datos.
+- `apps/web` — React 18 + Vite + Tailwind v4. Tres pestañas: Rutas, Tablero (resumen de búsquedas, validación, historial) y Datos (glosario y ficha de cada dato).
 - `apps/api` — Node 24 + Fastify 5. Cálculo sobre datasets, sin base de datos: `GET /rutas`, `GET /espacio*`, `GET /datos`, `GET /validacion`, `POST/GET /observaciones`, `GET /historial`. Escribe sólo JSON en `data/local/` (observaciones, historial, tendencias). Refresco automático diario de fuentes vencidas.
 - `packages/core` — primitivos Zod, catálogos IATA, fechas, esquema de fuentes de datos y enlaces a metabuscadores (sólo URLs).
 - `packages/espacio` — motor (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas vigentes, gaps, calendario con señales de demanda, combinaciones y Fase 7 (índice por ruta). Sin I/O.

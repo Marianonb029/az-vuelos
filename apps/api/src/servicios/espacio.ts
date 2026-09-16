@@ -86,14 +86,16 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const aeropuerto = (iata: string) => aeropuertos.find((a) => a.iata === iata);
   const noEsta = (iata: string) => `El aeropuerto ${iata} no está en el dataset de OurAirports (grandes y medianos con IATA)`;
 
-  const explorar = (origen: string, destino: string): ResultadoServicioEspacio => {
+  // `conGaps: false` para la priorización: la Fase 3 (gaps) sólo alimenta /espacio y las combinaciones de la
+  // Fase 6; calcularla en cada /rutas no cambiaba la lista.
+  const explorar = (origen: string, destino: string, conGaps = true): ResultadoServicioEspacio => {
     const o = expandirAeropuertos(origen, "origen", aeropuertos, grafo, config.fase1);
     if (!o.ok) return o;
     const d = expandirAeropuertos(destino, "destino", aeropuertos, grafo, config.fase1);
     if (!d.ok) return d;
     const generadas = generarRutas(o.candidatos, d.candidatos, grafo, config.fase2, config.hubs);
     const separadas = generarSplitTickets(o.candidatos, d.candidatos, grafo, config);
-    const gaps = analizarGaps({ origenes: o.candidatos, destinos: d.candidatos, ...generadas, nombres }, grafo, config);
+    const gaps = conGaps ? analizarGaps({ origenes: o.candidatos, destinos: d.candidatos, ...generadas, nombres }, grafo, config) : [];
     const mencionadas = new Set([...generadas.conservadas, ...generadas.descartadas, ...separadas].flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? [])]));
     return {
       ok: true,
@@ -149,7 +151,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
 
   const priorizar = (pedido: PedidoRutas, feriados: readonly Feriado[], avisos: readonly string[]): ResultadoServicioRutas => {
     const { origen, destino, fechaIda, fechaVuelta, equipaje, orden } = pedido;
-    const e = explorar(origen, destino);
+    const e = explorar(origen, destino, false);
     if (!e.ok) return e;
     const destinoGeo = aeropuerto(destino);
     const origenGeo = aeropuerto(origen);
@@ -208,7 +210,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
       return { ok: true, resultado: { calculadoEn: new Date().toISOString(), espacio: e.resultado, calendario: c.resultado, combinaciones: x.resultado } };
     },
     paisesDelEspacio: (origen, destino) => {
-      const e = explorar(origen, destino);
+      const e = explorar(origen, destino, false);
       if (!e.ok) return null;
       const escalas = [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas].flatMap((r) => [r.via, r.tramoPrevio?.hub ?? null]).filter((x): x is string => x !== null);
       return [...new Set([...[...e.resultado.origenes, ...e.resultado.destinos].map((c) => c.aeropuerto.pais), ...escalas.map((x) => aeropuerto(x)?.pais).filter((x): x is string => x !== undefined)])];

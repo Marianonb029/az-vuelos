@@ -11,8 +11,17 @@ export const EntradaHistorial = z.object({
   fechaIda: FechaIso,
   fechaVuelta: FechaIso.nullable(),
   equipaje: z.enum(["mano", "valija"]),
+  orden: z.enum(["indice", "cercania"]).default("indice"),
   rutas: z.number().int().min(0),
-  primeras: z.array(z.object({ posicion: z.number().int().min(1), ruta: z.string().min(1), indice: z.number().min(0), presionIda: z.number() })),
+  primeras: z.array(
+    z.object({
+      posicion: z.number().int().min(1),
+      ruta: z.string().min(1), // "ASU→GRU→MAD (2 boletos)"
+      indice: z.number().min(0),
+      presionIda: z.number(),
+      aerolineas: z.array(z.string()).default([]), // las que venden (Buscar en), para el tablero
+    }),
+  ),
 });
 
 export type EntradaHistorial = z.infer<typeof EntradaHistorial>;

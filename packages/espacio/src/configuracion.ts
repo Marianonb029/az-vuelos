@@ -143,7 +143,6 @@ export const ConfigEspacio = z.object({
       regionesMercado: z.array(z.string().min(1)).min(1), // regiones (de `regiones`) que definen "el mismo continente"
     }),
     empateTolerancia: z.number().min(0), // filas cuyo índice difiere menos que esto se muestran como empate
-    robustezVariacion: z.number().min(0), // ±variación de cada factor para la posición mín/máx
     maxRutas: z.number().int().positive(),
     nota: z.string(),
   }),

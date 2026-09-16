@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { RutasPriorizadas } from "./componentes/RutasPriorizadas";
+import { Tablero } from "./componentes/Tablero";
 import { TableroDatos } from "./componentes/TableroDatos";
 import { aeropuertos } from "./lib/catalogos";
 import { hoyIso } from "./lib/hoy";
 
-type Pestana = "rutas" | "datos";
+type Pestana = "rutas" | "tablero" | "datos";
 
 const PESTANAS: { id: Pestana; titulo: string; para: string }[] = [
   { id: "rutas", titulo: "Rutas", para: "Rutas ordenadas por chance de tarifa baja para una fecha, con enlaces a los metabuscadores" },
-  { id: "datos", titulo: "Datos", para: "De dónde sale cada variable, cuándo se actualizó y qué exactitud tiene" },
+  { id: "tablero", titulo: "Tablero", para: "Resumen de lo que se buscó y de lo que salió arriba, y validación del orden contra precios vistos" },
+  { id: "datos", titulo: "Datos", para: "Glosario de lo que se ve en Rutas y ficha de cada dato: fuente, última actualización y exactitud" },
 ];
 
-// Dos pestañas: la salida (Rutas) y la trazabilidad de sus datos (Datos). Nada lee precios (DECISIONES 9.3).
+// Tres pestañas: la salida (Rutas), el resumen de búsquedas y resultados (Tablero) y el glosario con la ficha de cada dato (Datos). Nada lee precios (DECISIONES 9.3).
 export const App = () => {
   const [pestana, setPestana] = useState<Pestana>("rutas");
 
@@ -38,6 +40,9 @@ export const App = () => {
 
       <section aria-label="Rutas priorizadas" hidden={pestana !== "rutas"}>
         <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} />
+      </section>
+      <section aria-label="Tablero" hidden={pestana !== "tablero"}>
+        <Tablero visible={pestana === "tablero"} />
       </section>
       <section aria-label="Datos" hidden={pestana !== "datos"}>
         <TableroDatos visible={pestana === "datos"} />

@@ -1219,7 +1219,6 @@
       "regionesMercado": ["europa_toda", "sudamerica", "centroamerica_caribe", "norteamerica", "asia", "medio_oriente", "oceania", "africa"]
     },
     "empateTolerancia": 0.02,
-    "robustezVariacion": 0.2,
     "maxRutas": 150,
     "nota": "Índice de costo estimado, no precio: km equivalentes (tarifa por km decreciente + fijo por boleto + traslado a alternativos, terrestre por km o aéreo con boleto extra por encima de trasladoAereoDesdeKm + tasas de salida por aeropuerto/país en km equivalentes) x competencia efectiva (grupos tarifarios ponderados por frecuencia, tramo más cerrado; tabla interpolada) x bajo costo (según equipaje) x presión (−50…100) x escalas x boletos separados x restricción de vía x anticipación x estadía. Tasas: orden de magnitud público (APD británica larga distancia ~£90–200; tasas de embarque BR/AR/PY) en km equivalentes, revisar anualmente. Menor índice = mayor chance de tarifa baja."
   }

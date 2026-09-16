@@ -1,4 +1,3 @@
-import type { ConfigEspacio } from "./configuracion";
 import { factorCompetencia, factorPorDias, kmEquivalentes, medirRuta } from "./fase7-indice";
 import type { ConfigFase7, EntradaFase7, MedidaRuta } from "./fase7-indice";
 import type { OrdenRutas, PasoOperacion, RutaPriorizada } from "./modelos";
@@ -105,22 +104,6 @@ const tramosTotalesDe = (m: MedidaRuta, idx: Indice) => m.tramos.length + (idx.t
 
 const candidata = (m: MedidaRuta, idx: Indice): Candidata => ({ clave: claveDe(m), indice: idx.indice, km: m.distanciaKm, origen: m.ruta.origen, tramos: tramosTotalesDe(m, idx), trasladoOrigen: m.trasladoOrigenKm, trasladoDestino: m.trasladoDestinoKm, aerolineas: m.competenciaTotal });
 
-// Variantes de config para la robustez: cada factor ±variación; la posición mín/máx de cada ruta entre ellas.
-const variantes = (cfg: ConfigFase7): ConfigFase7[] => {
-  const v = cfg.fase7.robustezVariacion;
-  const escalar = (tabla: Record<string, number>, k: number) => Object.fromEntries(Object.entries(tabla).map(([c, f]) => [c, 1 - (1 - f) * k]));
-  const con = (fase7: Partial<ConfigEspacio["fase7"]>): ConfigFase7 => ({ ...cfg, fase7: { ...cfg.fase7, ...fase7 } });
-  const salida: ConfigFase7[] = [];
-  for (const k of [1 - v, 1 + v]) {
-    salida.push(con({ pesoKmTraslado: cfg.fase7.pesoKmTraslado * k }));
-    salida.push(con({ factorPresionMaxima: cfg.fase7.factorPresionMaxima * k }));
-    salida.push(con({ factorPorEscala: cfg.fase7.factorPorEscala * k, factorBoletosSeparados: 1 + (cfg.fase7.factorBoletosSeparados - 1) * k }));
-    salida.push(con({ kmEquivalentes: { ...cfg.fase7.kmEquivalentes, fijoPorBoleto: cfg.fase7.kmEquivalentes.fijoPorBoleto * k } }));
-    salida.push(con({ factorCompetencia: escalar(cfg.fase7.factorCompetencia, k), factorBajoCosto: 1 - (1 - cfg.fase7.factorBajoCosto) * k, factorConector: 1 - (1 - cfg.fase7.factorConector) * k }));
-  }
-  return salida;
-};
-
 export interface ResultadoPriorizacion {
   rutas: RutaPriorizada[];
   operaciones: PasoOperacion[]; // embudo desde las rutas recibidas hasta la lista, con motivo de cada recorte
@@ -166,18 +149,8 @@ export const priorizarConDetalle = (entrada: EntradaFase7, cfg: ConfigFase7): Re
   operaciones.push({ paso: "recortadas por tope", cantidad: Math.max(0, medidas.length - elegidas.size), detalle: `quedan las ${cfg.fase7.maxRutas} de menor índice (fase7.maxRutas) más todas las que van del origen pedido al destino pedido (${pedidas.size}); el orden elegido se aplica sobre ésas` });
   medidas = medidas.filter((m) => elegidas.has(claveDe(m)));
   const orden = ordenar(candidatas.filter((c) => elegidas.has(c.clave)), entrada.orden);
-  const posicionBase = new Map(orden.map((x, i) => [x.clave, i + 1]));
-
-  // Robustez: posición mínima y máxima de cada ruta cuando cada factor se mueve ±variación.
-  const posMin = new Map(posicionBase);
-  const posMax = new Map(posicionBase);
-  for (const variante of variantes(cfg)) {
-    const ordenV = ordenar(medidas.map((m) => candidata(m, calcularIndice(m, entrada, variante))), entrada.orden);
-    ordenV.forEach((x, i) => {
-      posMin.set(x.clave, Math.min(posMin.get(x.clave) ?? i + 1, i + 1));
-      posMax.set(x.clave, Math.max(posMax.get(x.clave) ?? i + 1, i + 1));
-    });
-  }
+  // Robustez (puesto mín–máx al mover cada factor ±20 %): retirada en la Fase 12.2. Costaba diez rankings por
+  // consulta y dejó de mostrarse cuando la tabla pasó a una columna por variable; posicionMin/Max = posicion.
 
   // Empates: filas consecutivas cuyo índice no supera al primero del grupo en más de la tolerancia.
   const porClave = new Map(medidas.map((m) => [claveDe(m), m]));
@@ -224,8 +197,8 @@ export const priorizarConDetalle = (entrada: EntradaFase7, cfg: ConfigFase7): Re
       fundamento: idx.fundamento,
       familia: familiaDe(m),
       empate: grupo,
-      posicionMin: posMin.get(x.clave) ?? salida.length + 1,
-      posicionMax: posMax.get(x.clave) ?? salida.length + 1,
+      posicionMin: salida.length + 1,
+      posicionMax: salida.length + 1,
       enlaces: [],
     });
   }
