@@ -32,7 +32,7 @@ Requisitos: Node ≥ 22 y pnpm ≥ 10. Chrome sólo para `pnpm tendencia`.
 
 ## Reglas innegociables
 
-1. Nada se presenta como precio: la salida es un **índice de costo estimado** marcado como tal, con su cuenta a la vista en `fundamento` y `desglose`.
+1. Nada se presenta como precio ni como número resumen: la salida es una columna por variable en criollo; el **índice de costo estimado** ordena y queda a la vista en `fundamento` y `desglose` ("La cuenta"), nunca como cifra en la tabla.
 2. Toda variable declara su fuente, última actualización y exactitud (`GET /datos`); lo aproximado y lo supuesto se dice.
 3. No se lee ningún sitio de terceros desde la app: los enlaces a metabuscadores son sólo URLs. La única lectura es `pnpm tendencia` (Google Flights, a pedido, sin aceptar consentimiento).
 4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en tests.

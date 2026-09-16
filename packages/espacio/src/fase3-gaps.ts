@@ -121,11 +121,13 @@ export const analizarGaps = (entrada: EntradaFase3, grafo: Grafo, cfg: ConfigFas
     const setA = operadorasEn(grafo, origen);
     // Set B por origen: que TP cubra POA→LIS no la saca del gap de ASU (ahí sigue necesitando feeder a GRU).
     const cubiertas = new Set(conservadas.filter((r) => r.origen === origen).flatMap((r) => r.aerolineas));
+    const cubiertaEn = (aerolinea: string, aeropuerto: string) => conservadas.some((r) => r.origen === aeropuerto && r.aerolineas.includes(aerolinea));
     for (const regla of cfg.hubs) {
       for (const aerolinea of regla.aerolineas) {
         if (cubiertas.has(aerolinea) || gaps.has(aerolinea)) continue;
-        const operaEn = alcanceDeRegla(regla, aerolinea, origen, grafo, setA);
-        if (operaEn) gaps.set(aerolinea, gapPorRegla(regla, aerolinea, origen, operaEn, destinoSolicitado, cfg, nombres, grafo));
+        // Sólo cuenta como gap en los orígenes donde todavía no vende una ruta Nivel 1–2.
+        const operaEn = alcanceDeRegla(regla, aerolinea, origen, grafo, setA)?.filter((a) => !cubiertaEn(aerolinea, a));
+        if (operaEn && operaEn.length > 0) gaps.set(aerolinea, gapPorRegla(regla, aerolinea, origen, operaEn, destinoSolicitado, cfg, nombres, grafo));
       }
     }
     for (const aerolinea of setA) {

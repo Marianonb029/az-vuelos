@@ -85,7 +85,6 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
   const bajoCosto = new Set(resultado?.aerolineasBajoCosto ?? []);
   const filas = resultado ? (todas ? resultado.rutas.map((r) => ({ r, variantes: 0 })) : agrupar(resultado.rutas, familiasAbiertas)) : [];
-  const empates = new Set(resultado ? resultado.rutas.filter((r) => resultado.rutas.filter((x) => x.empate === r.empate).length > 1).map((r) => r.empate) : []);
 
   // El detalle del espacio de búsqueda (alternativos, rutas, separados, gaps) se pide sólo si se abre.
   const abrirEspacio = async (e: { currentTarget: HTMLDetailsElement }) => {
@@ -116,7 +115,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
             <Toggle id="r-equipaje" valor={equipaje} opciones={[{ valor: "mano", etiqueta: "Sólo mano" }, { valor: "valija", etiqueta: "Con valija" }]} onCambio={setEquipaje} />
           </Campo>
           <Campo id="r-orden" etiqueta="Ordenar por">
-            <Toggle id="r-orden" valor={orden} opciones={[{ valor: "indice", etiqueta: "Índice de costo" }, { valor: "tramos", etiqueta: "Menos tramos y más cerca" }]} onCambio={setOrden} />
+            <Toggle id="r-orden" valor={orden} opciones={[{ valor: "indice", etiqueta: "Chance de tarifa baja" }, { valor: "cercania", etiqueta: "Cercanía y competencia" }]} onCambio={setOrden} />
           </Campo>
           <Campo id="r-ida" etiqueta="Fecha de ida" error={errores.ida}>
             <input id="r-ida" type="date" value={fechaIda} min={hoy} onChange={(e) => setFechaIda(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" />
@@ -139,8 +138,8 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
       {resultado && (
         <Bloque
           orden={1}
-          titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}${resultado.equipaje === "valija" ? ", con valija" : ""}${resultado.orden === "tramos" ? " · menos tramos y más cerca primero" : ""}`}
-          objetivo={`${resultado.orden === "tramos" ? "Orden por simplicidad: primero menos tramos (vuelos más el traslado si es otro vuelo), entre iguales el aeropuerto más cercano al pedido, y recién después el índice. " : ""}No es un precio: es un índice de costo estimado (menor = más barato) que combina km volados, tasas, competencia efectiva (grupos tarifarios y frecuencia en el tramo más cerrado), presión de la fecha, escalas, anticipación y estadía. Las filas marcadas ≈ empatan (menos de 2 % de diferencia); el rango bajo el puesto dice cuánto se movería si los factores cambiaran ±20 %. Con 'Ver' podés anotar el precio que viste para medir si el orden acierta.`}
+          titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}${resultado.equipaje === "valija" ? ", con valija" : ""}${resultado.orden === "cercania" ? " · por cercanía y competencia" : ""}`}
+          objetivo={`${resultado.orden === "cercania" ? "Orden por cercanía: primero el origen pedido con el destino pedido, después los destinos alternativos por distancia, después el siguiente origen más cercano; entre iguales, más aerolíneas en la ruta (más competencia) y menos tramos. " : "Orden por chance de tarifa baja: km volados, tasas, competencia por tramo y corredor, perfil de la aerolínea, presión de la fecha, escalas, anticipación y estadía, todo junto. "}No se muestra ningún precio ni número resumen: cada columna cuenta cómo está esa variable en esa ruta, y con eso se decide dónde buscar. Con 'Ver' está la cuenta completa y podés anotar el precio que viste para medir si el orden acierta.`}
         >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
@@ -156,16 +155,17 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
             </button>
           </p>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="min-w-[96rem] w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="py-1 pr-2">#</th>
-                  <th className="py-1 pr-3">Ruta</th>
-                  <th className="py-1 pr-3">km volados</th>
-                  <th className="py-1 pr-3">Competencia</th>
-                  <th className="py-1 pr-3">Aerolíneas que operan cada tramo (lc = bajo costo)</th>
-                  <th className="py-1 pr-3">Presión</th>
-                  <th className="py-1 pr-3">Índice</th>
+                  <th className="py-1 pr-3">Ruta y dónde buscar</th>
+                  <th className="py-1 pr-3">Compras y escalas</th>
+                  <th className="py-1 pr-3">Competencia (aerolíneas por tramo, lc = bajo costo)</th>
+                  <th className="py-1 pr-3">Distancia y traslado</th>
+                  <th className="py-1 pr-3">Tarifa de la aerolínea</th>
+                  <th className="py-1 pr-3">Fecha</th>
+                  <th className="py-1 pr-3">Anticipación y estadía</th>
                   <th className="py-1" />
                 </tr>
               </thead>
@@ -179,9 +179,31 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                     bajoCosto={bajoCosto}
                     variantes={variantes}
                     onVerFamilia={variantes > 0 ? () => setFamiliasAbiertas((s) => new Set([...s, r.familia])) : null}
-                    empate={empates.has(r.empate) ? r.empate : null}
-                    mejorIndice={resultado.rutas[0]?.indice ?? 0}
                   />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Bloque>
+      )}
+      {resultado && (
+        <Bloque orden={2} titulo="Cómo se armó la lista: qué entró, qué se descartó y por qué" objetivo="Cada recorte con su cantidad y su criterio, para ver que no se pierdan rutas por una regla mal puesta. Los criterios viven en config/espacio.json.">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm" data-testid="operaciones">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="py-1 pr-3">Paso</th>
+                  <th className="py-1 pr-3 text-right">Rutas</th>
+                  <th className="py-1">Criterio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {resultado.operaciones.map((o) => (
+                  <tr key={o.paso} className="border-b border-slate-100 align-top">
+                    <td className="py-1 pr-3 font-medium text-slate-900">{o.paso}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums">{o.cantidad.toLocaleString("es")}</td>
+                    <td className="py-1 text-xs text-slate-600">{o.detalle}</td>
+                  </tr>
                 ))}
               </tbody>
             </table>

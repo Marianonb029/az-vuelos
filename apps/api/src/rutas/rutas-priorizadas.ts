@@ -24,7 +24,9 @@ const aniosDe = (fechas: readonly string[]) => [...new Set(fechas.map((f) => Num
 // Enlaces de búsqueda en cada metabuscador para la ruta (boleto único) o para cada boleto (separados).
 // Sólo se arma la URL: no se abre ningún sitio ni se lee ningún precio.
 const enlacesDe = (r: RutaPriorizada, fechaIda: string, fechaVuelta: string | null): EnlaceMetabuscador[] => {
-  const boletos = r.tramoPrevio === null ? [{ origen: r.origen, destino: r.destino }] : [{ origen: r.origen, destino: r.tramoPrevio.hub }, { origen: r.tramoPrevio.hub, destino: r.destino }];
+  const principales = r.tramoPrevio === null ? [{ origen: r.origen, destino: r.destino }] : [{ origen: r.origen, destino: r.tramoPrevio.hub }, { origen: r.tramoPrevio.hub, destino: r.destino }];
+  const traslados = r.tramos.filter((t) => t.traslado).map((t) => ({ origen: t.origen, destino: t.destino }));
+  const boletos = [...traslados.filter((t) => t.destino === r.origen), ...principales, ...traslados.filter((t) => t.origen === r.destino)];
   return boletos.flatMap((b) => METABUSCADORES.map((m) => ({ id: m.id, nombre: m.nombre, tramo: `${b.origen}→${b.destino}`, url: m.url({ origenIata: b.origen, destinoIata: b.destino, fechaIda, fechaVuelta }) })));
 };
 

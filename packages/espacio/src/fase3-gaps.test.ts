@@ -36,7 +36,7 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(new Set(gaps.map((g) => g.aerolinea)).size).toBe(gaps.length);
   });
 
-  it("Gap 1 contiene Turkish, Ethiopian y Swiss (BA y EK ya venden desde EZE en un boleto Nivel 1–2: son rutas, no gaps)", () => {
+  it("Gap 1 se reduce a Turkish desde SCL: con GRU/GIG entre los orígenes (Fase 12), ET, LX, TP, BA y EK venden en un boleto y son rutas, no gaps", () => {
     for (const iata of seed.esperado.gap1EZE) expect(porIata.get(iata)?.rol).toBe("gap_origen");
   });
 
@@ -59,12 +59,14 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(tk?.nombre).toBe("Turkish Airlines");
   });
 
-  it("ET y LX llegan vía GRU con boleto único; EK no es gap porque vende EZE→DWC→Europa en un boleto", () => {
-    expect(porIata.get("ET")?.operaEn).toEqual(["GRU"]);
-    expect(porIata.get("ET")?.hipotesis).toContain("EZE→GRU→ADD");
-    expect(porIata.get("ET")?.requiereBoletosSeparados).toBe(false);
-    expect(porIata.get("LX")?.operaEn).toEqual(["GRU"]);
-    expect(porIata.get("EK")).toBeUndefined();
+  it("ET, LX y TP dejan de ser gaps: GRU es origen candidato y desde ahí venden Europa en un boleto (el traslado EZE→GRU se mide como tramo)", () => {
+    expect(origenes.some((o) => o.aeropuerto.iata === "GRU")).toBe(true);
+    expect(porIata.has("ET")).toBe(false);
+    expect(porIata.has("LX")).toBe(false);
+    expect(porIata.has("TP")).toBe(false);
+    expect(conservadas.some((r) => r.origen === "GRU" && r.via === "ZRH" && r.destino === "MAD" && r.aerolineas.includes("LX"))).toBe(true);
+    expect(conservadas.some((r) => r.origen === "GRU" && r.via === "LIS" && r.destino === "MAD" && r.aerolineas.includes("TP"))).toBe(true);
+    expect(porIata.get("EK")?.operaEn ?? []).not.toContain("EZE");
     expect(conservadas.some((r) => r.origen === "EZE" && r.aerolineas.includes("EK"))).toBe(true);
   });
 
@@ -107,13 +109,13 @@ describe("Fase 3 — analizarGaps (datasets reales, EZE→MAD)", () => {
     expect(porIata.get("U2")?.nombre).toBe("easyJet");
   });
 
-  it("ASU→MAD: TAP entra como gap con feeder a GRU y boletos separados aunque cubra POA→LIS", () => {
+  it("ASU→MAD: TAP ya no es gap sino ruta GRU→LIS→MAD (y GIG, CNF) con traslado desde ASU; sólo queda como gap medio desde CWB", () => {
     const origenesAsu = candidatos("ASU", "origen");
     const rutasAsu = generarRutas(origenesAsu, destinos, grafo, cfg.fase2, cfg.hubs);
-    expect(rutasAsu.conservadas.some((r) => r.origen === "POA" && r.destino === "LIS" && r.aerolineas.includes("TP"))).toBe(true);
+    expect(origenesAsu.map((o) => o.aeropuerto.iata)).toEqual(expect.arrayContaining(["GRU", "GIG", "SCL"]));
+    expect(rutasAsu.conservadas.some((r) => r.origen === "GRU" && r.via === "LIS" && r.destino === "MAD" && r.aerolineas.includes("TP") && r.nivel === 1)).toBe(true);
     const tp = analizarGaps({ origenes: origenesAsu, destinos, ...rutasAsu, nombres }, grafo, cfg).find((g) => g.aerolinea === "TP");
-    expect(tp).toMatchObject({ rol: "gap_origen", operaEn: ["GRU", "GIG"], hub: "LIS", prioridad: "alta", requiereBoletosSeparados: true, estado: "pendiente", cubreRutasObjetivo: true });
-    expect(tp?.hipotesis).toContain("ASU→GRU/GIG (boleto aparte con G3/LA)→LIS→destino");
+    expect(tp?.operaEn ?? []).not.toContain("GRU");
   });
 
   it("ordena: gaps de origen antes que feeders, por prioridad y luego por código", () => {

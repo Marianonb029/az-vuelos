@@ -15,7 +15,7 @@ import {
   generarCombinaciones,
   generarRutas,
   generarSplitTickets,
-  priorizarRutas,
+  priorizarConDetalle,
   puntuarDia,
   ventanasVerdes,
 } from "@az/espacio";
@@ -67,7 +67,11 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const fuente = (f: Omit<FuenteDato, "vencida">): FuenteDato => ({ ...f, vencida: f.actualizadoEn !== null && f.cadenciaDias !== null && dias(f.actualizadoEn) > f.cadenciaDias });
   const fuentes = (): FuenteDato[] => [
     fuente({ variable: "Distancia en km", fuente: "OurAirports (coordenadas de aeropuertos)", actualizadoEn: meta.descargadoEn, exactitud: "exacta", detalle: "Ortodrómica por tramo; el traslado a aeropuertos alternativos se pesa aparte", cadenciaDias: 180, comando: "pnpm catalogos" }),
-    fuente({ variable: "Competencia: aerolíneas por tramo", fuente: "Virtual Radar Server standing data (CC0, diario)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `${meta.rutas.registros} rutas por número de vuelo; sin horarios ni fecha de última observación (pueden quedar números discontinuados)`, cadenciaDias: 30, comando: "pnpm catalogos" }),
+    fuente({ variable: "Competencia: aerolíneas por tramo", fuente: "Virtual Radar Server standing data (CC0, diario)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `${meta.rutas.registros} rutas por número de vuelo; sin horarios ni fecha de última observación (pueden quedar números discontinuados); ${configBase.grafo.aerolineasExcluidas.length} códigos excluidos (cargueras y desaparecidas); grupos tarifarios que cuentan como uno: ${Object.keys(configBase.grafo.gruposTarifarios).join(", ")}`, cadenciaDias: 30, comando: "pnpm catalogos" }),
+    fuente({ variable: "Competencia de corredor (largo radio)", fuente: "Calculado sobre VRS: grupos que vuelan del origen del tramo al mismo continente", actualizadoEn: meta.descargadoEn, exactitud: "aproximada", detalle: `Tramos de ${configBase.fase7.competencia.largoRadioDesdeKm} km o más: se venden contra todo lo que sale de ese aeropuerto al continente del destino (regiones ${configBase.fase7.competencia.regionesMercado.join(", ")}); el factor por tramo se pondera por km`, cadenciaDias: 30, comando: "pnpm catalogos" }),
+    fuente({ variable: "Perfil de aerolínea (low cost, hub conector)", fuente: "config/espacio.json → fase6.aerolineasPerfilBajoCosto / aerolineasPerfilConector", actualizadoEn: null, exactitud: "supuesto", detalle: `Low cost (${configBase.fase6.aerolineasPerfilBajoCosto.join(", ")}): ventaja con sólo mano, ninguna con valija. Hub conector (${configBase.fase6.aerolineasPerfilConector.join(", ")}): venden el largo radio por debajo del directo para llenar el hub`, cadenciaDias: 365, comando: null }),
+    fuente({ variable: "Aeropuertos alternativos", fuente: "OurAirports + VRS (salidas semanales proxy)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `Hasta ${configBase.fase1.radioOrigenKm} km del pedido, medianos o grandes, con vuelos internacionales y ≥${configBase.fase1.minSalidasSemanales} salidas semanales; los ${configBase.fase1.hubsAsegurados} con más salidas entran siempre y el resto por distancia hasta ${configBase.fase1.maxCandidatosOrigen} orígenes; un alternativo a más de ${configBase.fase7.trasladoAereoDesdeKm} km sólo cuenta si hay vuelo de pasajeros desde el pedido, y ese vuelo se mide como tramo aparte`, cadenciaDias: 30, comando: "pnpm catalogos" }),
+    fuente({ variable: "Tasas de salida internacional", fuente: "config/espacio.json → fase7.tasasAeropuerto / tasasPais", actualizadoEn: null, exactitud: "aproximada", detalle: "Orden de magnitud público en km equivalentes; sólo en tramos internacionales (las domésticas van dentro de la tarifa); revisar anualmente", cadenciaDias: 365, comando: null }),
     fuente({ variable: "Feriados y fines de semana largos", fuente: "Nager.Date (feriados nacionales)", actualizadoEn: null, exactitud: "exacta", detalle: "Se consulta en vivo por país y año en cada priorización; el fin de semana largo y el día de regreso se calculan", cadenciaDias: null, comando: null }),
     fuente({ variable: "Semana Santa y día de la semana", fuente: "Calculado (algoritmo de Pascua, calendario)", actualizadoEn: null, exactitud: "exacta", detalle: "Sin hora del día: el dataset no distingue viernes por la tarde de viernes por la mañana", cadenciaDias: null, comando: null }),
     fuente({ variable: "Eventos masivos", fuente: eventosDataset?.fuente ?? "sólo config/espacio.json", actualizadoEn: eventosDataset?.actualizadoEn ?? null, exactitud: "vigente", detalle: eventosDataset ? `${eventosDataset.eventos.length} eventos con fecha exacta entre ${eventosDataset.ventana.desde} y ${eventosDataset.ventana.hasta}, más ${configBase.fase5.eventos.length} de config; sólo los que tienen ítem en Wikidata con fecha y país` : `${configBase.fase5.eventos.length} eventos cargados a mano`, cadenciaDias: 30, comando: "pnpm eventos" }),
@@ -160,13 +164,22 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
       const a = aeropuerto(d);
       return a ? puntuarDia(fechaVuelta, { desde: fechaVuelta, hasta: fechaVuelta, origen: a, destino: origenGeo, feriados, sentido: "vuelta" }, config) : null;
     };
-    const lista = priorizarRutas({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, hoy: ahora().toISOString().slice(0, 10), fechaIda, fechaVuelta, equipaje, orden, presionIda, presionVuelta }, config);
+    const { rutas: lista, operaciones: embudo } = priorizarConDetalle({ solicitado: { origen, destino }, rutas: [...e.resultado.rutas.conservadas, ...e.resultado.rutas.separadas], grafo, hoy: ahora().toISOString().slice(0, 10), fechaIda, fechaVuelta, equipaje, orden, presionIda, presionVuelta }, config);
+    const r2 = e.resultado.rutas;
+    const operaciones = [
+      { paso: "orígenes candidatos", cantidad: e.resultado.origenes.length, detalle: `${e.resultado.origenes.map((o) => o.aeropuerto.iata).join(", ")} — a menos de ${config.fase1.radioOrigenKm} km, con vuelos internacionales y ≥${config.fase1.minSalidasSemanales} salidas semanales; los ${config.fase1.hubsAsegurados} con más salidas entran siempre, el resto por distancia hasta ${config.fase1.maxCandidatosOrigen}` },
+      { paso: "destinos candidatos", cantidad: e.resultado.destinos.length, detalle: `a menos de ${config.fase1.radioDestinoKm} km de ${destino}, hasta ${config.fase1.maxCandidatosDestino}` },
+      { paso: "rutas de un boleto (Nivel 1–2)", cantidad: r2.conservadas.length, detalle: "directas y con una escala vendidas por una misma aerolínea, con frecuencia proxy ≥ 7 vuelos semanales" },
+      { paso: "descartadas por nivel", cantidad: r2.descartadas.length, detalle: "Nivel 3–4 (menos de 7 vuelos semanales proxy): no entran al ranking; la Fase 3 las usa para proponer gaps" },
+      { paso: "boletos separados", cantidad: r2.separadas.length, detalle: `origen→hub con una aerolínea y hub→destino con otra, hubs de config (${config.split.hubs.join(", ")}), hasta ${config.split.maxHubsPorPar} por par` },
+      ...embudo,
+    ];
     const vencidas = fuentes().filter((f) => f.vencida).map((f) => `${f.variable}: datos de ${f.actualizadoEn?.slice(0, 10) ?? "?"}, más de ${f.cadenciaDias} días; corré \`${f.comando}\``);
     const fueraDeVentana = eventosDataset !== null && (fechaVuelta ?? fechaIda) > eventosDataset.ventana.hasta ? [`Eventos masivos: el dataset llega hasta ${eventosDataset.ventana.hasta}; para esa fecha no hay eventos cargados`] : [];
     const mencionadas = new Set(lista.flatMap((r) => [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? []), ...r.tramos.flatMap((t) => t.aerolineas)]));
     return {
       ok: true,
-      resultado: { origen, destino, fechaIda, fechaVuelta, equipaje, orden, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, avisos: [...avisos, ...vencidas, ...fueraDeVentana] },
+      resultado: { origen, destino, fechaIda, fechaVuelta, equipaje, orden, calculadoEn: new Date().toISOString(), rutas: lista, nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })), aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, avisos: [...avisos, ...vencidas, ...fueraDeVentana], operaciones },
     };
   };
 

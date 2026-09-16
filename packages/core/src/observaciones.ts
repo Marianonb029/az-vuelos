@@ -83,7 +83,10 @@ const rutaTexto = (o: Observacion) => `${o.rutaOrigen}→${o.rutaVia ? `${o.ruta
 export const validar = (observaciones: readonly Observacion[]): ResultadoValidacion => {
   const porConsulta = new Map<string, Observacion[]>();
   for (const o of observaciones) porConsulta.set(claveConsulta(o), [...(porConsulta.get(claveConsulta(o)) ?? []), o]);
-  const grupos = [...porConsulta.values()].filter((g) => g.length >= 3);
+  // Por consulta, una observación por ruta (la más barata vista): el índice estima el piso de cada ruta, y varias
+  // tarifas de la misma ruta con el mismo índice no dicen nada del orden entre rutas.
+  const masBarataPorRuta = (g: Observacion[]) => [...new Map([...g].sort((a, b) => b.precioUsd - a.precioUsd).map((o) => [rutaTexto(o), o])).values()];
+  const grupos = [...porConsulta.values()].map(masBarataPorRuta).filter((g) => g.length >= 3);
   const correlaciones = grupos.map((g) => spearman(g.map((o) => o.indice), g.map((o) => o.precioUsd))).filter((c): c is number => c !== null);
   const aciertos = grupos.map((g) => {
     const minima = [...g].sort((a, b) => a.precioUsd - b.precioUsd)[0];

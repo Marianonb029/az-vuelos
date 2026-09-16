@@ -2,7 +2,7 @@ import { diasEntre } from "@az/core";
 import type { ConfigEspacio } from "./configuracion";
 import { distanciaKm } from "./geo";
 import type { Grafo } from "./grafo";
-import type { OrdenRutas, PuntajeDia, Ruta, TramoCompetencia } from "./modelos";
+import type { AeropuertoGeo, OrdenRutas, PuntajeDia, Ruta, TramoCompetencia } from "./modelos";
 
 // Fase 7 (medición): todo lo que se puede medir o inferir de una ruta antes de ponerle índice. Cada
 // cantidad sale de datos públicos (OurAirports, VRS, Nager.Date) o de la config; nada es un precio.
@@ -20,7 +20,7 @@ export interface EntradaFase7 {
   presionVuelta: ((destino: string) => PuntajeDia | null) | null; // null: viaje sólo de ida
 }
 
-export type ConfigFase7 = Pick<ConfigEspacio, "fase7" | "fase6" | "grafo">;
+export type ConfigFase7 = Pick<ConfigEspacio, "fase7" | "fase6" | "grafo" | "regiones">;
 
 export interface MedidaRuta {
   ruta: Ruta;
@@ -34,6 +34,7 @@ export interface MedidaRuta {
   competenciaTotal: number; // aerolíneas distintas en la ruta
   competenciaEfectiva: number; // por grupo tarifario y ponderada por frecuencia, en el tramo más cerrado
   bajoCosto: boolean;
+  conector: boolean;
   restriccion: string | null; // vía con condición para la persona (visa, ESTA…)
   tasasKm: number; // tasas de salida de cada aeropuerto del itinerario, en km equivalentes
   presionIda: PuntajeDia;
@@ -90,6 +91,45 @@ export const competenciaEfectivaDe = (vuelosPorAerolinea: Record<string, number>
   return [...porGrupo.values()].reduce((s, p) => s + p, 0);
 };
 
+// Región de mercado (continente) de un país según `regionesMercado`.
+const regionMercadoDe = (pais: string, cfg: ConfigFase7): string | null => cfg.fase7.competencia.regionesMercado.find((r) => (cfg.regiones[r] ?? []).includes(pais)) ?? null;
+
+// Competencia de corredor de un tramo de largo radio: grupos que vuelan largo radio desde el origen del
+// tramo a cualquier aeropuerto del continente del destino, ponderados por sus números de vuelo.
+export const competenciaCorredorDe = (origen: string, destino: string, grafo: Grafo, cfg: ConfigFase7): number | null => {
+  const a = grafo.aeropuerto(origen);
+  const b = grafo.aeropuerto(destino);
+  if (!a || !b || distanciaKm(a, b) < cfg.fase7.competencia.largoRadioDesdeKm) return null;
+  const region = regionMercadoDe(b.pais, cfg);
+  if (region === null) return null;
+  const vuelos: Record<string, number> = {};
+  for (const arista of grafo.salidasDe(origen)) {
+    const d = grafo.aeropuerto(arista.destino);
+    if (!d || regionMercadoDe(d.pais, cfg) !== region || distanciaKm(a, d) < cfg.fase7.competencia.largoRadioDesdeKm) continue;
+    for (const [iata, n] of Object.entries(arista.vuelosPorAerolinea)) vuelos[iata] = (vuelos[iata] ?? 0) + n;
+  }
+  return Math.round(competenciaEfectivaDe(vuelos, cfg) * 100) / 100;
+};
+
+const tramoDe = (a: AeropuertoGeo, b: AeropuertoGeo, grafo: Grafo, cfg: ConfigFase7, traslado: boolean): TramoCompetencia => {
+  const arista = grafo.arista(a.iata, b.iata);
+  const vuelosPorAerolinea = arista?.vuelosPorAerolinea ?? {};
+  const par = Math.round(competenciaEfectivaDe(vuelosPorAerolinea, cfg) * 100) / 100;
+  const corredor = competenciaCorredorDe(a.iata, b.iata, grafo, cfg);
+  return {
+    origen: a.iata,
+    destino: b.iata,
+    km: Math.round(distanciaKm(a, b)),
+    aerolineas: [...(arista?.aerolineasOperadoras ?? [])].sort(),
+    vuelosPorAerolinea,
+    grupos: [...new Set(Object.keys(vuelosPorAerolinea).map((x) => grupoDe(x, cfg.grafo.gruposTarifarios)))].sort(),
+    competenciaEfectiva: Math.max(par, corredor ?? 0),
+    competenciaPar: par,
+    competenciaCorredor: corredor,
+    traslado,
+  };
+};
+
 const tramosDe = (r: Ruta, grafo: Grafo, cfg: ConfigFase7): TramoCompetencia[] | null => {
   const paradas = [r.origen, ...(r.via === null ? [] : [r.via]), r.destino];
   const tramos: TramoCompetencia[] = [];
@@ -97,20 +137,15 @@ const tramosDe = (r: Ruta, grafo: Grafo, cfg: ConfigFase7): TramoCompetencia[] |
     const a = grafo.aeropuerto(paradas[i] ?? "");
     const b = grafo.aeropuerto(paradas[i + 1] ?? "");
     if (!a || !b) return null;
-    const arista = grafo.arista(a.iata, b.iata);
-    const vuelosPorAerolinea = arista?.vuelosPorAerolinea ?? {};
-    tramos.push({
-      origen: a.iata,
-      destino: b.iata,
-      km: Math.round(distanciaKm(a, b)),
-      aerolineas: [...(arista?.aerolineasOperadoras ?? [])].sort(),
-      vuelosPorAerolinea,
-      grupos: [...new Set(Object.keys(vuelosPorAerolinea).map((x) => grupoDe(x, cfg.grafo.gruposTarifarios)))].sort(),
-      competenciaEfectiva: Math.round(competenciaEfectivaDe(vuelosPorAerolinea, cfg) * 100) / 100,
-    });
+    tramos.push(tramoDe(a, b, grafo, cfg, false));
   }
   return tramos;
 };
+
+// Traslado entre el aeropuerto pedido y el alternativo cuando supera `trasladoAereoDesdeKm` y hay vuelo:
+// es un boleto más, con sus aerolíneas y su competencia; se mide como tramo aparte.
+const tramoTraslado = (desde: AeropuertoGeo, hasta: AeropuertoGeo, grafo: Grafo, cfg: ConfigFase7): TramoCompetencia | null =>
+  desde.iata !== hasta.iata && distanciaKm(desde, hasta) > cfg.fase7.trasladoAereoDesdeKm && grafo.arista(desde.iata, hasta.iata) ? tramoDe(desde, hasta, grafo, cfg, true) : null;
 
 const restriccionDe = (r: Ruta, cfg: ConfigFase7): string | null => {
   const vias = [r.via, r.tramoPrevio?.hub ?? null].filter((v): v is string => v !== null);
@@ -118,30 +153,42 @@ const restriccionDe = (r: Ruta, cfg: ConfigFase7): string | null => {
 };
 
 export const medirRuta = (r: Ruta, entrada: EntradaFase7, cfg: ConfigFase7): MedidaRuta | null => {
-  const tramos = tramosDe(r, entrada.grafo, cfg);
+  const volados = tramosDe(r, entrada.grafo, cfg);
   const o = entrada.grafo.aeropuerto(r.origen);
   const d = entrada.grafo.aeropuerto(r.destino);
   const presionIda = entrada.presionIda(r.origen);
-  if (!tramos || !o || !d || !presionIda) return null;
+  if (!volados || !o || !d || !presionIda) return null;
   const presionVuelta = entrada.presionVuelta === null ? null : entrada.presionVuelta(r.destino);
   if (entrada.presionVuelta !== null && presionVuelta === null) return null;
   const so = entrada.grafo.aeropuerto(entrada.solicitado.origen);
   const sd = entrada.grafo.aeropuerto(entrada.solicitado.destino);
-  const vendedoras = [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? [])];
-  // Tasas de salida: se pagan en cada aeropuerto desde el que se despega (origen y escala).
-  const tasasKm = tramos.map((t) => t.origen).reduce((s, iata) => s + (cfg.fase7.tasasAeropuerto[iata] ?? cfg.fase7.tasasPais[entrada.grafo.aeropuerto(iata)?.pais ?? ""] ?? 0), 0);
+  const trasladoOrigenKm = so && so.iata !== o.iata ? Math.round(distanciaKm(so, o)) : 0;
+  const trasladoDestinoKm = sd && sd.iata !== d.iata ? Math.round(distanciaKm(d, sd)) : 0;
+  const trasladoIda = so ? tramoTraslado(so, o, entrada.grafo, cfg) : null;
+  const trasladoLlegada = sd ? tramoTraslado(d, sd, entrada.grafo, cfg) : null;
+  // Un alternativo a más de `trasladoAereoDesdeKm` sin vuelo de pasajeros desde/hacia el pedido no es alcanzable.
+  if ((trasladoOrigenKm > cfg.fase7.trasladoAereoDesdeKm && !trasladoIda) || (trasladoDestinoKm > cfg.fase7.trasladoAereoDesdeKm && !trasladoLlegada)) return null;
+  const tramos = [...(trasladoIda ? [trasladoIda] : []), ...volados, ...(trasladoLlegada ? [trasladoLlegada] : [])];
+  // Quien vende cada compra: el boleto principal, el previo (split) y el traslado aéreo (cualquiera que lo opere).
+  const vendedoras = [...r.aerolineas, ...(r.tramoPrevio?.aerolineas ?? []), ...tramos.filter((t) => t.traslado).flatMap((t) => t.aerolineas)];
+  const largoRadio = volados.some((t) => t.km >= cfg.fase7.competencia.largoRadioDesdeKm);
+  // Tasas de salida internacional: se pagan en cada aeropuerto desde el que se despega hacia otro país (origen,
+  // escala o traslado aéreo); las tasas domésticas son chicas y van dentro de la tarifa.
+  const internacionales = tramos.filter((t) => entrada.grafo.aeropuerto(t.origen)?.pais !== entrada.grafo.aeropuerto(t.destino)?.pais);
+  const tasasKm = internacionales.map((t) => t.origen).reduce((s, iata) => s + (cfg.fase7.tasasAeropuerto[iata] ?? cfg.fase7.tasasPais[entrada.grafo.aeropuerto(iata)?.pais ?? ""] ?? 0), 0);
   return {
     ruta: r,
     tramos,
-    distanciaKm: tramos.reduce((s, t) => s + t.km, 0),
+    distanciaKm: volados.reduce((s, t) => s + t.km, 0),
     distanciaDirectaKm: Math.round(distanciaKm(o, d)),
-    trasladoOrigenKm: so && so.iata !== o.iata ? Math.round(distanciaKm(so, o)) : 0,
-    trasladoDestinoKm: sd && sd.iata !== d.iata ? Math.round(distanciaKm(d, sd)) : 0,
+    trasladoOrigenKm,
+    trasladoDestinoKm,
     boletos: r.tramoPrevio === null ? 1 : 2,
     competenciaMinima: Math.max(1, Math.min(...tramos.map((t) => t.aerolineas.length))),
     competenciaTotal: Math.max(1, new Set(tramos.flatMap((t) => t.aerolineas)).size),
     competenciaEfectiva: Math.max(cfg.fase7.competencia.pesoMinimoAerolinea, Math.min(...tramos.map((t) => t.competenciaEfectiva))),
     bajoCosto: vendedoras.some((a) => cfg.fase6.aerolineasPerfilBajoCosto.includes(a)),
+    conector: largoRadio && r.aerolineas.some((a) => cfg.fase6.aerolineasPerfilConector.includes(a)),
     restriccion: restriccionDe(r, cfg),
     tasasKm,
     presionIda,

@@ -29,7 +29,7 @@ const agregar = (o: Omit<Observacion, "id" | "registradoEn">) => {
 
 interface Oferta {
   precio: { montoUsd: number };
-  tramos: { origenIata: string; destinoIata: string; viaIatas: string[] }[];
+  tramos: { origenIata: string; destinoIata: string; viaIatas: string[]; escalas: number }[];
   transbordoPorCuentaPropia: boolean;
 }
 interface LecturaMeta {
@@ -46,7 +46,10 @@ for (const fila of db.prepare("SELECT datos FROM lecturas_metabuscador WHERE est
   for (const o of l.ofertas ?? []) {
     const ida = o.tramos[0];
     if (!ida) continue;
-    agregar({ origen: l.origenIata, destino: l.destinoIata, fechaIda: l.fechaIda, fechaVuelta: l.fechaVuelta, rutaOrigen: ida.origenIata, rutaVia: ida.viaIatas[0] ?? null, rutaDestino: ida.destinoIata, boletos: o.transbordoPorCuentaPropia ? 2 : 1, indice: 0, posicion: null, precioUsd: Math.round(o.precio.montoUsd), fuente: l.metabuscador.id, nota: "importado de la lectura de metabuscadores (Fase 7.3)" });
+    // Una oferta con escalas sin IATA (Kiwi y Trip nombran ciudades) no se puede ubicar: quedaría como "directa" y
+    // ensuciaría la validación; se guarda con nota y sin ruta ubicable.
+    const escalasSinIata = ida.escalas > 0 && ida.viaIatas.length === 0;
+    agregar({ origen: l.origenIata, destino: l.destinoIata, fechaIda: l.fechaIda, fechaVuelta: l.fechaVuelta, rutaOrigen: ida.origenIata, rutaVia: ida.viaIatas[0] ?? null, rutaDestino: ida.destinoIata, boletos: o.transbordoPorCuentaPropia ? 2 : 1, indice: 0, posicion: null, precioUsd: Math.round(o.precio.montoUsd), fuente: l.metabuscador.id, nota: escalasSinIata ? `importado de la lectura de metabuscadores (Fase 7.3); ${ida.escalas} escala(s) sin IATA: no ubicable` : "importado de la lectura de metabuscadores (Fase 7.3)" });
   }
 }
 interface Cotizacion {
@@ -77,7 +80,7 @@ for (const [clave, grupo] of porConsulta) {
   if (!r.ok) continue;
   for (const o of grupo) {
     // Sólo se ubica con ruta y boletos exactos; una oferta con escala sin IATA (Kiwi nombra ciudades) queda sin posición.
-    if (o.boletos === 2 && o.rutaVia === null) continue;
+    if (o.rutaVia === null && (o.boletos === 2 || o.nota.includes("no ubicable"))) continue;
     const fila = r.resultado.rutas.find((x) => x.origen === o.rutaOrigen && x.destino === o.rutaDestino && (x.via ?? x.tramoPrevio?.hub ?? null) === o.rutaVia && x.boletos === o.boletos);
     if (fila) {
       o.indice = fila.indice;

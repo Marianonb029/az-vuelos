@@ -7,7 +7,6 @@ export interface ContextoExplicacion {
   origen: string; // lo que pidió la persona
   destino: string;
   equipaje: "mano" | "valija";
-  mejorIndice: number; // el índice de la primera fila: contra eso se compara
   nombre: (iata: string) => string; // aerolínea o aeropuerto legible
 }
 
@@ -18,11 +17,17 @@ export interface DondeBuscar {
 
 // Aerolíneas donde vale comparar el precio de esta ruta: las que venden el boleto (único o cada uno de los dos).
 export const dondeBuscar = (r: RutaPriorizada): DondeBuscar[] => {
-  if (r.tramoPrevio === null) return [{ tramo: r.via === null ? `${r.origen}→${r.destino}` : `${r.origen}→${r.via}→${r.destino}`, aerolineas: r.aerolineas }];
-  return [
-    { tramo: `boleto 1: ${r.origen}→${r.tramoPrevio.hub}`, aerolineas: r.tramoPrevio.aerolineas },
-    { tramo: `boleto 2: ${r.tramoPrevio.hub}→${r.destino}`, aerolineas: r.aerolineas },
-  ];
+  const traslado = (t: RutaPriorizada["tramos"][number]) => ({ tramo: `traslado ${t.origen}→${t.destino}, boleto aparte`, aerolineas: t.aerolineas });
+  const previos = r.tramos.filter((t) => t.traslado && t.destino === r.origen).map(traslado);
+  const posteriores = r.tramos.filter((t) => t.traslado && t.origen === r.destino).map(traslado);
+  const principal: DondeBuscar[] =
+    r.tramoPrevio === null
+      ? [{ tramo: r.via === null ? `${r.origen}→${r.destino}` : `${r.origen}→${r.via}→${r.destino}`, aerolineas: r.aerolineas }]
+      : [
+          { tramo: `boleto 1: ${r.origen}→${r.tramoPrevio.hub}`, aerolineas: r.tramoPrevio.aerolineas },
+          { tramo: `boleto 2: ${r.tramoPrevio.hub}→${r.destino}`, aerolineas: r.aerolineas },
+        ];
+  return [...previos, ...principal, ...posteriores];
 };
 
 const lista = (codigos: readonly string[], nombre: (iata: string) => string) => codigos.map(nombre).join(", ");
@@ -32,9 +37,10 @@ const explicarDistancia = (r: RutaPriorizada, ctx: ContextoExplicacion): string 
   const traslado = r.trasladoOrigenKm + r.trasladoDestinoKm;
   if (traslado > 0) {
     const tramos = [r.trasladoOrigenKm > 0 ? `${ctx.origen}→${r.origen} (${r.trasladoOrigenKm} km)` : "", r.trasladoDestinoKm > 0 ? `${r.destino}→${ctx.destino} (${r.trasladoDestinoKm} km)` : ""].filter(Boolean).join(" y ");
-    partes.push(`más el traslado ${tramos}: ${r.trasladoAereo ? "es otro vuelo, con su propio boleto" : "cuenta como viaje por tierra, sumalo en tiempo y plata"}`);
+    const vuelan = r.tramos.filter((t) => t.traslado).map((t) => `${t.origen}→${t.destino} lo vuelan ${lista(t.aerolineas, ctx.nombre)}`).join("; ");
+    partes.push(`más el traslado ${tramos}: ${r.trasladoAereo ? `es otro vuelo, con su propio boleto${vuelan ? ` (${vuelan})` : " (sin vuelo directo en el dataset)"}` : "cuenta como viaje por tierra, sumalo en tiempo y plata"}`);
   }
-  if ((r.desglose.kmTasas ?? 0) > 0) partes.push(`las tasas de salida de ${r.origen} pesan como ${r.desglose.kmTasas} km más`);
+  if ((r.desglose.kmTasas ?? 0) > 0) partes.push(`las tasas de salida internacional pesan como ${r.desglose.kmTasas} km más`);
   return partes.join("; ") + ".";
 };
 
@@ -42,7 +48,9 @@ const explicarCompetencia = (r: RutaPriorizada, ctx: ContextoExplicacion): strin
   const cerrado = r.tramos.length > 1 ? r.tramos.reduce((a, b) => (a.competenciaEfectiva <= b.competenciaEfectiva ? a : b)) : r.tramos[0];
   const donde = cerrado ? `${cerrado.origen}→${cerrado.destino}` : "la ruta";
   const aviso = cerrado && cerrado.aerolineas.length > cerrado.grupos.length ? ` Ojo: de esas ${cerrado.aerolineas.length} aerolíneas sólo ${cerrado.grupos.length} fijan precio por separado; las demás son del mismo grupo y no se pelean entre sí.` : "";
-  if (r.competenciaEfectiva < 1.5) return `Casi sin competencia: en ${donde} manda ${cerrado ? lista(cerrado.aerolineas, ctx.nombre) : "una sola aerolínea"} y sin pelea no hay motivo para bajar el precio.${aviso}`;
+  if (cerrado && cerrado.competenciaCorredor !== null && cerrado.competenciaCorredor > cerrado.competenciaPar && cerrado.competenciaCorredor >= 1.5)
+    return `En ${donde} ${cerrado.aerolineas.length === 1 ? `sólo vuela ${lista(cerrado.aerolineas, ctx.nombre)}` : `vuelan ${lista(cerrado.aerolineas, ctx.nombre)}`}, pero es un tramo largo que se vende contra todo lo que sale de ${cerrado.origen} al mismo continente (${cerrado.competenciaCorredor} grupos efectivos): ahí sí hay pelea de precios.${aviso}`;
+  if (r.competenciaEfectiva < 1.5) return `Casi sin competencia: en ${donde} manda ${cerrado ? lista(cerrado.aerolineas, ctx.nombre) : "una sola aerolínea"}${cerrado && cerrado.competenciaCorredor !== null ? ` y desde ${cerrado.origen} casi nadie más vuela a ese continente` : ""}; sin pelea no hay motivo para bajar el precio.${aviso}`;
   if (r.competenciaEfectiva < 2.5) return `Competencia moderada: en ${donde} se reparten el tramo ${cerrado ? lista(cerrado.aerolineas, ctx.nombre) : "pocas aerolíneas"}; hay algo de pelea, no mucha.${aviso}`;
   return `Buena pelea: ${r.competenciaTotal} aerolíneas operan la ruta y en ${donde} compiten ${cerrado ? lista(cerrado.aerolineas, ctx.nombre) : "varias"}; ahí suelen aparecer las ofertas.${aviso}`;
 };
@@ -53,6 +61,9 @@ const explicarBajoCosto = (r: RutaPriorizada, ctx: ContextoExplicacion): string 
     ? "Hay low cost en la ruta, pero pediste valija: cuando sumás el equipaje la ventaja se pierde, compará el total y no el precio de tapa."
     : "Hay low cost en la ruta y viajás sólo con equipaje de mano: es donde el precio de tapa suele ser el más bajo.";
 };
+
+const explicarConector = (r: RutaPriorizada, ctx: ContextoExplicacion): string | null =>
+  r.conector ? `El tramo largo lo vende ${lista(r.aerolineas, ctx.nombre)}, una aerolínea que vive de conectar por su hub: para llenar el avión suele cobrar menos que un directo.` : null;
 
 const explicarPresion = (r: RutaPriorizada): string => {
   const p = r.presionVuelta === null ? r.presionIda.presion : Math.round((r.presionIda.presion + r.presionVuelta.presion) / 2);
@@ -89,11 +100,22 @@ const explicarEstadia = (r: RutaPriorizada): string | null => {
   return `Estadía larga (${d} días): varias tarifas baratas no permiten más de 30 días; revisá la condición.`;
 };
 
-const explicarIndice = (r: RutaPriorizada, ctx: ContextoExplicacion): string => {
-  if (ctx.mejorIndice <= 0 || r.indice <= ctx.mejorIndice) return `Índice ${r.indice.toLocaleString("es")}: es la referencia; el resto se compara contra esta ruta.`;
-  const pct = Math.round(((r.indice - ctx.mejorIndice) / ctx.mejorIndice) * 100);
-  return `Índice ${r.indice.toLocaleString("es")}: estimamos un ${pct} % más caro que la primera (${ctx.mejorIndice.toLocaleString("es")}). No es un precio: es cuánto pesan juntas las variables de arriba.`;
-};
+// Una frase por variable, con nombre: la tabla muestra una columna por variable y la persona decide con eso,
+// sin un número que resuma todo.
+export interface ExplicacionRuta {
+  distancia: string;
+  competencia: string;
+  tarifa: string; // low cost, hub conector, o "tarifa de red" cuando no aplica ninguno
+  fecha: string;
+  compras: string; // directo / escala en el mismo boleto / boletos separados, más el traslado y la visa si hay
+  anticipacion: string; // más la estadía si es ida y vuelta
+}
 
-export const explicarRuta = (r: RutaPriorizada, ctx: ContextoExplicacion): string[] =>
-  [explicarDistancia(r, ctx), explicarCompetencia(r, ctx), explicarBajoCosto(r, ctx), explicarPresion(r), explicarBoletos(r, ctx), explicarRestriccion(r), explicarAnticipacion(r), explicarEstadia(r), explicarIndice(r, ctx)].filter((x): x is string => x !== null);
+export const explicarRuta = (r: RutaPriorizada, ctx: ContextoExplicacion): ExplicacionRuta => ({
+  distancia: explicarDistancia(r, ctx),
+  competencia: explicarCompetencia(r, ctx),
+  tarifa: [explicarBajoCosto(r, ctx), explicarConector(r, ctx)].filter((x): x is string => x !== null).join(" ") || "Tarifa de red: sin low cost ni hub conector en la ruta; el precio lo marca la competencia del tramo.",
+  fecha: explicarPresion(r),
+  compras: [explicarBoletos(r, ctx), explicarRestriccion(r)].filter((x): x is string => x !== null).join(" "),
+  anticipacion: [explicarAnticipacion(r), explicarEstadia(r)].filter((x): x is string => x !== null).join(" "),
+});

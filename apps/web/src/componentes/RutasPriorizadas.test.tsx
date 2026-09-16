@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Aeropuerto } from "@az/core";
 import type { ResultadoRutas, RutaPriorizada } from "@az/espacio";
@@ -10,7 +10,7 @@ const aeropuertos: Aeropuerto[] = [
 ];
 
 const presion = { fecha: "2027-02-16", aeropuerto: "ASU", presion: 12, etiquetas: ["salida entre semana"], banda: "verde" as const, fundamento: "salida entre semana -8 = -8 (−50…100: 12)" };
-const comun = { destino: "MAD", escalas: 1, bajoCosto: true, restriccion: null, presionIda: presion, presionVuelta: null, anticipacionDias: 154, estadiaDias: null, desglose: { kmEquivalentes: 6100 }, posicionMin: 1, posicionMax: 3 };
+const comun = { destino: "MAD", escalas: 1, bajoCosto: true, conector: false, restriccion: null, presionIda: presion, presionVuelta: null, anticipacionDias: 154, estadiaDias: null, desglose: { kmEquivalentes: 6100 }, posicionMin: 1, posicionMax: 3 };
 const ruta = (extra: Partial<RutaPriorizada> & Pick<RutaPriorizada, "posicion" | "origen" | "via" | "boletos" | "indice" | "familia" | "empate">): RutaPriorizada => ({
   ...comun,
   aerolineas: ["TP"],
@@ -23,8 +23,8 @@ const ruta = (extra: Partial<RutaPriorizada> & Pick<RutaPriorizada, "posicion" |
   tramosTotales: 1,
   desvioPct: 7,
   tramos: [
-    { origen: "ASU", destino: "GRU", km: 1100, aerolineas: ["G3", "LA"], vuelosPorAerolinea: { G3: 2, LA: 5 }, grupos: ["Abra", "LATAM-Delta"], competenciaEfectiva: 1.5 },
-    { origen: "GRU", destino: "MAD", km: 8400, aerolineas: ["TP", "IB"], vuelosPorAerolinea: { TP: 3, IB: 6 }, grupos: ["IAG", "TP"], competenciaEfectiva: 1.75 },
+    { origen: "ASU", destino: "GRU", km: 1100, aerolineas: ["G3", "LA"], vuelosPorAerolinea: { G3: 2, LA: 5 }, grupos: ["Abra", "LATAM-Delta"], competenciaEfectiva: 1.5, competenciaPar: 1.5, competenciaCorredor: null, traslado: false },
+    { origen: "GRU", destino: "MAD", km: 8400, aerolineas: ["TP", "IB"], vuelosPorAerolinea: { TP: 3, IB: 6 }, grupos: ["IAG", "TP"], competenciaEfectiva: 1.75, competenciaPar: 1.75, competenciaCorredor: null, traslado: false },
   ],
   competenciaMinima: 2,
   competenciaTotal: 4,
@@ -44,6 +44,7 @@ const resultado: ResultadoRutas = {
   fechaVuelta: null,
   equipaje: "mano",
   orden: "indice",
+  operaciones: [{ paso: "en la lista", cantidad: 3, detalle: "ordenadas por índice de costo" }],
   calculadoEn: "2026-09-15T12:00:00.000Z",
   avisos: [],
   nombres: [{ iata: "UX", nombre: "Air Europa" }, { iata: "TP", nombre: "TAP" }, { iata: "G3", nombre: "GOL" }],
@@ -51,7 +52,7 @@ const resultado: ResultadoRutas = {
   rutas: [
     ruta({ posicion: 1, origen: "ASU", via: "GRU", boletos: 2, indice: 5100, familia: "GRU→MAD (2 boletos)", empate: 1 }),
     ruta({ posicion: 2, origen: "POA", via: "GRU", boletos: 2, indice: 5150, familia: "GRU→MAD (2 boletos)", empate: 1, trasladoOrigenKm: 819 }),
-    ruta({ posicion: 3, origen: "ASU", via: null, boletos: 1, indice: 6300, familia: "directo→MAD", empate: 2, aerolineas: ["UX"], tramoPrevio: null, distanciaKm: 8900, desvioPct: 0, bajoCosto: false, tramos: [{ origen: "ASU", destino: "MAD", km: 8900, aerolineas: ["UX"], vuelosPorAerolinea: { UX: 4 }, grupos: ["Turkish-Air Europa"], competenciaEfectiva: 1 }], competenciaMinima: 1, competenciaTotal: 1, competenciaEfectiva: 1, fundamento: "8900 km volados … índice 6300", enlaces: [{ id: "kiwi", nombre: "Kiwi.com", tramo: "ASU→MAD", url: "https://www.kiwi.com/deep?from=ASU&to=MAD" }] }),
+    ruta({ posicion: 3, origen: "ASU", via: null, boletos: 1, indice: 6300, familia: "directo→MAD", empate: 2, aerolineas: ["UX"], tramoPrevio: null, distanciaKm: 8900, desvioPct: 0, bajoCosto: false, conector: false, tramos: [{ origen: "ASU", destino: "MAD", km: 8900, aerolineas: ["UX"], vuelosPorAerolinea: { UX: 4 }, grupos: ["Turkish-Air Europa"], competenciaEfectiva: 1, competenciaPar: 1, competenciaCorredor: null, traslado: false }], competenciaMinima: 1, competenciaTotal: 1, competenciaEfectiva: 1, fundamento: "8900 km volados … índice 6300", enlaces: [{ id: "kiwi", nombre: "Kiwi.com", tramo: "ASU→MAD", url: "https://www.kiwi.com/deep?from=ASU&to=MAD" }] }),
   ],
 };
 
@@ -61,7 +62,7 @@ const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
 };
 
 describe("RutasPriorizadas", () => {
-  it("pide las rutas con equipaje, agrupa por familia, marca empates y robustez, y permite anotar un precio visto", async () => {
+  it("pide las rutas con equipaje, agrupa por familia, muestra una columna por variable, el embudo, y permite anotar un precio visto", async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(resultado) } as unknown as Response);
     vi.stubGlobal("fetch", fetchMock);
     render(<RutasPriorizadas aeropuertos={aeropuertos} hoy="2026-09-15" />);
@@ -74,18 +75,21 @@ describe("RutasPriorizadas", () => {
     await waitFor(() => expect(screen.getByTestId("resumen-rutas")).toBeTruthy());
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&equipaje=valija&orden=indice");
     expect(screen.getByTestId("resumen-rutas").textContent).toContain("3 rutas · 2 familias");
-    let filas = screen.getAllByRole("row").slice(1);
+    const filasDe = (tabla: HTMLElement) => within(tabla).getAllByRole("row").slice(1);
+    const tabla = screen.getByTestId("resumen-rutas").parentElement?.querySelector("table") as HTMLElement;
+    let filas = filasDe(tabla);
     expect(filas).toHaveLength(2); // la mejor de cada familia
     expect(filas[0]?.textContent).toContain("ASU → GRU → MAD");
-    expect(filas[0]?.textContent).toContain("≈1"); // empata con POA→GRU→MAD
-    expect(filas[0]?.textContent).toContain("1–3"); // robustez
-    expect(filas[0]?.textContent).toContain("4 aerolíneas");
-    expect(filas[0]?.textContent).toContain("efectiva 1.5");
+    expect(filas[0]?.textContent).not.toContain("5100"); // sin índice a la vista: una columna por variable
+    expect(filas[0]?.textContent).toContain("4 aerolíneas en la ruta");
+    expect(filas[0]?.textContent).toContain("Dos boletos separados");
     expect(filas[0]?.textContent).toContain("ASU→GRU: G3lc, LA");
+    expect(filas[0]?.textContent).toContain("Buscar en (boleto 1: ASU→GRU)");
     fireEvent.click(screen.getByRole("button", { name: "+1 de la misma familia" }));
-    filas = screen.getAllByRole("row").slice(1);
+    filas = filasDe(tabla);
     expect(filas).toHaveLength(3);
     expect(filas[1]?.textContent).toContain("POA → GRU → MAD");
+    expect(screen.getByTestId("operaciones").textContent).toContain("en la lista");
 
     fireEvent.click(screen.getAllByRole("button", { name: "Ver" })[0] as HTMLElement);
     expect(screen.getByText(/9500 km volados/)).toBeTruthy();

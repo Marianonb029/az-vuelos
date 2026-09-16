@@ -20,14 +20,15 @@ describe("validación del índice", () => {
   });
 
   it("mide correlación, acierto top 5, escala USD por punto y los peores desvíos", () => {
-    const r = validar([obs(5000, 700, 1), obs(5500, 900, 2), obs(6000, 1000, 3), obs(7000, 650, 9, { rutaVia: "GRU", boletos: 2 })]);
+    // Cuatro rutas distintas (la validación toma una observación por ruta, la más barata) y dos tarifas más de la directa que no cuentan.
+    const r = validar([obs(5000, 700, 1), obs(5000, 950, 1), obs(5500, 900, 2, { rutaVia: "SCL" }), obs(6000, 1000, 3, { rutaVia: "LIM" }), obs(7000, 650, 9, { rutaVia: "GRU", boletos: 2 })]);
     expect(r.consultas).toBe(1);
-    expect(r.observaciones).toBe(4);
+    expect(r.observaciones).toBe(5);
     expect(r.correlacion).toBeLessThan(1);
     expect(r.aciertoTop5).toBe(0); // el más barato (650) estaba en el puesto 9
-    expect(r.usdPorKmEquivalente).toBeCloseTo(0.152, 2); // mediana de 0.14, 0.164, 0.167, 0.093
+    expect(r.usdPorKmEquivalente).toBeCloseTo(0.164, 2); // mediana de 0.14, 0.19, 0.164, 0.167, 0.093
     expect(r.peores[0]).toMatchObject({ ruta: "ASU→GRU→MAD (2 boletos)", posicion: 9, precioUsd: 650 });
-    expect(r.porMes).toEqual([{ mes: "2027-02", observaciones: 4, usdPorKmEquivalente: expect.any(Number) }]);
+    expect(r.porMes).toEqual([{ mes: "2027-02", observaciones: 5, usdPorKmEquivalente: expect.any(Number) }]);
     expect(r.lectura).toContain("0 % de las veces");
   });
 });

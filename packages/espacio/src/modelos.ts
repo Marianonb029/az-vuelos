@@ -147,14 +147,18 @@ export const TramoCompetencia = z.object({
   aerolineas: z.array(IataAerolinea), // todas las que operan el tramo según el dataset de rutas
   vuelosPorAerolinea: z.record(IataAerolinea, z.number().int().min(1)), // números de vuelo vigentes por aerolínea
   grupos: z.array(z.string()), // grupos tarifarios distintos presentes (IAG, LATAM…); una aerolínea suelta es su propio grupo
-  competenciaEfectiva: z.number().min(0), // por grupo y ponderada por frecuencia
+  competenciaEfectiva: z.number().min(0), // la que manda: máximo entre el par y el corredor
+  competenciaPar: z.number().min(0), // por grupo y ponderada por frecuencia, sólo el par de aeropuertos
+  competenciaCorredor: z.number().min(0).nullable(), // largo radio: grupos que vuelan desde el origen al continente del destino; null en tramos cortos
+  traslado: z.boolean(), // vuelo aparte entre el aeropuerto pedido y el alternativo (no es parte del itinerario vendido)
 });
 
 export const EnlaceMetabuscador = z.object({ id: z.string().min(1), nombre: z.string().min(1), tramo: z.string().min(1), url: z.url() });
 
-// Cómo se ordena la salida: por índice de costo, o primero por simplicidad (menos tramos, aeropuertos más
-// cercanos al pedido) y recién después por índice.
-export const OrdenRutas = z.enum(["indice", "tramos"]);
+// Cómo se ordena la salida: por índice de costo, o por cercanía: primero el origen pedido con el destino pedido,
+// después los destinos alternativos por distancia, después el siguiente origen más cercano y así; entre iguales,
+// más aerolíneas en la ruta primero (más competencia, más chance de tarifa baja), menos tramos y recién el índice.
+export const OrdenRutas = z.enum(["indice", "cercania"]);
 export type OrdenRutas = z.infer<typeof OrdenRutas>;
 
 export const RutaPriorizada = z.object({
@@ -178,6 +182,7 @@ export const RutaPriorizada = z.object({
   competenciaTotal: z.number().int().min(1), // aerolíneas distintas que operan algún tramo de la ruta
   competenciaEfectiva: z.number().min(0), // la que manda en el índice: por grupo tarifario y ponderada por frecuencia, en el tramo más cerrado
   bajoCosto: z.boolean(),
+  conector: z.boolean(), // el tramo largo lo vende una aerolínea de hub conector (perfil en config)
   restriccion: z.string().nullable(), // vía con condición para la persona (p. ej. requiere_visa_eeuu_o_esta)
   presionIda: PuntajeDia,
   presionVuelta: PuntajeDia.nullable(),
@@ -193,6 +198,11 @@ export const RutaPriorizada = z.object({
   enlaces: z.array(EnlaceMetabuscador), // búsquedas en metabuscadores para esa ruta (la API las completa)
 });
 
+// Qué pasó con las rutas entre el espacio de búsqueda y la lista: cada recorte con su cantidad y su motivo,
+// para ver que no se pierdan rutas por un mal criterio.
+export const PasoOperacion = z.object({ paso: z.string().min(1), cantidad: z.number().int().min(0), detalle: z.string() });
+export type PasoOperacion = z.infer<typeof PasoOperacion>;
+
 export const ResultadoRutas = z.object({
   origen: IataAeropuerto,
   destino: IataAeropuerto,
@@ -205,6 +215,7 @@ export const ResultadoRutas = z.object({
   nombres: z.array(NombreAerolinea),
   aerolineasBajoCosto: z.array(IataAerolinea), // perfil bajo costo según config (para marcar cada código en la UI)
   avisos: z.array(z.string()),
+  operaciones: z.array(PasoOperacion), // embudo: candidatos → rutas → medidas → recortes → lista
 });
 
 export const ResultadoCalendario = z.object({

@@ -8,7 +8,7 @@ import { registrarObservacion } from "../lib/api";
 const BANDA: Record<PuntajeDia["banda"], string> = { verde: "bg-emerald-100 text-emerald-800", amarillo: "bg-amber-100 text-amber-800", rojo: "bg-red-100 text-red-800" };
 
 const Presion = ({ p, titulo }: { p: PuntajeDia; titulo: string }) => (
-  <span title={p.fundamento} className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${BANDA[p.banda]}`}>
+  <span title={p.fundamento} className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${BANDA[p.banda]}`}>
     {titulo} {p.presion} {p.banda}
   </span>
 );
@@ -28,7 +28,7 @@ const FormularioObservacion = ({ r, resultado }: { r: RutaPriorizada; resultado:
     const nueva: NuevaObservacion = { origen: resultado.origen, destino: resultado.destino, fechaIda: resultado.fechaIda, fechaVuelta: resultado.fechaVuelta, rutaOrigen: r.origen, rutaVia: r.via, rutaDestino: r.destino, boletos: r.boletos, indice: r.indice, posicion: r.posicion, precioUsd: monto, fuente, nota: "" };
     try {
       await registrarObservacion(nueva);
-      setEstado(`Anotado USD ${monto} (${fuente}); se suma a la validación del índice`);
+      setEstado(`Anotado USD ${monto} (${fuente}); se suma a la validación del orden`);
       setPrecio("");
     } catch (err: unknown) {
       setEstado(`No se pudo anotar: ${describirError(err)}`);
@@ -62,33 +62,29 @@ interface Props {
   bajoCosto: ReadonlySet<string>;
   variantes: number; // otras rutas de la misma familia que quedaron plegadas
   onVerFamilia: (() => void) | null;
-  empate: number | null; // grupo de empate si hay otras filas con índice casi igual
-  mejorIndice: number; // índice de la primera fila: la explicación compara contra él
 }
 
-// Una fila por ruta: km, competencia, presión, índice y robustez; desplegable con fundamento, tramos, enlaces y observación.
-export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFamilia, empate, mejorIndice }: Props) => {
+// Una fila por ruta: dónde buscar y una columna por variable (compras, competencia, distancia, tarifa, fecha,
+// anticipación), cada una contada en criollo; sin número que resuma. Desplegable: la cuenta, los tramos, enlaces y
+// el campo para anotar el precio visto.
+export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFamilia }: Props) => {
   const [abierta, setAbierta] = useState(false);
   const nombre = (iata: string) => nombres.get(iata) ?? iata;
   const vende = (a: string) => r.aerolineas.includes(a) || (r.tramoPrevio?.aerolineas ?? []).includes(a);
   const buscarEn = dondeBuscar(r);
-  const enCriollo = explicarRuta(r, { origen: resultado.origen, destino: resultado.destino, equipaje: resultado.equipaje, mejorIndice, nombre });
+  const e = explicarRuta(r, { origen: resultado.origen, destino: resultado.destino, equipaje: resultado.equipaje, nombre });
+  const celda = "min-w-[13rem] py-1.5 pr-3 align-top text-xs text-slate-700";
   return (
     <>
       <tr className="border-b border-slate-100 align-top">
-        <td className="py-1.5 pr-2 tabular-nums text-slate-900">
-          <span className="font-semibold">{r.posicion}</span>
-          {empate !== null && <span title={`Empate: mismo índice (±2 %) que las demás filas marcadas ≈${empate}`} className="ml-0.5 text-xs text-slate-500">≈{empate}</span>}
-          {(r.posicionMin !== r.posicion || r.posicionMax !== r.posicion) && (
-            <span title="Puesto que ocuparía si cada factor del índice se moviera ±20 %" className="block text-[10px] text-slate-500">
-              {r.posicionMin}–{r.posicionMax}
-            </span>
-          )}
-        </td>
-        <td className="py-1.5 pr-3 whitespace-nowrap font-medium text-slate-900">
-          {rutaTexto(r)}
+        <td className="py-1.5 pr-2 tabular-nums font-semibold text-slate-900">{r.posicion}</td>
+        <td className="min-w-[16rem] py-1.5 pr-3 font-medium text-slate-900">
+          <span className="whitespace-nowrap">{rutaTexto(r)}</span>
           {r.boletos === 2 && <span title="Dos compras separadas: sin protección de conexión, dejá margen entre vuelos" className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 boletos</span>}
+          {r.trasladoAereo && <span title="El aeropuerto alternativo está a más de 400 km del pedido: el traslado es otro vuelo, con su boleto" className="ml-1 rounded bg-slate-200 px-1 text-[10px] uppercase text-slate-700">+ vuelo aparte</span>}
           {r.restriccion && <span title={r.restriccion.replace(/_/g, " ")} className="ml-1 rounded bg-red-100 px-1 text-[10px] uppercase text-red-800">visa/tránsito</span>}
+          {r.bajoCosto && <span className="ml-1 rounded bg-sky-100 px-1 text-[10px] uppercase text-sky-800">low cost</span>}
+          {r.conector && <span title="El tramo largo lo vende una aerolínea de hub conector (sexta libertad): suele cobrar menos que un directo" className="ml-1 rounded bg-teal-100 px-1 text-[10px] uppercase text-teal-800">hub conector</span>}
           {variantes > 0 && onVerFamilia && (
             <button type="button" onClick={onVerFamilia} className="ml-1 rounded border border-slate-300 px-1 text-[10px] text-slate-600 hover:bg-slate-100">
               +{variantes} de la misma familia
@@ -100,38 +96,46 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
             </span>
           ))}
         </td>
-        <td className="py-1.5 pr-3 tabular-nums text-slate-700">
-          {r.distanciaKm.toLocaleString("es")} {r.desvioPct > 0 && <span className="text-xs text-slate-500">(+{r.desvioPct} %)</span>}
-          {r.trasladoOrigenKm + r.trasladoDestinoKm > 0 && <span className="block text-xs text-slate-500">+ traslado {(r.trasladoOrigenKm + r.trasladoDestinoKm).toLocaleString("es")} km</span>}
-        </td>
-        <td className="py-1.5 pr-3 text-slate-700">
-          <span className="font-semibold tabular-nums">{r.competenciaTotal}</span> aerolínea{r.competenciaTotal === 1 ? "" : "s"}
-          <span className="block text-xs text-slate-500" title="Grupos tarifarios ponderados por frecuencia en el tramo más cerrado: es lo que pesa en el índice">
-            efectiva {r.competenciaEfectiva}
-            {r.tramos.length > 1 ? ` · tramo más cerrado: ${r.competenciaMinima}` : ""}
+        <td className={celda}>{e.compras}</td>
+        <td className={celda}>
+          <span className="block font-semibold tabular-nums text-slate-900">
+            {r.competenciaTotal} aerolínea{r.competenciaTotal === 1 ? "" : "s"} en la ruta
           </span>
-          {r.bajoCosto && <span className="mt-0.5 inline-block rounded bg-sky-100 px-1 text-[10px] uppercase text-sky-800">low cost</span>}
+          {e.competencia}
+          <span className="mt-1 block text-slate-500">
+            {r.tramos.map((t) => (
+              <span key={`${t.origen}-${t.destino}`} className="block whitespace-nowrap">
+                {t.origen}→{t.destino}
+                {t.traslado ? " (vuelo aparte)" : ""}:{" "}
+                {t.aerolineas.length === 0
+                  ? "sin datos"
+                  : t.aerolineas.map((a, i) => (
+                      <span key={a} title={`${nombre(a)} · ${t.vuelosPorAerolinea[a] ?? 0} números de vuelo${bajoCosto.has(a) ? " · bajo costo" : ""}`} className={vende(a) ? "font-semibold text-slate-800" : ""}>
+                        {a}
+                        {bajoCosto.has(a) && <span className="ml-0.5 rounded bg-sky-100 px-0.5 text-[9px] uppercase text-sky-800">lc</span>}
+                        {i < t.aerolineas.length - 1 ? ", " : ""}
+                      </span>
+                    ))}
+                {t.competenciaCorredor !== null && t.competenciaCorredor > t.competenciaPar ? ` · corredor ${t.competenciaCorredor}` : ""}
+              </span>
+            ))}
+          </span>
         </td>
-        <td className="py-1.5 pr-3 text-xs text-slate-700">
-          {r.tramos.map((t) => (
-            <span key={`${t.origen}-${t.destino}`} className="block whitespace-nowrap">
-              <span className="text-slate-500">{t.origen}→{t.destino}:</span>{" "}
-              {t.aerolineas.length === 0
-                ? "sin datos"
-                : t.aerolineas.map((a, i) => (
-                    <span key={a} title={`${nombre(a)} · ${t.vuelosPorAerolinea[a] ?? 0} números de vuelo${bajoCosto.has(a) ? " · bajo costo" : ""}`} className={vende(a) ? "font-semibold text-slate-900" : ""}>
-                      {a}
-                      {bajoCosto.has(a) && <span className="ml-0.5 rounded bg-sky-100 px-0.5 text-[9px] uppercase text-sky-800">lc</span>}
-                      {i < t.aerolineas.length - 1 ? ", " : ""}
-                    </span>
-                  ))}
-            </span>
-          ))}
+        <td className={celda}>
+          <span className="block font-semibold tabular-nums text-slate-900">
+            {r.distanciaKm.toLocaleString("es")} km{r.desvioPct > 0 ? ` (+${r.desvioPct} %)` : ""}
+            {r.trasladoOrigenKm + r.trasladoDestinoKm > 0 ? ` + ${(r.trasladoOrigenKm + r.trasladoDestinoKm).toLocaleString("es")} km de traslado` : ""}
+          </span>
+          {e.distancia}
         </td>
-        <td className="py-1.5 pr-3">
-          <Presion p={r.presionIda} titulo="ida" /> {r.presionVuelta && <Presion p={r.presionVuelta} titulo="vuelta" />}
+        <td className={celda}>{e.tarifa}</td>
+        <td className={celda}>
+          <span className="mb-1 block">
+            <Presion p={r.presionIda} titulo="ida" /> {r.presionVuelta && <Presion p={r.presionVuelta} titulo="vuelta" />}
+          </span>
+          {e.fecha}
         </td>
-        <td className="py-1.5 pr-3 font-semibold tabular-nums text-slate-900">{r.indice.toLocaleString("es")}</td>
+        <td className={celda}>{e.anticipacion}</td>
         <td className="py-1.5">
           <button type="button" onClick={() => setAbierta((v) => !v)} className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-100" aria-expanded={abierta}>
             {abierta ? "Cerrar" : "Ver"}
@@ -140,12 +144,7 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
       </tr>
       {abierta && (
         <tr className="border-b border-slate-200 bg-slate-50">
-          <td colSpan={8} className="px-2 py-2 text-xs text-slate-700">
-            <ul className="mb-2 list-disc space-y-0.5 pl-4 text-sm text-slate-800" aria-label="En criollo">
-              {enCriollo.map((frase) => (
-                <li key={frase}>{frase}</li>
-              ))}
-            </ul>
+          <td colSpan={9} className="px-2 py-2 text-xs text-slate-700">
             <p className="mb-1">
               <span className="font-medium">La cuenta:</span> {r.fundamento}
             </p>
@@ -159,16 +158,14 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
               )}
             </p>
             <p className="mb-1">
-              <span className="font-medium">Tramos:</span> {r.tramos.map((t) => `${t.origen}→${t.destino} (${t.km} km): ${t.aerolineas.map(nombre).join(", ") || "sin datos"} · grupos: ${t.grupos.join(", ") || "—"}`).join(" · ")}
-              {" · "}
-              <span className="font-medium">vende el boleto:</span> {[...(r.tramoPrevio?.aerolineas ?? []), ...r.aerolineas].map(nombre).join(", ")}
+              <span className="font-medium">Tramos:</span> {r.tramos.map((t) => `${t.origen}→${t.destino} (${t.km} km${t.traslado ? ", vuelo aparte" : ""}): ${t.aerolineas.map(nombre).join(", ") || "sin datos"} · grupos: ${t.grupos.join(", ") || "—"}${t.competenciaCorredor !== null ? ` · corredor ${t.competenciaCorredor} (par ${t.competenciaPar})` : ""}`).join(" · ")}
             </p>
             {r.enlaces.length > 0 && (
               <p>
                 <span className="font-medium">Buscar en metabuscadores:</span>{" "}
-                {r.enlaces.map((e) => (
-                  <a key={`${e.id}-${e.tramo}`} href={e.url} target="_blank" rel="noreferrer" className="mr-2 whitespace-nowrap text-sky-700 underline">
-                    {e.nombre} {r.boletos === 2 ? e.tramo : ""}
+                {r.enlaces.map((e2) => (
+                  <a key={`${e2.id}-${e2.tramo}`} href={e2.url} target="_blank" rel="noreferrer" className="mr-2 whitespace-nowrap text-sky-700 underline">
+                    {e2.nombre} {new Set(r.enlaces.map((x) => x.tramo)).size > 1 || r.boletos === 2 ? e2.tramo : ""}
                   </a>
                 ))}
               </p>

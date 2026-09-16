@@ -71,7 +71,7 @@ const puntuar = (s: Semilla, ventana: Ventana, entrada: EntradaFase6, cfg: Confi
   if (s.nivel !== null) anotar("nivelRuta", (p["nivelRuta"] ?? 0) * (PUNTOS_NIVEL[s.nivel] ?? 0), `ruta Nivel ${s.nivel}`);
   const presion = presionMedia(entrada.calendarios.get(s.origen.aeropuerto.iata), ventana);
   if (presion !== null) anotar("presionInversa", ((p["presionInversa"] ?? 0) * (100 - presion)) / 100, `presión media ${Math.round(presion)}`);
-  if (cfg.aerolineasPerfilBajoCosto.includes(s.aerolinea)) anotar("perfilPrecioAerolinea", p["perfilPrecioAerolinea"] ?? 0, "aerolínea con perfil de ofertas");
+  if (cfg.aerolineasPerfilBajoCosto.includes(s.aerolinea) || cfg.aerolineasPerfilConector.includes(s.aerolinea)) anotar("perfilPrecioAerolinea", p["perfilPrecioAerolinea"] ?? 0, "aerolínea con perfil de ofertas");
 
   const extremosPedidos = Number(s.origen.esSolicitado) + Number(s.destino.esSolicitado);
   if (extremosPedidos > 0) anotar("aeropuertoSolicitado", ((p["aeropuertoSolicitado"] ?? 0) * extremosPedidos) / 2, extremosPedidos === 2 ? "aeropuertos pedidos" : "un aeropuerto pedido");

@@ -31,12 +31,23 @@ export const expandirAeropuertos = (
       if (a.aeropuerto.iata === solicitado) return -1;
       if (b.aeropuerto.iata === solicitado) return 1;
       return a.distanciaKm - b.distanciaKm || b.salidasSemanales - a.salidasSemanales;
-    })
-    .slice(0, maximo);
+    });
+  // Los hubs del radio entran siempre (los `hubsAsegurados` con más salidas: GRU o SCL a 1.100–1.600 km de ASU
+  // no pueden quedar afuera por aeropuertos chicos más cercanos); el resto del cupo se llena por distancia.
+  const hubs = new Set(
+    [...dentro]
+      .filter((c) => c.aeropuerto.iata !== solicitado)
+      .sort((a, b) => b.salidasSemanales - a.salidasSemanales)
+      .slice(0, config.hubsAsegurados)
+      .map((c) => c.aeropuerto.iata),
+  );
+  const porDistancia = dentro.filter((c) => !hubs.has(c.aeropuerto.iata)).slice(0, Math.max(1, maximo - hubs.size));
+  const elegidos = new Set([...hubs, ...porDistancia.map((c) => c.aeropuerto.iata)]);
+  const candidatos = dentro.filter((c) => elegidos.has(c.aeropuerto.iata));
 
   return {
     ok: true,
-    candidatos: dentro.map((c, i) => ({
+    candidatos: candidatos.map((c, i) => ({
       aeropuerto: c.aeropuerto,
       rol,
       esSolicitado: c.aeropuerto.iata === solicitado,

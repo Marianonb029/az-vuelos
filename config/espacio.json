@@ -14,7 +14,13 @@
       "3S",
       "PO",
       "GG",
-      "WH"
+      "WH",
+      "MP",
+      "2C",
+      "QY",
+      "3V",
+      "WT",
+      "MB"
     ],
     "equivalencias": {
       "PZ": "LA",
@@ -103,16 +109,17 @@
         "AD"
       ]
     },
-    "nota": "US Airways ya no existe (2015) y WH (Webjet, absorbida por GOL en 2015; OpenTravelData asigna hoy el código a West African Airlines) tampoco: VRS todavía trae sus callsigns en Brasil. Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA. Grupos tarifarios: participaciones y joint ventures públicas al 2026 (IAG; LATAM-Delta JV; Air France-KLM; Lufthansa Group con ITA; Abra con Avianca y GOL; American 20 % de JetSMART; Turkish 26 % de Air Europa). Revisar trimestralmente."
+    "nota": "US Airways ya no existe (2015) y WH (Webjet, absorbida por GOL en 2015; OpenTravelData asigna hoy el código a West African Airlines) tampoco: VRS todavía trae sus callsigns en Brasil. Las demás excluidas son cargueras (VRS trae sus vuelos): no venden pasajes; MP Martinair, QY European Air Transport (DHL), 3V TNT, WT Swiftair, MB MNG y 2C (SNCF, ruido) inflaban la competencia de tramos y corredores. Las equivalencias pliegan filiales al código del sitio que vende el boleto: LATAM Paraguay/Brasil/Argentina/Ecuador/Perú → LA; JetSMART Argentina → JA. Grupos tarifarios: participaciones y joint ventures públicas al 2026 (IAG; LATAM-Delta JV; Air France-KLM; Lufthansa Group con ITA; Abra con Avianca y GOL; American 20 % de JetSMART; Turkish 26 % de Air Europa). Revisar trimestralmente."
   },
   "fase1": {
     "radioOrigenKm": 2000,
     "radioDestinoKm": 2000,
     "tipoMinimo": "mediano",
     "requiereInternacional": true,
-    "maxCandidatosOrigen": 15,
+    "maxCandidatosOrigen": 18,
     "maxCandidatosDestino": 250,
-    "minSalidasSemanales": 21
+    "minSalidasSemanales": 21,
+    "hubsAsegurados": 6
   },
   "fase2": {
     "niveles": {
@@ -1076,9 +1083,15 @@
       "VY",
       "FR",
       "U2",
-      "W6",
+      "W6"
+    ],
+    "aerolineasPerfilConector": [
+      "TP",
       "TK",
-      "ET"
+      "ET",
+      "EK",
+      "QR",
+      "AT"
     ],
     "maxCombinaciones": 300
   },
@@ -1104,7 +1117,9 @@
       "1": 1.0,
       "2": 0.9,
       "3": 0.83,
-      "4": 0.75
+      "4": 0.75,
+      "6": 0.68,
+      "8": 0.62
     },
     "factorBajoCosto": 0.88,
     "factorPresionMaxima": 0.6,
@@ -1112,7 +1127,8 @@
     "pesoKmTraslado": 0.6,
     "trasladoAereoDesdeKm": 400,
     "factorBajoCostoConValija": 1.0,
-    "factorBoletosSeparados": 1.08,
+    "factorConector": 0.92,
+    "factorBoletosSeparados": 0.92,
     "factorRestriccionVia": 1.15,
     "anticipacion": [
       {
@@ -1195,11 +1211,13 @@
     },
     "competencia": {
       "vuelosPorAerolineaPleno": 4,
-      "pesoMinimoAerolinea": 0.5
+      "pesoMinimoAerolinea": 0.5,
+      "largoRadioDesdeKm": 3000,
+      "regionesMercado": ["europa_toda", "sudamerica", "centroamerica_caribe", "norteamerica", "asia", "medio_oriente", "oceania", "africa"]
     },
     "empateTolerancia": 0.02,
     "robustezVariacion": 0.2,
-    "maxRutas": 60,
+    "maxRutas": 150,
     "nota": "Índice de costo estimado, no precio: km equivalentes (tarifa por km decreciente + fijo por boleto + traslado a alternativos, terrestre por km o aéreo con boleto extra por encima de trasladoAereoDesdeKm + tasas de salida por aeropuerto/país en km equivalentes) x competencia efectiva (grupos tarifarios ponderados por frecuencia, tramo más cerrado; tabla interpolada) x bajo costo (según equipaje) x presión (−50…100) x escalas x boletos separados x restricción de vía x anticipación x estadía. Tasas: orden de magnitud público (APD británica larga distancia ~£90–200; tasas de embarque BR/AR/PY) en km equivalentes, revisar anualmente. Menor índice = mayor chance de tarifa baja."
   }
 }

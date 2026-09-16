@@ -92,21 +92,30 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
   const entrada = { solicitado: { origen: "ASU", destino: "MAD" }, rutas: [...generadas.conservadas, ...separadas].filter((r) => r.destino === "MAD"), grafo, hoy: "2026-09-15", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano" as const, orden: "indice" as const, presionIda, presionVuelta: null };
   const rutas = priorizarRutas(entrada, cfg);
 
-  it("orden 'tramos': menos tramos primero, entre iguales el aeropuerto más cercano, y después el índice", () => {
-    const simples = priorizarRutas({ ...entrada, orden: "tramos" }, cfg);
-    expect(simples[0]).toMatchObject({ origen: "ASU", destino: "MAD", via: null, tramosTotales: 1, posicion: 1 });
+  it("orden 'cercania': origen pedido y destino pedido primero, después por distancia; entre iguales más aerolíneas y menos tramos", () => {
+    const simples = priorizarRutas({ ...entrada, orden: "cercania" }, cfg);
+    expect(simples[0]).toMatchObject({ origen: "ASU", destino: "MAD", trasladoOrigenKm: 0, trasladoDestinoKm: 0, posicion: 1 });
+    expect(simples[0]?.competenciaTotal).toBeGreaterThanOrEqual(simples[1]?.competenciaTotal ?? 0); // entre ASU→MAD, más aerolíneas primero
     for (let i = 1; i < simples.length; i++) {
       const a = simples[i - 1];
       const b = simples[i];
       if (!a || !b) throw new Error("fila");
-      const trasladoA = a.trasladoOrigenKm + a.trasladoDestinoKm;
-      const trasladoB = b.trasladoOrigenKm + b.trasladoDestinoKm;
-      expect(a.tramosTotales < b.tramosTotales || (a.tramosTotales === b.tramosTotales && (trasladoA < trasladoB || (trasladoA === trasladoB && a.indice <= b.indice)))).toBe(true);
+      const clave = (r: typeof a) => [r.trasladoOrigenKm, r.trasladoDestinoKm, -r.competenciaTotal, r.tramosTotales, r.indice];
+      const ka = clave(a);
+      const kb = clave(b);
+      const primeraDistinta = ka.findIndex((v, k) => v !== kb[k]);
+      expect(primeraDistinta === -1 || (ka[primeraDistinta] ?? 0) < (kb[primeraDistinta] ?? 0)).toBe(true);
     }
-    // El traslado aéreo cuenta como un tramo más: un directo desde VCP (a 1.200 km) no es "más simple" que ASU→GRU→MAD.
-    const vcp = simples.find((r) => r.origen === "VCP" && r.via === null);
-    expect(vcp?.trasladoAereo).toBe(true);
-    expect(vcp?.tramosTotales).toBe(2);
+    // El traslado aéreo cuenta como un tramo más, con sus aerolíneas (GRU→LIS→MAD con TAP más el vuelo ASU→GRU aparte
+    // no es "más simple" que ASU→GRU→MAD). "EZE→MAD con vuelo aparte" se pliega en "ASU→EZE→MAD en dos boletos"
+    // (misma secuencia y compras). VCP (sin vuelo de pasajeros desde ASU) ya no es alcanzable.
+    const gru = rutas.find((r) => r.origen === "GRU" && r.via === "LIS" && r.destino === "MAD");
+    expect(gru?.trasladoAereo).toBe(true);
+    expect(gru?.tramosTotales).toBe(3);
+    expect(gru?.tramos[0]).toMatchObject({ origen: "ASU", destino: "GRU", traslado: true });
+    expect(gru?.tramos[0]?.aerolineas).toContain("LA");
+    expect(simples.some((r) => r.origen === "EZE" && r.via === null && r.destino === "MAD")).toBe(false);
+    expect(simples.some((r) => r.origen === "VCP")).toBe(false);
   });
 
   it("km equivalentes, competencia (interpolada) y factores por días salen de la config", () => {
@@ -115,7 +124,8 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(kmEquivalentes(9000, cfg.fase7.kmEquivalentes)).toBe(1500 + 2500 * 0.7 + 5000 * 0.5);
     expect(factorCompetencia(1, cfg.fase7.factorCompetencia)).toBe(1);
     expect(factorCompetencia(3, cfg.fase7.factorCompetencia)).toBe(0.83);
-    expect(factorCompetencia(7, cfg.fase7.factorCompetencia)).toBe(0.75);
+    expect(factorCompetencia(7, cfg.fase7.factorCompetencia)).toBeCloseTo(0.65);
+    expect(factorCompetencia(12, cfg.fase7.factorCompetencia)).toBe(0.62);
     expect(factorCompetencia(0.5, cfg.fase7.factorCompetencia)).toBe(1);
     expect(factorCompetencia(1.5, cfg.fase7.factorCompetencia)).toBeCloseTo(0.95);
     expect(factorPorDias(10, cfg.fase7.anticipacion)).toBe(1.3);
@@ -153,7 +163,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(separada?.tramos[0]?.grupos).toContain("Abra"); // GOL es Abra
     const alternativa = rutas.find((r) => r.origen !== "ASU" && r.trasladoOrigenKm > cfg.fase7.trasladoAereoDesdeKm);
     expect(alternativa?.fundamento).toContain("(aéreo)");
-    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano", orden: "indice", calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
+    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano", orden: "indice", operaciones: [], calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
   });
 
   it("a igual ruta: más presión, menos anticipación, valija en low cost o vía con restricción suben el índice", () => {

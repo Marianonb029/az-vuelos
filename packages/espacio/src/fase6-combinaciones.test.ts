@@ -82,7 +82,7 @@ describe("Fase 6 — generarCombinaciones", () => {
   it("los boletos separados entran con nivel, penalización y el tramo previo explícito, sin bono de gap", () => {
     const s = combinaciones.find((c) => c.tramoPrevio !== null && c.ventanaIda.desde === "2027-01-15");
     expect(s).toMatchObject({ origen: "EZE", destino: "MAD", aerolinea: "TP", via: "GRU", nivelRuta: 2, requiereBoletosSeparados: true, confianza: "alta", tramoPrevio: { hub: "GRU", aerolineas: ["G3", "JJ"] } });
-    expect(s?.desglose).toEqual({ nivelRuta: 18, presionInversa: 10, aeropuertoSolicitado: 12, penalizacionBoletosSeparados: -8 });
+    expect(s?.desglose).toEqual({ nivelRuta: 18, presionInversa: 10, aeropuertoSolicitado: 12, penalizacionBoletosSeparados: -8, perfilPrecioAerolinea: 15 }); // TAP: perfil conector
     expect(s?.fundamento).toContain("Boleto aparte EZE→GRU con G3/JJ");
     expect(s?.id).toBe("EZE-MAD-TP-GRU-2027-01-15"); // no choca con el gap de TP
   });

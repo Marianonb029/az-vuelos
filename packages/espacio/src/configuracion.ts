@@ -84,6 +84,7 @@ export const ConfigEspacio = z.object({
     maxCandidatosOrigen: z.number().int().positive(),
     maxCandidatosDestino: z.number().int().positive(),
     minSalidasSemanales: z.number().int().min(0), // un alternativo con menos salidas (proxy) no compite
+    hubsAsegurados: z.number().int().min(0), // los N aeropuertos con más salidas del radio entran aunque haya más cercanos
   }),
   fase2: z.object({
     niveles: z.object({ 1: NivelConfig, 2: NivelConfig, 3: NivelConfig, 4: NivelConfig }),
@@ -126,13 +127,21 @@ export const ConfigEspacio = z.object({
     pesoKmTraslado: z.number().min(0), // km hasta un aeropuerto alternativo (ida o llegada), en km equivalentes
     trasladoAereoDesdeKm: z.number().positive(), // por encima, el traslado es otro vuelo (km equivalentes + un boleto)
     factorBajoCostoConValija: z.number().positive(), // con valija despachada la ventaja low cost cambia
+    factorConector: z.number().positive(), // el tramo largo lo vende una aerolínea conectora (perfil en fase6)
     factorBoletosSeparados: z.number().positive(), // riesgo de conexión por cuenta propia
     factorRestriccionVia: z.number().positive(), // vía con visa/ESTA u otra condición
     anticipacion: z.array(z.object({ hastaDias: z.number().int().min(0).nullable(), factor: z.number().positive() })).min(1),
     estadia: z.array(z.object({ hastaDias: z.number().int().min(0).nullable(), factor: z.number().positive() })).min(1),
     tasasAeropuerto: z.record(IataAeropuerto, z.number().min(0)), // tasas de salida en km equivalentes
     tasasPais: z.record(z.string().length(2), z.number().min(0)),
-    competencia: z.object({ vuelosPorAerolineaPleno: z.number().positive(), pesoMinimoAerolinea: z.number().min(0).max(1) }),
+    competencia: z.object({
+      vuelosPorAerolineaPleno: z.number().positive(),
+      pesoMinimoAerolinea: z.number().min(0).max(1),
+      // Un tramo de largo radio se vende contra todo lo que sale de ese aeropuerto hacia el mismo continente
+      // (el hub-feed de TAP GIG→LIS compite con IB GIG→MAD, AF GIG→CDG…): competencia de corredor.
+      largoRadioDesdeKm: z.number().positive(),
+      regionesMercado: z.array(z.string().min(1)).min(1), // regiones (de `regiones`) que definen "el mismo continente"
+    }),
     empateTolerancia: z.number().min(0), // filas cuyo índice difiere menos que esto se muestran como empate
     robustezVariacion: z.number().min(0), // ±variación de cada factor para la posición mín/máx
     maxRutas: z.number().int().positive(),
@@ -143,7 +152,8 @@ export const ConfigEspacio = z.object({
     // Escalas con condición para la persona (visa, ESTA): la combinación sigue, pero penalizada y marcada.
     restriccionesVia: z.record(z.string(), z.array(IataAeropuerto)),
     kmPorPenalizacionTraslado: z.number().positive(),
-    aerolineasPerfilBajoCosto: z.array(IataAerolinea),
+    aerolineasPerfilBajoCosto: z.array(IataAerolinea), // low cost puras: la ventaja se pierde con valija
+    aerolineasPerfilConector: z.array(IataAerolinea), // hubs de sexta libertad (TAP, Turkish, Ethiopian…): venden el largo radio por debajo del directo
     maxCombinaciones: z.number().int().positive(),
   }),
 });

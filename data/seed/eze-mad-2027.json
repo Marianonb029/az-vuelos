@@ -4,11 +4,11 @@
   "esperado": {
     "origenesMinimos": ["EZE", "COR", "ROS", "MVD", "ASU", "SCL"],
     "destinosAlcanzables": 230,
-    "rutasNivel12": { "min": 100, "max": 2000, "manual": 71 },
+    "rutasNivel12": { "min": 100, "max": 4000, "manual": 71 },
     "combinaciones": { "min": 250, "max": 330, "manual": 290 },
     "combinacionesPorOrigen": { "EZE": 134, "SCL": 65, "COR": 28, "MVD": 28, "ASU": 26, "ROS": 9 },
     "niveles": { "EZE-MAD": 1, "EZE-MXP": 1, "EZE-AJA": 1 },
-    "gap1EZE": ["TK", "ET", "LX"],
+    "gap1EZE": ["TK"],
     "notaGap1": "BA cubre EZE→LHR (Nivel 2) con LHR dentro del radio de destino de 2000 km: no es gap, es ruta",
     "gap2": ["VY"],
     "calendario": { "fechaPedida": "2027-01-15", "bandaEsperada": ["rojo", "amarillo"], "ventanaVerde": { "desde": "2027-02-15", "hasta": "2027-02-25" } }

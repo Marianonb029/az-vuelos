@@ -37,10 +37,14 @@ const evaluar = async (fase7: Fase7): Promise<number> => {
     const r = servicio.priorizar({ origen: c.origen, destino: c.destino, fechaIda: c.fechaIda, fechaVuelta: c.fechaVuelta, equipaje: "mano", orden: "indice" }, f.feriados, f.avisos);
     if (!r.ok) continue;
     const indices = new Map(r.resultado.rutas.map((x) => [clave(x), x.indice]));
-    const pares = observaciones
-      .filter((o) => `${o.origen}|${o.destino}|${o.fechaIda}|${o.fechaVuelta ?? ""}` === id)
-      .map((o) => ({ indice: indices.get(`${o.rutaOrigen}|${o.rutaVia ?? ""}|${o.rutaDestino}|${o.boletos}`), precio: o.precioUsd }))
-      .filter((p): p is { indice: number; precio: number } => p.indice !== undefined);
+    // Una observación por ruta (la más barata): el índice estima el piso de cada ruta.
+    const porRuta = new Map<string, number>();
+    for (const o of observaciones.filter((o) => `${o.origen}|${o.destino}|${o.fechaIda}|${o.fechaVuelta ?? ""}` === id)) {
+      const k = `${o.rutaOrigen}|${o.rutaVia ?? ""}|${o.rutaDestino}|${o.boletos}`;
+      porRuta.set(k, Math.min(porRuta.get(k) ?? Infinity, o.precioUsd));
+    }
+    const pares = [...porRuta.entries()].map(([k, precio]) => ({ indice: indices.get(k), precio })).filter((p): p is { indice: number; precio: number } => p.indice !== undefined);
+    if (pares.length < 3) continue;
     const rho = spearman(pares.map((p) => p.indice), pares.map((p) => p.precio));
     if (rho !== null) correlaciones.push(rho);
   }
@@ -49,11 +53,11 @@ const evaluar = async (fase7: Fase7): Promise<number> => {
 
 // Cada factor se prueba en una grilla alrededor de su valor; se queda el mejor y se pasa al siguiente (2 vueltas).
 const grilla = (valor: number, pasos: number[]) => pasos.map((p) => Math.round(valor * p * 1000) / 1000);
-const candidatos: { nombre: string; aplicar: (f: Fase7, v: number) => Fase7; leer: (f: Fase7) => number; pasos: number[] }[] = [
+const candidatos: { nombre: string; aplicar: (f: Fase7, v: number) => Fase7; leer: (f: Fase7) => number; pasos?: number[]; valores?: number[] }[] = [
   { nombre: "kmEquivalentes.fijoPorBoleto", aplicar: (f, v) => ({ ...f, kmEquivalentes: { ...f.kmEquivalentes, fijoPorBoleto: v } }), leer: (f) => f.kmEquivalentes.fijoPorBoleto, pasos: [0.25, 0.5, 1, 2, 4] },
   { nombre: "pesoKmTraslado", aplicar: (f, v) => ({ ...f, pesoKmTraslado: v }), leer: (f) => f.pesoKmTraslado, pasos: [0.5, 0.75, 1, 1.5, 2.5] },
   { nombre: "factorPresionMaxima", aplicar: (f, v) => ({ ...f, factorPresionMaxima: v }), leer: (f) => f.factorPresionMaxima, pasos: [0, 0.5, 1, 1.5, 2] },
-  { nombre: "factorPorEscala", aplicar: (f, v) => ({ ...f, factorPorEscala: v }), leer: (f) => f.factorPorEscala, pasos: [0, 0.5, 1, 2, 4] },
+  { nombre: "factorPorEscala", aplicar: (f, v) => ({ ...f, factorPorEscala: v }), leer: (f) => f.factorPorEscala, valores: [-0.15, -0.1, -0.05, 0, 0.05, 0.1] },
   { nombre: "factorBoletosSeparados", aplicar: (f, v) => ({ ...f, factorBoletosSeparados: v }), leer: (f) => f.factorBoletosSeparados, pasos: [0.85, 0.92, 1, 1.08, 1.16] },
   { nombre: "factorBajoCosto", aplicar: (f, v) => ({ ...f, factorBajoCosto: v }), leer: (f) => f.factorBajoCosto, pasos: [0.85, 0.92, 1, 1.08, 1.15] },
   { nombre: "factorCompetencia (pendiente)", aplicar: (f, v) => ({ ...f, factorCompetencia: Object.fromEntries(Object.entries(base.fase7.factorCompetencia).map(([k, x]) => [k, Math.round((1 - (1 - x) * v) * 1000) / 1000])) }), leer: () => 1, pasos: [0, 0.5, 1, 1.5, 2] },
@@ -65,7 +69,7 @@ console.log(`Base: correlación media ${mejorRho.toFixed(3)} sobre ${consultas.l
 for (let vuelta = 1; vuelta <= 2; vuelta++) {
   for (const c of candidatos) {
     const actual = c.leer(mejor);
-    for (const v of grilla(actual, c.pasos)) {
+    for (const v of c.valores ?? grilla(actual, c.pasos ?? [1])) {
       if (v === actual && c.nombre !== "factorCompetencia (pendiente)") continue;
       const rho = await evaluar(c.aplicar(mejor, v));
       if (rho > mejorRho + 0.005) {
