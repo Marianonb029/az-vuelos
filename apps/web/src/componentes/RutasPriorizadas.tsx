@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { Fragment, useCallback, useState } from "react";
 import type { FormEvent } from "react";
 import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta, sumarDias } from "@az/core";
 import type { Aeropuerto } from "@az/core";
@@ -99,7 +99,10 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
 
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
   const bajoCosto = new Set(resultado?.aerolineasBajoCosto ?? []);
-  const filas = resultado ? (todas ? resultado.rutas.map((r) => ({ r, variantes: 0 })) : agrupar(resultado.rutas, familiasAbiertas)) : [];
+  // En el orden por cercanía las familias ("misma estrategia con distinto origen") no se pliegan: el origen es
+  // justamente lo que ordena, y plegar escondería IGU→GRU→MAD debajo de ASU→GRU→MAD. Se agrupa por origen.
+  const porCercania = resultado?.orden === "cercania";
+  const filas = resultado ? (todas || porCercania ? resultado.rutas.map((r) => ({ r, variantes: 0 })) : agrupar(resultado.rutas, familiasAbiertas)) : [];
 
   // El detalle del espacio de búsqueda (alternativos, rutas, separados, gaps) se pide sólo si se abre.
   const abrirEspacio = async (e: { currentTarget: HTMLDetailsElement }) => {
@@ -163,11 +166,16 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
           ))}
           <p className="flex flex-wrap items-center gap-3 text-sm text-slate-600" data-testid="resumen-rutas">
             <span>
-              {resultado.rutas.length} rutas · {new Set(resultado.rutas.map((r) => r.familia)).size} familias (misma estrategia con distinto origen)
+              {resultado.rutas.length} rutas ·{" "}
+              {porCercania
+                ? `${new Set(resultado.rutas.map((r) => r.origen)).size} aeropuertos de salida, del pedido al más lejano`
+                : `${new Set(resultado.rutas.map((r) => r.familia)).size} familias (misma estrategia con distinto origen)`}
             </span>
-            <button type="button" onClick={() => setTodas((v) => !v)} className="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100">
-              {todas ? "Mostrar la mejor de cada familia" : "Mostrar todas"}
-            </button>
+            {!porCercania && (
+              <button type="button" onClick={() => setTodas((v) => !v)} className="rounded border border-slate-300 px-2 py-0.5 text-xs hover:bg-slate-100">
+                {todas ? "Mostrar la mejor de cada familia" : "Mostrar todas"}
+              </button>
+            )}
           </p>
           <div className="overflow-x-auto">
             <table className="min-w-[96rem] w-full text-sm">
@@ -185,16 +193,18 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
                 </tr>
               </thead>
               <tbody>
-                {filas.map(({ r, variantes }) => (
-                  <FilaRuta
-                    key={`${r.posicion}`}
-                    r={r}
-                    resultado={resultado}
-                    nombres={nombres}
-                    bajoCosto={bajoCosto}
-                    variantes={variantes}
-                    onVerFamilia={variantes > 0 ? () => setFamiliasAbiertas((s) => new Set([...s, r.familia])) : null}
-                  />
+                {filas.map(({ r, variantes }, i) => (
+                  <Fragment key={`${r.posicion}`}>
+                    {porCercania && filas[i - 1]?.r.origen !== r.origen && (
+                      <tr className="bg-slate-100">
+                        <td colSpan={9} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                          Desde {r.origen}
+                          {r.trasladoOrigenKm === 0 ? " (el aeropuerto pedido)" : ` — a ${r.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}${r.trasladoAereo ? ", con vuelo aparte" : ", por tierra"}`} · {filas.filter((f) => f.r.origen === r.origen).length} rutas: primero a {resultado.destino}, después a sus alternativos por distancia
+                        </td>
+                      </tr>
+                    )}
+                    <FilaRuta r={r} resultado={resultado} nombres={nombres} bajoCosto={bajoCosto} variantes={variantes} onVerFamilia={variantes > 0 ? () => setFamiliasAbiertas((s) => new Set([...s, r.familia])) : null} />
+                  </Fragment>
                 ))}
               </tbody>
             </table>
