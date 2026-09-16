@@ -63,23 +63,38 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
     vuelta: intentado && tipo === "ida_y_vuelta" && fechaVuelta === "" ? "Elegí la fecha de vuelta" : intentado && tipo === "ida_y_vuelta" && fechaVuelta < fechaIda ? "La vuelta no puede ser anterior a la ida" : undefined,
   };
 
-  const buscar = async (e: FormEvent) => {
-    e.preventDefault();
-    setIntentado(true);
-    if (Object.values(errores).some((x) => x !== undefined) || !origen || !destino || fechaIda === "") return;
+  const priorizar = async (equipajeElegido: "mano" | "valija", ordenElegido: OrdenRutas) => {
+    if (!origen || !destino || fechaIda === "") return;
     setCargando(true);
     setError(null);
     setEspacio(null);
     setErrorEspacio(null);
     setFamiliasAbiertas(new Set());
     try {
-      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipaje, orden));
+      setResultado(await obtenerRutas(origen.iata, destino.iata, fechaIda, tipo === "ida_y_vuelta" ? fechaVuelta : null, equipajeElegido, ordenElegido));
     } catch (err: unknown) {
       setResultado(null);
       setError(`No se pudieron priorizar las rutas: ${describirError(err)}`);
     } finally {
       setCargando(false);
     }
+  };
+
+  const buscar = async (e: FormEvent) => {
+    e.preventDefault();
+    setIntentado(true);
+    if (Object.values(errores).some((x) => x !== undefined)) return;
+    await priorizar(equipaje, orden);
+  };
+
+  // Cambiar el orden o el equipaje con un resultado en pantalla vuelve a priorizar sin apretar el botón.
+  const cambiarOrden = (o: OrdenRutas) => {
+    setOrden(o);
+    if (resultado) void priorizar(equipaje, o);
+  };
+  const cambiarEquipaje = (eq: "mano" | "valija") => {
+    setEquipaje(eq);
+    if (resultado) void priorizar(eq, orden);
   };
 
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
@@ -112,10 +127,10 @@ export const RutasPriorizadas = ({ aeropuertos, hoy }: Props) => {
             <Toggle id="r-tipo" valor={tipo} opciones={[{ valor: "ida", etiqueta: "Ida" }, { valor: "ida_y_vuelta", etiqueta: "Ida y vuelta" }]} onCambio={setTipo} />
           </Campo>
           <Campo id="r-equipaje" etiqueta="Equipaje">
-            <Toggle id="r-equipaje" valor={equipaje} opciones={[{ valor: "mano", etiqueta: "Sólo mano" }, { valor: "valija", etiqueta: "Con valija" }]} onCambio={setEquipaje} />
+            <Toggle id="r-equipaje" valor={equipaje} opciones={[{ valor: "mano", etiqueta: "Sólo mano" }, { valor: "valija", etiqueta: "Con valija" }]} onCambio={cambiarEquipaje} />
           </Campo>
           <Campo id="r-orden" etiqueta="Ordenar por">
-            <Toggle id="r-orden" valor={orden} opciones={[{ valor: "indice", etiqueta: "Chance de tarifa baja" }, { valor: "cercania", etiqueta: "Cercanía y competencia" }]} onCambio={setOrden} />
+            <Toggle id="r-orden" valor={orden} opciones={[{ valor: "indice", etiqueta: "Chance de tarifa baja" }, { valor: "cercania", etiqueta: "Cercanía y competencia" }]} onCambio={cambiarOrden} />
           </Campo>
           <Campo id="r-ida" etiqueta="Fecha de ida" error={errores.ida}>
             <input id="r-ida" type="date" value={fechaIda} min={hoy} onChange={(e) => setFechaIda(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" />
