@@ -5,3 +5,4 @@ export * from "./fuentes";
 export * from "./enlaces-metabuscadores";
 export * from "./tendencias";
 export * from "./precios";
+export * from "./mercado";

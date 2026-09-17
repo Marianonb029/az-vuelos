@@ -1,16 +1,16 @@
 # AZ Vuelos
 
-Ordena rutas aéreas por chance de tarifa baja **sin leer precios**: índice de costo estimado con km volados, competencia de aerolíneas por tramo, presión de la fecha (feriados, fines de semana largos, día de la semana, temporada por región, eventos masivos) y escalas, más enlaces a metabuscadores. El brief original (`docs/BRIEF.md`) pedía leer precios en sitios oficiales; la Fase 9 lo reemplazó y retiró el scraper. `docs/DECISIONES.md` manda sobre el brief.
+Muestra **lo que el mercado tiene** para llegar de un origen a un destino: las tarifas cacheadas de la API de datos de Travelpayouts (lo que otros usuarios de Aviasales encontraron), en uno o dos boletos encadenados, sin límite de transbordos, ordenadas por aeropuerto de salida, precio, equipaje de bodega, horas totales, escalas y aerolíneas (Fase 15), con la antigüedad y el desvío estimado de cada tarifa. Detrás, el **modelo sin precios** (Fases 1–14: alternativos, grafo de rutas vigentes, competencia, presión de la fecha, índice) elige qué pares de boletos bajar. El brief original (`docs/BRIEF.md`) pedía leer precios en sitios oficiales; la Fase 9 lo reemplazó por el modelo y la Fase 15 puso los precios ciertos de la API como salida. `docs/DECISIONES.md` manda sobre el brief.
 
 ## Stack
 
 pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquema)
 
-- `apps/web` — React 18 + Vite + Tailwind v4. Tres pestañas: Rutas, Tablero (resumen de la última priorización, sin registro) y Datos (glosario y ficha de cada dato).
-- `apps/api` — Node 24 + Fastify 5. Cálculo sobre datasets, sin base de datos ni registros de uso: `GET /rutas`, `GET /espacio*`, `GET /datos`. Lee de `data/local/` lo que dejan los scripts (tendencias, corroboración, precios cacheados). Refresco automático diario de fuentes vencidas.
-- `packages/core` — primitivos Zod, catálogos IATA, fechas, esquema de fuentes de datos y enlaces a metabuscadores (sólo URLs).
+- `apps/web` — React 18 + Vite + Tailwind v4. Tres pestañas: Rutas (el mercado; plegado, el modelo sin precios), Tablero (métricas de la última búsqueda, sin registro) y Datos (glosario y ficha de cada dato).
+- `apps/api` — Node 24 + Fastify 5. Cálculo sobre datasets, sin base de datos ni registros de uso: `GET /mercado` (Fase 15), `GET /rutas` (modelo), `GET /espacio*`, `GET /datos`. Lee de `data/local/` lo que dejan los scripts (tendencias, corroboración, precios cacheados). Refresco automático diario de fuentes vencidas.
+- `packages/core` — primitivos Zod, catálogos IATA, fechas, esquema de fuentes, enlaces a metabuscadores (sólo URLs), precios cacheados (`precios.ts`: esquema, lectura del enlace, corridas, desvío) y el mercado (`mercado.ts`: combinaciones de uno o dos boletos, orden 1–6, antigüedad y cadencia). Sin I/O.
 - `packages/espacio` — motor (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas vigentes, gaps, calendario con señales de demanda, combinaciones y Fase 7 (índice por ruta). Sin I/O.
-- `config/espacio.json` — todos los números del modelo (radios, niveles, pesos de presión, temporadas por región con fuente, factores del índice).
+- `config/espacio.json` — todos los números del modelo y del mercado (radios, niveles, pesos, factores, `precios` con cadencia por anticipación, historial y tasa de desvío supuesta, `mercado` con esperas entre boletos y ventana).
 - `data` — datasets generados (`pnpm catalogos`, `pnpm eventos`), no editar a mano.
 - `scripts` — catálogos (OurAirports, OpenTravelData, VRS), eventos (Wikidata), corroboración de rutas con Wikipedia, precios cacheados de Travelpayouts (token en `TRAVELPAYOUTS_TOKEN`) y lectura de tendencia de Google Flights (Playwright, sólo ese script).
 
@@ -25,7 +25,7 @@ pnpm lint
 pnpm catalogos   # rutas (VRS) y aeropuertos: mensual
 pnpm eventos     # eventos masivos (Wikidata): mensual
 pnpm corroborar ASU GRU MAD         # aerolíneas por aeropuerto: Wikipedia contra VRS (aparece en Datos)
-pnpm precios ASU MAD                # precios cacheados de Travelpayouts para los boletos del par: semanal
+pnpm precios ASU MAD                # tarifas cacheadas de Travelpayouts para los pares del modelo; se acumulan sin borrar: diaria/3 días/semanal según lo que falte para el viaje
 pnpm tendencia ASU MAD 2027-02-25   # etiqueta de precios de Google Flights para el par
 ```
 
@@ -33,7 +33,7 @@ Requisitos: Node ≥ 22 y pnpm ≥ 10. Chrome sólo para `pnpm tendencia`.
 
 ## Reglas innegociables
 
-1. El único precio que se muestra es el **cacheado de Travelpayouts**, con su fecha y su desvío medido, nunca como cotización viva; no hay número resumen del modelo en la tabla: el **índice de costo estimado** ordena y queda en `fundamento` y `desglose` ("La cuenta").
+1. El único precio que se muestra es el **cacheado de Travelpayouts**, con la fecha en que se vio, el desvío (medido entre corridas o supuesto declarado) y la cadencia con que toca rebajarlo; nunca como cotización viva. El orden del mercado es el del dueño (salida, precio, bodega, horas, escalas, aerolíneas); el **índice** del modelo sólo ordena la lista plegada y queda en "La cuenta".
 2. Toda variable declara su fuente, última actualización y exactitud (`GET /datos`); lo aproximado y lo supuesto se dice.
 3. No se lee ningún sitio de terceros desde la app: los enlaces a metabuscadores son sólo URLs. Las lecturas son scripts a pedido: `pnpm precios` (API de Travelpayouts con token), `pnpm corroborar` (Wikipedia), `pnpm tendencia` (Google Flights, sin aceptar consentimiento).
 4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en tests.

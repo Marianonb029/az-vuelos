@@ -9,7 +9,22 @@ const EXACTITUD: Record<FuenteDato["exactitud"], string> = { exacta: "bg-emerald
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 // Glosario de lo que se ve en Rutas: qué significa cada término y de qué dato sale (la fila de Fuentes que lo alimenta).
+// Primero el mercado (la lista principal), después el modelo sin precios (plegado abajo en Rutas).
 const GLOSARIO: { termino: string; significado: string; sale: string }[] = [
+  { termino: "Combinación", significado: "Una forma de llegar al destino con lo que la API tiene: un boleto, o dos encadenados donde termina el primero (con 3 a 24 h de espera). Sin límite de transbordos dentro de cada boleto.", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Orden 1–6", significado: "1. Aeropuerto de salida: el pedido primero, después los alternativos por cercanía. 2. Precio total. 3. Sin equipaje de bodega antes que con. 4. Horas totales. 5. Escalas. 6. Aerolíneas distintas. Cada criterio desempata al anterior.", sale: "—" },
+  { termino: "Precio", significado: "Suma de los boletos, en USD, tal como otro usuario lo vio en Aviasales. No es cotización viva: al abrir el enlace puede haber cambiado (ver antigüedad y desvío).", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Equipaje", significado: "Mano y bodega según la clave de tarifa del enlace: inferido, no documentado. 'No informado' cuando la clave no viene. Confirmar en la aerolínea.", sale: "Equipaje de mano y de bodega" },
+  { termino: "Horas totales", significado: "De la salida del primer boleto a la llegada del último, esperas incluidas (las horas del enlace son locales y se comparan en el mismo aeropuerto).", sale: "Itinerario, horarios y agencia de cada tarifa" },
+  { termino: "Escalas", significado: "Transbordos dentro de cada boleto más los cambios de boleto. Un cambio de boleto no tiene protección de conexión: si el primero se atrasa, el segundo se pierde.", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Aerolíneas", significado: "Cuántas vendedoras distintas hay en la combinación (la API da la que vende cada boleto, no la que opera cada tramo).", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Termina en X", significado: "La combinación llega a un aeropuerto alternativo (p. ej. LIS por MAD): el traslado al destino pedido va aparte y no está en el precio.", sale: "Aeropuertos alternativos" },
+  { termino: "Vista hace N días", significado: "Días desde que un usuario de Aviasales vio esa tarifa (search_date del enlace), no desde que se bajó el dataset. La combinación toma la más vieja de sus boletos.", sale: "Antigüedad y desvío estimado de cada tarifa" },
+  { termino: "Puede haberse movido ±X %", significado: "Días transcurridos × tasa diaria. La tasa es la medida entre dos corridas (mediana del cambio / días entre ellas) o, hasta tenerla, el supuesto de config.", sale: "Antigüedad y desvío estimado de cada tarifa" },
+  { termino: "Refrescar / rebajar cada N días", significado: "Cadencia recomendada según lo que falta para el viaje (diaria en las últimas dos semanas, cada 3 días hasta 60, semanal más lejos). 'Refrescar' en rojo: la tarifa es más vieja que eso; corré pnpm precios.", sale: "Antigüedad y desvío estimado de cada tarifa" },
+  { termino: "Agencia", significado: "Quién vendía esa tarifa cuando se vio (gate de Aviasales): agencia en línea o la aerolínea.", sale: "Itinerario, horarios y agencia de cada tarifa" },
+  { termino: "Corridas", significado: "Cada pnpm precios se guarda con su fecha sin borrar la anterior (90 días): lo vigente es la última versión de cada tarifa; lo anterior sirve para medir el desvío.", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "— Modelo sin precios (plegado en Rutas) —", significado: "Lo que sigue describe la lista del modelo: rutas posibles según el grafo, sin precios; es lo que elige qué pares baja pnpm precios.", sale: "—" },
   { termino: "Buscar en", significado: "Las aerolíneas que venden ese boleto (el itinerario completo si es uno; cada compra si son dos; el vuelo aparte si el aeropuerto es alternativo). Ahí se compara el precio; las demás sólo operan un tramo.", sale: "Competencia: aerolíneas por tramo" },
   { termino: "2 boletos", significado: "Dos compras separadas: origen→hub con una aerolínea y hub→destino con otra. Sin protección de conexión.", sale: "Competencia: aerolíneas por tramo" },
   { termino: "+ vuelo aparte", significado: "El aeropuerto de salida o llegada es un alternativo a más de 400 km del pedido: el traslado es otro vuelo, con su boleto y sus aerolíneas.", sale: "Aeropuertos alternativos" },
@@ -25,8 +40,7 @@ const GLOSARIO: { termino: string; significado: string; sale: string }[] = [
   { termino: "Presión y banda", significado: "Suma de señales del día (−50…100): feriados, fines de semana largos, temporada, eventos, día de la semana, en origen, escala y destino. Verde ≤33, amarillo 34–66, rojo ≥67. Cada señal se lista con puntos y fuente; en 'Ver', lo revisado que no sumó.", sale: "Feriados y fines de semana largos · Eventos masivos · Temporada y demanda por región · Corredores de tarifas" },
   { termino: "Anticipación y estadía", significado: "Días entre hoy y la ida (comprar tarde recarga) y días entre ida y vuelta (muy corta o muy larga recarga).", sale: "Factores del índice" },
   { termino: "Visa / tránsito", significado: "La escala pide visa o permiso de tránsito (p. ej. ESTA en hubs de EE.UU.).", sale: "Factores del índice" },
-  { termino: "La cuenta (en Ver)", significado: "El índice de costo estimado que ordena: km equivalentes × un factor por variable. No es un precio; los factores son supuestos en config/espacio.json y se ajustan con precios anotados.", sale: "Factores del índice" },
-  { termino: "Precio visto", significado: "El precio que viste en un metabuscador para esa fila. Alimenta la validación del orden (Tablero).", sale: "—" },
+  { termino: "La cuenta (en Ver)", significado: "El índice de costo estimado que ordena el modelo: km equivalentes × un factor por variable. No es un precio; los factores son supuestos en config/espacio.json.", sale: "Factores del índice" },
 ];
 
 // Pestaña Datos: glosario de lo que se ve en Rutas y la ficha de cada dato (fuente, última actualización, exactitud, refresco).
@@ -56,7 +70,7 @@ export const TableroDatos = ({ visible }: { visible: boolean }) => {
           {error}
         </p>
       )}
-      <Bloque orden={1} titulo="Glosario: qué significa cada cosa que ves en Rutas" objetivo="Cada término de la tabla de rutas, en una frase, y de qué dato sale (fila de la ficha de abajo).">
+      <Bloque orden={1} titulo="Glosario: qué significa cada cosa que ves en Rutas y Tablero" objetivo="Cada término, en una frase, y de qué dato sale (fila de la ficha de abajo). Primero el mercado; después el modelo sin precios.">
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="glosario">
             <thead>

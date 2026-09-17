@@ -2,16 +2,19 @@ import { crearApp } from "./app";
 import { config } from "./config";
 import { crearServicioEspacio } from "./servicios/espacio";
 import { crearServicioFeriados } from "./servicios/feriados";
+import { crearServicioMercado } from "./servicios/mercado";
 import { iniciarRefresco } from "./servicios/refresco";
 
-// El servicio del espacio se recrea cuando el refresco automático trae datasets nuevos.
+// Los servicios se recrean cuando el refresco automático trae datasets nuevos.
 let espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
-const app = crearApp({ espacio: () => espacio, feriados: crearServicioFeriados(), rutaTendencias: config.rutaTendencias });
+let mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio);
+const app = crearApp({ espacio: () => espacio, mercado: () => mercado, feriados: crearServicioFeriados(), rutaTendencias: config.rutaTendencias });
 
 iniciarRefresco({
   fuentesVencidas: () => espacio.fuentes().filter((f) => f.vencida),
   recargar: () => {
     espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
+    mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio);
   },
   raizRepo: config.raizRepo,
   cadaMs: 24 * 60 * 60_000,

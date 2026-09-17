@@ -1,17 +1,48 @@
 import { describe, expect, it } from "vitest";
-import { medirDesvio, preciarRuta, reducirPrecios, ventanaBoleto } from "./precios";
+import { leerEnlace, medirDesvio, preciarRuta, reducirPrecios, ultimos, ventanaBoleto } from "./precios";
 import type { PrecioCacheado } from "./precios";
 
-const t = (origen: string, destino: string, aerolinea: string, fechaIda: string, precioUsd: number, transbordos = 0, encontradoEn = "2026-09-16T10:00:00.000Z"): PrecioCacheado => ({ origen, destino, aerolinea, numeroVuelo: `${aerolinea}1`, fechaIda, transbordos, duracionMin: 600, precioUsd, enlace: "/search/x", encontradoEn });
+const t = (origen: string, destino: string, aerolinea: string, fechaIda: string, precioUsd: number, transbordos = 0, encontradoEn = "2026-09-16T10:00:00.000Z"): PrecioCacheado => ({
+  origen,
+  destino,
+  aerolinea,
+  numeroVuelo: `${aerolinea}1`,
+  fechaIda,
+  transbordos,
+  duracionMin: 600,
+  itinerario: [origen, destino],
+  salidaEpoch: 1_800_000_000,
+  llegadaEpoch: 1_800_036_000,
+  equipajeMano: true,
+  equipajeBodega: false,
+  agencia: "x",
+  precioUsd,
+  enlace: "/search/x",
+  vistoEn: encontradoEn.slice(0, 10),
+  encontradoEn,
+});
 const plegar = (iata: string) => (iata === "JJ" || iata === "PZ" ? "LA" : iata);
 
 describe("precios cacheados (Travelpayouts)", () => {
-  it("reduce a un precio por par, fecha, aerolínea y transbordos: el mínimo", () => {
-    const r = reducirPrecios([t("ASU", "GRU", "G3", "2027-01-19", 180), t("ASU", "GRU", "G3", "2027-01-19", 150), t("ASU", "GRU", "LA", "2027-01-19", 200)]);
-    expect(r.map((x) => `${x.aerolinea}:${x.precioUsd}`)).toEqual(["G3:150", "LA:200"]);
+  it("lee del enlace lo que la API no da como campo: itinerario, horas, duración, cuándo se vio y equipaje", () => {
+    const enlace = "/search/ASU3009MAD1?t=TP17907699001790868000001335ASUGRULISMAD_c2e083145bccbe17948e6ec236fd35c4_67403&search_date=14092026&expected_price_uuid=x&static_fare_key=TY%7CP0%7CH1%7CL0%7CCH0%7CR0%7CTBC0&itinerary_key=y";
+    expect(leerEnlace(enlace)).toEqual({ itinerario: ["ASU", "GRU", "LIS", "MAD"], salidaEpoch: 1790769900, llegadaEpoch: 1790868000, duracionMin: 1335, vistoEn: "2026-09-14", equipajeMano: true, equipajeBodega: false });
+    expect(leerEnlace("/search/ASU3009MAD1?t=TP1790769900ASUMAD_x&search_date=14092026")).toBeNull();
+    expect(leerEnlace("/search/x?t=IB17896836001789688400000080AGPMAD_f_5&search_date=16092026")?.equipajeMano).toBeNull();
   });
 
-  it("precia una combinación por boleto: vendedoras, transbordos admitidos y ventana del segundo boleto", () => {
+  it("reduce a un precio por tarifa y corrida (el mínimo) y conserva las corridas anteriores; `ultimos` da la vigente", () => {
+    const vieja = t("ASU", "GRU", "G3", "2027-01-19", 120, 0, "2026-09-09T10:00:00.000Z");
+    const r = reducirPrecios([t("ASU", "GRU", "G3", "2027-01-19", 180), t("ASU", "GRU", "G3", "2027-01-19", 150), t("ASU", "GRU", "LA", "2027-01-19", 200), vieja]);
+    expect(r.map((x) => `${x.aerolinea}:${x.precioUsd}`)).toEqual(["G3:120", "G3:150", "LA:200"]);
+    expect(ultimos(r).map((x) => `${x.aerolinea}:${x.precioUsd}`)).toEqual(["G3:150", "LA:200"]);
+    // Mismo par y aerolínea por otro itinerario es otra tarifa.
+    const viaGig = { ...t("ASU", "MAD", "G3", "2027-01-19", 700), itinerario: ["ASU", "GIG", "LIS", "MAD"] };
+    const viaGru = { ...t("ASU", "MAD", "G3", "2027-01-19", 800), itinerario: ["ASU", "GRU", "LIS", "MAD"] };
+    expect(ultimos([viaGig, viaGru])).toHaveLength(2);
+  });
+
+  it("precia una combinación del modelo por boleto: vendedoras, transbordos admitidos y ventana del segundo boleto", () => {
     const precios = [
       t("ASU", "GRU", "PZ", "2027-01-19", 210), // LATAM Paraguay: se pliega a LA
       t("ASU", "GRU", "G3", "2027-01-19", 150),
@@ -44,7 +75,7 @@ describe("precios cacheados (Travelpayouts)", () => {
     expect(cerca).toMatchObject({ precioUsd: 140, fechaIda: "2027-01-25", fechaExacta: false }); // el del 10/02 queda fuera de los 7 días
   });
 
-  it("mide el desvío entre corridas sobre las mismas claves", () => {
+  it("mide el desvío entre corridas sobre las mismas tarifas", () => {
     const antes = [t("ASU", "GRU", "G3", "2027-01-19", 100, 0, "2026-09-09T10:00:00.000Z"), t("ASU", "GRU", "LA", "2027-01-19", 200, 0, "2026-09-09T10:00:00.000Z"), t("GRU", "MAD", "TP", "2027-01-19", 500, 1, "2026-09-09T10:00:00.000Z")];
     const despues = [t("ASU", "GRU", "G3", "2027-01-19", 110), t("ASU", "GRU", "LA", "2027-01-19", 180), t("GRU", "MAD", "TP", "2027-01-19", 500, 1), t("GRU", "MAD", "AF", "2027-01-19", 600, 1)];
     const d = medirDesvio(antes, despues);

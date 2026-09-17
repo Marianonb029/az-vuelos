@@ -1,37 +1,43 @@
 # AZ Vuelos
 
-Dado un origen, un destino y una fecha de ida (y vuelta opcional), AZ Vuelos ordena las rutas aéreas posibles por su **chance de tarifa baja**, sin leer ningún precio. Cada ruta lleva un **índice de costo estimado** (menor = más barato; nunca un precio) que combina:
+Dado un origen, un destino y una fecha de ida, AZ Vuelos muestra **lo que el mercado tiene** para llegar: las tarifas que otros usuarios de Aviasales encontraron (API de datos de Travelpayouts, gratuita), en un boleto o en dos encadenados donde termina el primero, sin límite de transbordos, con el orden del dueño:
 
-- **distancia**: km volados por tramo, desvío respecto al directo y traslado si se sale o llega por un aeropuerto alternativo;
-- **competencia**: cuántas aerolíneas operan el tramo más cerrado de la ruta (rutas vigentes por número de vuelo) y si hay una de bajo costo;
-- **presión de la fecha**: feriados (en vivo), fines de semana largos, día de la semana y día de regreso, Semana Santa, temporada por región/continente y eventos masivos confirmados;
-- **escalas** y si son uno o dos boletos.
+1. **aeropuerto de salida**: el pedido primero, después los alternativos por cercanía;
+2. **precio** total, de menor a mayor;
+3. **sin equipaje de bodega** antes que con;
+4. **horas totales** hasta el destino (esperas incluidas);
+5. **escalas** (transbordos más cambios de boleto);
+6. **aerolíneas distintas**.
 
-Cada fila explica su cuenta ("por qué") y enlaza a siete metabuscadores (Kayak, Momondo, Kiwi.com, Trip.com, Google Flights, Turismocity, Viajala) con la ruta y la fecha ya cargadas, por boleto. La app sólo arma la URL: no abre ni lee ningún sitio.
+Cada fila dice hace cuántos días se vio la tarifa, cuánto puede haberse movido desde entonces (tasa medida entre corridas o supuesto de config) y cada cuánto conviene rebajar los precios según lo que falta para el viaje. Nada es cotización viva: la app sólo lee el dataset que deja `pnpm precios`.
 
-Historia del producto: `docs/BRIEF.md` (brief original, lectura de precios en sitios oficiales) y `docs/DECISIONES.md` (manda sobre el brief; la Fase 9 registra el cambio a rutas priorizadas sin precios y el retiro del scraper).
+Detrás sigue el **modelo sin precios** (Fases 1–14: aeropuertos alternativos, grafo de rutas vigentes, competencia, presión de la fecha, índice de costo estimado): plegado en Rutas, es lo que decide qué pares de boletos bajar para un origen y un destino.
+
+Historia del producto: `docs/BRIEF.md` (brief original) y `docs/DECISIONES.md` (manda sobre el brief; la Fase 9 registra el cambio a rutas sin precios y la Fase 15 el cambio a precios ciertos de la API).
 
 ## Pantallas
 
 | Pestaña | Para qué sirve |
 |---|---|
-| **Rutas** | Origen, destino y fecha → tabla ordenada por índice con km, competencia, aerolíneas por tramo, presión de ida/vuelta y enlaces. Debajo, desplegable con el espacio de búsqueda que hay detrás: cuándo volar (calendario de presión), boletos separados por hub, rutas con boleto único, aeropuertos alternativos y gaps. |
-| **Tablero** | Resumen de la última priorización (no guarda registro): combinaciones, compras, aerolíneas y hubs por los que empezar a buscar, tramo que fija el precio, puertas alternativas y cómo se llega al destino, y el embudo de lo que entró y se descartó. |
-| **Datos** | Glosario de cada término de Rutas y la ficha de cada dato: fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. Lo 'aproximado' y 'supuesto' es estático (config) y no se actualiza solo. |
+| **Rutas** | Origen, destino, fecha y ventana (ese día / ±3 / ±7 / ±15) → combinaciones del mercado agrupadas por aeropuerto de salida, con boletos (itinerario, aerolínea, vuelo, horario local, equipaje, agencia, enlace a Aviasales), precio, equipaje, horas totales, escalas, aerolíneas, día de salida y antigüedad con desvío estimado. Debajo, plegado, el modelo sin precios con su propio formulario. |
+| **Tablero** | Métricas de la última búsqueda (no guarda registro): combinaciones, más barata / más corta / menos escalas, qué se paga por menos escalas, dónde está lo barato (salida, aerolíneas, escalas, agencias, día), frescura (a refrescar, antigüedad, desvío, equipaje informado) y las corridas del dataset. Plegado, el resumen del modelo. |
+| **Datos** | Glosario de cada término de Rutas y Tablero y la ficha de cada dato: fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. |
 
 Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y un número de peso en la decisión (1 = lo que más pesa).
 
-## Qué es el índice y cómo leer una fila
+## Cómo leer una fila del mercado
 
-- **Índice** (interno, en "La cuenta" al desplegar) = km equivalentes (distancia + tasas internacionales + traslado) × un factor por variable (competencia por tramo ponderada por km, con corredor de largo radio; low cost según equipaje; hub conector; presión de la fecha; escalas; boletos separados; visa; anticipación; estadía). Menor = más chance de tarifa baja. No es un precio; los supuestos están en `config/espacio.json`.
-- **Ordenar por**: *Chance de tarifa baja* (el índice, sin mostrarlo como número) o *Cercanía y competencia*: un recorrido por aeropuerto de salida (el pedido primero, después por distancia); en cada uno, primero las rutas al destino pedido y después las de cada destino alternativo con cómo se llega desde ahí al pedido (vuelo aparte con qué aerolíneas, o por tierra); entre iguales más aerolíneas en el tramo más cerrado y menos tramos.
-- **Columnas**: una por variable, contada en criollo — compras y escalas, competencia (aerolíneas por tramo y corredor de largo radio), distancia y traslado, tarifa de la aerolínea (low cost / hub conector / red), fecha, anticipación y estadía. No hay precio ni número resumen; con eso se decide dónde buscar.
-- **Cómo se armó la lista** (bloque 2): cada recorte del espacio de búsqueda con su cantidad y su criterio.
-- **Dos boletos con conexión**: el segundo boleto puede tener su propia escala vendida junta (ASU→GRU con GOL + TAP GRU→LIS→MAD; ASU→PTY + KLM PTY→AMS→MAD): lo que los sitios de las aerolíneas muestran como "1 transbordo" desde el hub.
-- **Buscar en:** las aerolíneas que venden ese boleto (o cada uno de los dos). Ahí se compara el precio; las demás de la columna de tramos sólo operan y sirven para medir competencia.
-- **Precio cacheado (Travelpayouts)**: lo que otros usuarios de Aviasales encontraron en los últimos días para cada boleto de la combinación (aerolínea, vuelo, fecha, transbordos), sumado; "parcial" si falta un boleto. No es cotización viva: cada corrida mide cuánto cambiaron los precios desde la anterior y ese es el margen a asumir.
-- **Ver** muestra además qué se revisó y no sumó (verde ≤33, amarillo 34–66, rojo ≥67) y cada señal que sumó o restó con su fuente (feriados Nager.Date por país, fines de semana largos, temporadas de config, eventos de Wikidata/config, día de la semana), también en la ciudad de la escala. **Ver** muestra además qué se revisó y no sumó (feriados y eventos de cada país y ciudad del viaje), la cuenta exacta del índice y los enlaces a los metabuscadores.
-- **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; los 6 con más salidas entran siempre (GRU, GIG, SCL para ASU), el resto por distancia. A más de 400 km el traslado es otro vuelo, con sus aerolíneas y su boleto; si no hay vuelo, la ruta no es alcanzable.
+- **Boletos**: cada boleto con su itinerario completo (los aeropuertos por los que pasa, leídos del enlace de la tarifa), la aerolínea que lo vende, el número de vuelo, precio, transbordos, duración, hora local de salida y llegada, equipaje (inferido de la clave de tarifa; "no informado" si no viene), la agencia que lo vendía y el enlace para abrirlo en Aviasales. Entre dos boletos, la espera en el aeropuerto de cambio (3 a 24 h; sin protección de conexión).
+- **Termina en X**: la combinación llega a un aeropuerto alternativo (LIS por MAD): el traslado al pedido va aparte y no está en el precio.
+- **Antigüedad**: "vista hace N días" cuenta desde que un usuario de Aviasales vio la tarifa (no desde que se bajó el dataset). "Puede haberse movido ±X %" = días × tasa diaria; la tasa es la medida entre corridas (mediana del cambio / días entre ellas) o, hasta tenerla, 1 % por día (config). "Refrescar" en rojo: la tarifa es más vieja que la cadencia que le toca (diaria a menos de 14 días del viaje, cada 3 días hasta 60, semanal más lejos).
+- **Corridas**: cada `pnpm precios` se agrega al dataset sin borrar el anterior (90 días). Lo vigente es la última versión de cada tarifa; lo anterior mide el desvío.
+
+## El modelo sin precios (plegado en Rutas)
+
+- **Índice** (interno, en "La cuenta") = km equivalentes (distancia + tasas internacionales + traslado) × un factor por variable (competencia por tramo ponderada por km, con corredor de largo radio; low cost según equipaje; hub conector; presión de la fecha; escalas; boletos separados; visa; anticipación; estadía). No es un precio; los supuestos están en `config/espacio.json`.
+- **Ordenar por**: *Chance de tarifa baja* o *Cercanía y competencia* (por aeropuerto de salida, primero el destino pedido y después cada alternativo con cómo se llega).
+- **Para qué sirve ahora**: `pnpm precios` toma de esta lista los pares de boletos a bajar (directos, origen→hub, hub→destino, vuelos aparte); las columnas explican por qué cada par está.
+- **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; los 6 con más salidas entran siempre (GRU, GIG, SCL para ASU), el resto por distancia.
 
 ## Señales y comandos
 
@@ -41,7 +47,7 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 | `pnpm eventos` | Eventos masivos confirmados (Wikidata), ~2 min |
 | `pnpm tendencia ASU MAD 2027-02-25` | Lee en Google Flights si los precios del par están bajos / típicos / altos respecto de 12 meses (usa el Chrome instalado; no acepta consentimiento) |
 | `pnpm corroborar ASU GRU MAD` | Compara, por aeropuerto, las aerolíneas de Wikipedia (Airlines and destinations) contra las de VRS; el resultado aparece en Datos |
-| `pnpm precios ASU MAD [meses]` | Baja de Travelpayouts (Aviasales Data API, token gratuito en `TRAVELPAYOUTS_TOKEN`) los precios cacheados de cada boleto de las combinaciones del par para los próximos meses; Rutas los muestra por combinación y Datos el desvío entre corridas. Correr cada 7 días por par buscado |
+| `pnpm precios ASU MAD [meses]` | Baja de Travelpayouts (Aviasales Data API, token gratuito en `TRAVELPAYOUTS_TOKEN`) todas las tarifas cacheadas de los pares de boletos que el modelo propone para el par, para los próximos meses, y las agrega al dataset sin borrar las corridas anteriores. Es lo que Rutas muestra. Cadencia: diaria a menos de 14 días del viaje, cada 3 días hasta 60, semanal más lejos |
 
 La API corre el refresco automático una vez por día para lo que venció (`pnpm catalogos`, `pnpm eventos`).
 

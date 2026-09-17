@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { DatasetPrecios, diasEntre, preciarRuta, ventanaBoleto } from "@az/core";
+import { DatasetPrecios, diasEntre, preciarRuta, ultimos, ventanaBoleto } from "@az/core";
 import type { BoletoAPreciar, FuenteDato } from "@az/core";
 import {
   AeropuertoGeo,
@@ -38,7 +38,7 @@ export interface PedidoRutas {
 }
 
 export interface ServicioEspacio {
-  explorar: (origen: string, destino: string) => ResultadoServicioEspacio;
+  explorar: (origen: string, destino: string, conGaps?: boolean) => ResultadoServicioEspacio;
   paisesDe: (origen: string, destino: string) => string[] | null; // para pedir feriados antes del calendario
   calendario: (origen: string, destino: string, desde: string, hasta: string, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCalendario;
   // Países de todos los orígenes candidatos más el destino: las combinaciones puntúan cada origen con su propio calendario.
@@ -64,9 +64,14 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const rutaEventos = resolve(directorioDatos, "eventos.json");
   const eventosDataset = existsSync(rutaEventos) ? DatasetEventos.parse(leerJson(rutaEventos)) : null;
   const config: ConfigEspacio = { ...configBase, fase5: { ...configBase.fase5, eventos: [...configBase.fase5.eventos, ...(eventosDataset?.eventos ?? [])] } };
-  // Precios cacheados de Travelpayouts (`pnpm precios`): se leen en cada priorización para reflejar la última corrida.
+  // Precios cacheados de Travelpayouts (`pnpm precios`): se leen en cada priorización para reflejar la última
+  // corrida. Un archivo con formato anterior cuenta como "sin dataset" y Datos lo dice.
   const rutaPrecios = resolve(directorioDatos, "local", "precios.json");
-  const precios = () => (existsSync(rutaPrecios) ? DatasetPrecios.parse(leerJson(rutaPrecios)) : null);
+  const precios = (): DatasetPrecios | null => {
+    if (!existsSync(rutaPrecios)) return null;
+    const parseado = DatasetPrecios.safeParse(leerJson(rutaPrecios));
+    return parseado.success ? parseado.data : null;
+  };
   const plegar = (iata: string) => configBase.grafo.equivalencias[iata] ?? iata;
   const dias = (iso: string) => Math.floor((ahora().getTime() - Date.parse(iso)) / 86_400_000);
   const fuente = (f: Omit<FuenteDato, "vencida">): FuenteDato => ({ ...f, vencida: f.actualizadoEn !== null && f.cadenciaDias !== null && dias(f.actualizadoEn) > f.cadenciaDias });
@@ -83,9 +88,10 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
 
   const filaPrecios = (): { variable: string; fuente: string; actualizadoEn: string | null; detalle: string } => {
     const d = precios();
-    if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: "Sin corridas todavía: `pnpm precios ASU MAD` baja, por cada boleto de las combinaciones del par, los precios encontrados por usuarios de Aviasales en los últimos días para los próximos meses (token gratuito en TRAVELPAYOUTS_TOKEN)" };
-    const desvio = d.desvio ? `desvío contra la corrida anterior: mediana ${d.desvio.medianaPct} %, p90 ${d.desvio.p90Pct} % sobre ${d.desvio.comparados} tarifas (${d.desvio.subieron} subieron, ${d.desvio.bajaron} bajaron)` : "sin corrida anterior para medir el desvío";
-    return { variable: "Precios cacheados (Travelpayouts)", fuente: d.fuente, actualizadoEn: d.actualizadoEn, detalle: `${d.precios.length} tarifas en ${d.pares.length} pares de boletos (${d.pares.map((x) => `${x.origen}→${x.destino}`).slice(0, 12).join(", ")}${d.pares.length > 12 ? "…" : ""}); ${desvio}. No son cotizaciones vivas: el precio real puede diferir en ese margen hasta la próxima corrida` };
+    if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: `Sin dataset legible${existsSync(rutaPrecios) ? " (formato anterior)" : ""}: \`pnpm precios ASU MAD\` baja, por cada par de boletos que el modelo propone para llegar al destino, los precios encontrados por usuarios de Aviasales en los últimos días para los próximos meses (token gratuito en TRAVELPAYOUTS_TOKEN)` };
+    const vigentes = ultimos(d.precios);
+    const desvio = d.desvio ? `desvío medido contra la corrida anterior: mediana ${d.desvio.medianaPct} %, p90 ${d.desvio.p90Pct} % sobre ${d.desvio.comparados} tarifas (${d.desvio.subieron} subieron, ${d.desvio.bajaron} bajaron)` : `sin corrida anterior para medir el desvío: se asume ${configBase.precios.desvioDiarioSupuestoPct} % por día desde que se vio cada tarifa`;
+    return { variable: "Precios cacheados (Travelpayouts)", fuente: d.fuente, actualizadoEn: d.actualizadoEn, detalle: `${vigentes.length} tarifas vigentes (${d.precios.length - vigentes.length} de corridas anteriores conservadas ${configBase.precios.diasHistorial} días; ${d.corridas.length} corridas) en ${d.pares.length} pares de boletos (${d.pares.map((x) => `${x.origen}→${x.destino}`).slice(0, 12).join(", ")}${d.pares.length > 12 ? "…" : ""}); ${desvio}. Cada fila de Rutas dice hace cuántos días se vio su tarifa y cuánto puede haberse movido. No son cotizaciones vivas` };
   };
 
   const fuentes = (): FuenteDato[] => [
@@ -93,6 +99,9 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     fuente({ variable: "Competencia: aerolíneas por tramo", fuente: "Virtual Radar Server standing data (CC0, diario)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `${meta.rutas.registros} rutas por número de vuelo; sin horarios ni fecha de última observación (pueden quedar números discontinuados); ${configBase.grafo.aerolineasExcluidas.length} códigos excluidos (cargueras y desaparecidas); grupos tarifarios que cuentan como uno: ${Object.keys(configBase.grafo.gruposTarifarios).join(", ")}`, cadenciaDias: 30, comando: "pnpm catalogos" }),
     fuente({ ...corroboracion(), exactitud: "vigente", cadenciaDias: 30, comando: "pnpm corroborar" }),
     fuente({ ...filaPrecios(), exactitud: "vigente", cadenciaDias: configBase.precios.cadenciaDias, comando: "pnpm precios ORIGEN DESTINO" }),
+    fuente({ variable: "Itinerario, horarios y agencia de cada tarifa", fuente: "Enlace de búsqueda de cada tarifa (campo `link` de la API)", actualizadoEn: precios()?.actualizadoEn ?? null, exactitud: "exacta", detalle: "La API da aerolínea, fecha, transbordos, duración y precio; los aeropuertos por los que pasa, la hora de salida y llegada y la fecha en que se vio la tarifa vienen en su enlace. Con las horas se encadenan dos boletos separados (espera de " + `${configBase.mercado.conexionMinHoras} a ${configBase.mercado.conexionMaxHoras} h)`, cadenciaDias: configBase.precios.cadenciaDias, comando: "pnpm precios ORIGEN DESTINO" }),
+    fuente({ variable: "Equipaje de mano y de bodega", fuente: "Clave de tarifa del enlace (static_fare_key, no documentada)", actualizadoEn: precios()?.actualizadoEn ?? null, exactitud: "aproximada", detalle: "Se lee 'H' como equipaje de mano y 'L' como bodega: es una inferencia (en el dataset las low cost salen H0 y las de red H1; las tarifas más baratas siempre L0). Si la clave no viene, la fila dice 'no informado'. Confirmar en la aerolínea antes de comprar", cadenciaDias: null, comando: null }),
+    fuente({ variable: "Antigüedad y desvío estimado de cada tarifa", fuente: "Calculado: días desde que se vio × tasa diaria (medida entre corridas o supuesto de config)", actualizadoEn: null, exactitud: precios()?.desvio ? "aproximada" : "supuesto", detalle: `Cadencia recomendada según lo que falta para el viaje: ${configBase.precios.cadencia.map((c) => `${c.hastaDiasAlViaje === null ? "más lejos" : `hasta ${c.hastaDiasAlViaje} días`}: cada ${c.cadaDias}`).join("; ")}. Tasa supuesta ${configBase.precios.desvioDiarioSupuestoPct} % por día hasta que dos corridas en días distintos la midan`, cadenciaDias: null, comando: null }),
     fuente({ variable: "Competencia de corredor (largo radio)", fuente: "Calculado sobre VRS: grupos que vuelan del origen del tramo al mismo continente", actualizadoEn: meta.descargadoEn, exactitud: "aproximada", detalle: `Tramos de ${configBase.fase7.competencia.largoRadioDesdeKm} km o más: se venden contra todo lo que sale de ese aeropuerto al continente del destino (regiones ${configBase.fase7.competencia.regionesMercado.join(", ")}); el factor por tramo se pondera por km`, cadenciaDias: 30, comando: "pnpm catalogos" }),
     fuente({ variable: "Perfil de aerolínea (low cost, hub conector)", fuente: "config/espacio.json → fase6.aerolineasPerfilBajoCosto / aerolineasPerfilConector", actualizadoEn: null, exactitud: "supuesto", detalle: `Low cost (${configBase.fase6.aerolineasPerfilBajoCosto.join(", ")}): ventaja con sólo mano, ninguna con valija. Hub conector (${configBase.fase6.aerolineasPerfilConector.join(", ")}): venden el largo radio por debajo del directo para llenar el hub`, cadenciaDias: 365, comando: null }),
     fuente({ variable: "Aeropuertos alternativos", fuente: "OurAirports + VRS (salidas semanales proxy)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `Hasta ${configBase.fase1.radioOrigenKm} km del pedido, medianos o grandes, con vuelos internacionales y ≥${configBase.fase1.minSalidasSemanales} salidas semanales; los ${configBase.fase1.hubsAsegurados} con más salidas entran siempre y el resto por distancia hasta ${configBase.fase1.maxCandidatosOrigen} orígenes; un alternativo a más de ${configBase.fase7.trasladoAereoDesdeKm} km sólo cuenta si hay vuelo de pasajeros desde el pedido, y ese vuelo se mide como tramo aparte`, cadenciaDias: 30, comando: "pnpm catalogos" }),
@@ -216,6 +225,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     // Precio por boleto con lo cacheado: el boleto único, los dos del separado (el segundo puede salir hasta
     // `margenDiasSegundoBoleto` después) y el vuelo aparte hacia/desde el alternativo.
     const dataset = precios();
+    const vigentes = dataset ? ultimos(dataset.precios) : [];
     const conPrecio = dataset
       ? lista.map((r) => {
           const previos = r.tramos.filter((t) => t.traslado && t.destino === r.origen);
@@ -231,13 +241,13 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
             const base = "traslado" in b ? { tramo: `${b.origen}→${b.destino}`, origen: b.origen, destino: b.destino, aerolineas: b.aerolineas, transbordos: 0 } : b;
             return { ...base, ...ventanaBoleto(fechaIda, i, config.precios.margenDiasSegundoBoleto) };
           });
-          return { ...r, precio: preciarRuta(boletos, dataset.precios, plegar, config.precios.diasCerca) };
+          return { ...r, precio: preciarRuta(boletos, vigentes, plegar, config.precios.diasCerca) };
         })
       : lista;
     const resumenPrecios = dataset
       ? {
           actualizadoEn: dataset.actualizadoEn,
-          tarifas: dataset.precios.length,
+          tarifas: vigentes.length,
           conPrecioCompleto: conPrecio.filter((r) => r.precio?.completo).length,
           conPrecioParcial: conPrecio.filter((r) => r.precio && !r.precio.completo && r.precio.totalUsd !== null).length,
           desvio: dataset.desvio,

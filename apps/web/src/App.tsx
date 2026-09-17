@@ -1,5 +1,7 @@
 import { useState } from "react";
+import type { ResultadoMercado } from "@az/core";
 import type { ResultadoRutas } from "@az/espacio";
+import { Mercado } from "./componentes/Mercado";
 import { RutasPriorizadas } from "./componentes/RutasPriorizadas";
 import { Tablero } from "./componentes/Tablero";
 import { TableroDatos } from "./componentes/TableroDatos";
@@ -9,21 +11,23 @@ import { hoyIso } from "./lib/hoy";
 type Pestana = "rutas" | "tablero" | "datos";
 
 const PESTANAS: { id: Pestana; titulo: string; para: string }[] = [
-  { id: "rutas", titulo: "Rutas", para: "Rutas ordenadas por chance de tarifa baja para una fecha, con enlaces a los metabuscadores" },
-  { id: "tablero", titulo: "Tablero", para: "Resumen de la última priorización: qué se armó, qué se descartó y por dónde conviene empezar a buscar" },
+  { id: "rutas", titulo: "Rutas", para: "Lo que el mercado (API de Travelpayouts) tiene para llegar al destino, ordenado por aeropuerto de salida, precio, equipaje, horas, escalas y aerolíneas" },
+  { id: "tablero", titulo: "Tablero", para: "Métricas de la última búsqueda: qué hay, dónde está lo barato y qué tan fresco es" },
   { id: "datos", titulo: "Datos", para: "Glosario de lo que se ve en Rutas y ficha de cada dato: fuente, última actualización y exactitud" },
 ];
 
-// Tres pestañas: la salida (Rutas), el resumen de la última priorización (Tablero) y el glosario con la ficha de cada dato (Datos). Nada lee precios ni guarda registros (DECISIONES 9.3, 13).
+// Tres pestañas: la salida (Rutas: el mercado, y plegado el modelo sin precios que elige qué pares bajar), las
+// métricas de la última búsqueda (Tablero) y el glosario con la ficha de cada dato (Datos). Nada guarda registros.
 export const App = () => {
   const [pestana, setPestana] = useState<Pestana>("rutas");
-  const [resultado, setResultado] = useState<ResultadoRutas | null>(null);
+  const [mercado, setMercado] = useState<ResultadoMercado | null>(null);
+  const [modelo, setModelo] = useState<ResultadoRutas | null>(null);
 
   return (
     <main className="mx-auto max-w-6xl p-6">
       <header className="mb-6 border-b border-slate-200 pb-4">
         <h1 className="text-2xl font-semibold text-slate-900">AZ Vuelos</h1>
-        <p className="text-sm text-slate-600">Rutas ordenadas por chance de tarifa baja: distancia, competencia, presión de la fecha y escalas. Sin leer precios.</p>
+        <p className="text-sm text-slate-600">Precios ciertos del mercado (Travelpayouts) para llegar al destino en uno o dos boletos, ordenados por salida, precio, equipaje, horas, escalas y aerolíneas, con la antigüedad de cada tarifa.</p>
         <nav aria-label="Secciones" className="mt-4 flex gap-1">
           {PESTANAS.map((p) => (
             <button
@@ -40,11 +44,17 @@ export const App = () => {
         </nav>
       </header>
 
-      <section aria-label="Rutas priorizadas" hidden={pestana !== "rutas"}>
-        <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setResultado} />
+      <section aria-label="Mercado" hidden={pestana !== "rutas"} className="grid gap-6">
+        <Mercado aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setMercado} />
+        <details className="rounded-lg border border-slate-200 bg-white p-4">
+          <summary className="cursor-pointer text-sm font-medium text-slate-800">Modelo sin precios: rutas posibles según el grafo de aerolíneas (es lo que decide qué pares baja pnpm precios)</summary>
+          <div className="mt-4">
+            <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setModelo} />
+          </div>
+        </details>
       </section>
       <section aria-label="Tablero" hidden={pestana !== "tablero"}>
-        <Tablero resultado={resultado} />
+        <Tablero mercado={mercado} modelo={modelo} />
       </section>
       <section aria-label="Datos" hidden={pestana !== "datos"}>
         <TableroDatos visible={pestana === "datos"} />

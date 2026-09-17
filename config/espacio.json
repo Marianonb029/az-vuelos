@@ -1107,7 +1107,21 @@
     "maxPares": 120,
     "margenDiasSegundoBoleto": 1,
     "diasCerca": 7,
-    "nota": "Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios ORIGEN DESTINO; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio) como margen a asumir hasta la próxima."
+    "diasHistorial": 90,
+    "desvioDiarioSupuestoPct": 1,
+    "cadencia": [
+      { "hastaDiasAlViaje": 14, "cadaDias": 1 },
+      { "hastaDiasAlViaje": 60, "cadaDias": 3 },
+      { "hastaDiasAlViaje": null, "cadaDias": 7 }
+    ],
+    "nota": "Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios ORIGEN DESTINO y cada corrida se guarda 90 días sin borrar la anterior; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio). Hasta tener ese desvío medido, cada fila estima ±1 % por día desde que se vio la tarifa (supuesto: las tarifas de largo radio se mueven del orden de 5–10 % por semana; se reemplaza por la tasa medida en cuanto hay dos corridas). Cadencia recomendada según lo que falta para el viaje: diaria en las últimas dos semanas, cada 3 días hasta 60 días, semanal más lejos."
+  },
+  "mercado": {
+    "conexionMinHoras": 3,
+    "conexionMaxHoras": 24,
+    "flexDiasDefecto": 3,
+    "maxPorOrigen": 150,
+    "nota": "Dos boletos separados no tienen protección de conexión: 3 h mínimas de espera (aduana, retiro de valija, nuevo check-in en aeropuertos grandes) y hasta 24 h (más es otro viaje). Sin límite de transbordos dentro de cada boleto: lo que la API tiene, se muestra. La ventana de salida por defecto es ±3 días: el cache es ralo y las tarifas bajas suelen estar en días vecinos."
   },
   "fase7": {
     "kmEquivalentes": {

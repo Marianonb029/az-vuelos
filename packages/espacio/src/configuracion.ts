@@ -73,6 +73,18 @@ export const ConfigPrecios = z.object({
   maxPares: z.number().int().min(1), // pares de boletos por corrida (uno por segundo, un pedido por mes)
   margenDiasSegundoBoleto: z.number().int().min(0), // el segundo boleto puede salir hasta N días después del primero
   diasCerca: z.number().int().min(0), // sin precio para la fecha pedida, se muestra el mínimo hasta N días alrededor, marcado como fecha no exacta
+  diasHistorial: z.number().int().min(1), // corridas anteriores que se conservan (por antigüedad de `encontradoEn`)
+  desvioDiarioSupuestoPct: z.number().min(0), // % por día desde que se vio la tarifa, hasta que haya desvío medido entre corridas
+  cadencia: z.array(z.object({ hastaDiasAlViaje: z.number().int().min(0).nullable(), cadaDias: z.number().int().min(1) })).min(1), // cada cuánto rebajar según lo que falta para el viaje
+});
+
+// Mercado (Fase 15): cómo se encadenan dos boletos cacheados y cuánto se muestra por aeropuerto de salida.
+export const ConfigMercado = z.object({
+  conexionMinHoras: z.number().min(0), // espera mínima entre boletos separados (sin protección de conexión)
+  conexionMaxHoras: z.number().positive(),
+  flexDiasDefecto: z.number().int().min(0), // ventana de salida ± días alrededor de la fecha pedida
+  maxPorOrigen: z.number().int().min(1),
+  nota: z.string(),
 });
 
 export const ConfigEspacio = z.object({
@@ -128,6 +140,7 @@ export const ConfigEspacio = z.object({
   }),
   // Índice de costo estimado por ruta (Fase 7): distancia, competencia, presión de la fecha y escalas.
   precios: ConfigPrecios,
+  mercado: ConfigMercado,
   fase7: z.object({
     kmEquivalentes: z.object({
       fijoPorBoleto: z.number().min(0), // tasas y costo fijo por boleto emitido, en km equivalentes

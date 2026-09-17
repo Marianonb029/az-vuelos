@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { ResultadoRutas, RutaPriorizada } from "@az/espacio";
-import { Tablero } from "./Tablero";
+import { TableroModelo } from "./TableroModelo";
 
 const presion: RutaPriorizada["presionIda"] = { fecha: "2027-01-19", aeropuerto: "ASU", presion: 7, etiquetas: [], banda: "verde", fundamento: "", senales: [], revisado: [] };
 const tramo = (origen: string, destino: string, aerolineas: string[], traslado = false): RutaPriorizada["tramos"][number] => ({ origen, destino, km: 1000, aerolineas, vuelosPorAerolinea: Object.fromEntries(aerolineas.map((a) => [a, 2])), grupos: aerolineas, competenciaEfectiva: aerolineas.length, competenciaPar: aerolineas.length, competenciaCorredor: null, traslado });
@@ -25,14 +25,14 @@ const resultado: ResultadoRutas = {
   precios: null,
 };
 
-describe("Tablero", () => {
+describe("TableroModelo", () => {
   it("sin priorización, lo dice", () => {
-    render(<Tablero resultado={null} />);
-    expect(screen.getByText(/Todavía no hay una priorización/)).toBeTruthy();
+    render(<TableroModelo resultado={null} />);
+    expect(screen.getByText(/Todavía no hay una priorización del modelo/)).toBeTruthy();
   });
 
   it("resume la última priorización: combinaciones, compras, dónde buscar, hubs, puertas y embudo", () => {
-    render(<Tablero resultado={resultado} />);
+    render(<TableroModelo resultado={resultado} />);
     const resumen = screen.getByTestId("tablero-resumen").textContent ?? "";
     expect(resumen).toContain("3combinaciones en la lista");
     expect(resumen).toContain("2 entre ASU y MAD; 1 con aeropuerto alternativo");
