@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FechaIso, IataAerolinea, IataAeropuerto } from "@az/core";
+import { Continente, FechaIso, IataAerolinea, IataAeropuerto } from "@az/core";
 
 // Todo número del SPEC vive en config/espacio.json; acá sólo se valida su forma.
 
@@ -68,14 +68,22 @@ export const TemporadaRegional = z.object({
 
 // Precios cacheados (Travelpayouts): cuánto bajar y cada cuánto; el desvío real se mide entre corridas.
 export const ConfigPrecios = z.object({
-  mesesAdelante: z.number().int().min(1).max(12),
-  cadenciaDias: z.number().int().min(1), // pasado esto, Datos marca los precios como vencidos
-  maxPares: z.number().int().min(1), // pares de boletos por corrida (uno por segundo, un pedido por mes)
+  cadenciaDias: z.number().int().min(1), // pasado esto, Datos marca los precios como vencidos y la bajada vuelve a pedir el par
   margenDiasSegundoBoleto: z.number().int().min(0), // el segundo boleto puede salir hasta N días después del primero
   diasCerca: z.number().int().min(0), // sin precio para la fecha pedida, se muestra el mínimo hasta N días alrededor, marcado como fecha no exacta
   diasHistorial: z.number().int().min(1), // corridas anteriores que se conservan (por antigüedad de `encontradoEn`)
   desvioDiarioSupuestoPct: z.number().min(0), // % por día desde que se vio la tarifa, hasta que haya desvío medido entre corridas
   cadencia: z.array(z.object({ hastaDiasAlViaje: z.number().int().min(0).nullable(), cadaDias: z.number().int().min(1) })).min(1), // cada cuánto rebajar según lo que falta para el viaje
+});
+
+// Bajada por continentes (Fase 16): grupos de prioridad del dueño, presupuesto de pedidos por corrida y cada
+// cuánto redescubrir a qué destinos tiene cache cada origen. Un pedido por segundo.
+export const ConfigBajada = z.object({
+  grupos: z.array(z.object({ origen: z.array(Continente).min(1), destino: z.array(Continente).min(1), nota: z.string() })).min(1), // en orden de prioridad
+  maxPedidosPorCorrida: z.number().int().min(1),
+  redescubrirDias: z.number().int().min(1), // un origen se vuelve a preguntar (sin destino) pasado esto
+  hubsDelOrigen: z.boolean(), // además de los destinos del grupo, bajar origen→aeropuerto grande del mismo continente (el primer boleto de un encadenado)
+  nota: z.string(),
 });
 
 // Mercado (Fase 15): cómo se encadenan dos boletos cacheados y cuánto se muestra por aeropuerto de salida.
@@ -140,6 +148,7 @@ export const ConfigEspacio = z.object({
   }),
   // Índice de costo estimado por ruta (Fase 7): distancia, competencia, presión de la fecha y escalas.
   precios: ConfigPrecios,
+  bajada: ConfigBajada,
   mercado: ConfigMercado,
   fase7: z.object({
     kmEquivalentes: z.object({

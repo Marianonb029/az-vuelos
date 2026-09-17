@@ -39,11 +39,21 @@ export type DesvioPrecios = z.infer<typeof DesvioPrecios>;
 
 export const CorridaPrecios = z.object({ en: FechaHoraIso, pares: z.number().int().min(0), tarifas: z.number().int().min(0) });
 
+// Un par bajado: cuándo, cuántas tarifas trajo y en qué grupo de prioridad de la bajada por continentes cayó
+// (null: se pidió a mano con `pnpm precios ORIGEN DESTINO`).
+export const ParBajado = z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0), bajadoEn: FechaHoraIso, grupo: z.number().int().min(1).nullable() });
+export type ParBajado = z.infer<typeof ParBajado>;
+
+// Descubrimiento: a qué destinos tiene cache la API desde un aeropuerto (pedido sin destino).
+export const Descubrimiento = z.object({ origen: IataAeropuerto, en: FechaHoraIso, destinos: z.array(IataAeropuerto) });
+export type Descubrimiento = z.infer<typeof Descubrimiento>;
+
 export const DatasetPrecios = z.object({
   fuente: z.string(),
   moneda: z.literal("usd"),
   actualizadoEn: FechaHoraIso,
-  pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, meses: z.array(z.string()), tarifas: z.number().int().min(0) })),
+  pares: z.array(ParBajado),
+  descubrimientos: z.array(Descubrimiento),
   corridas: z.array(CorridaPrecios), // una por `pnpm precios`, la más vieja primero
   precios: z.array(PrecioCacheado), // todas las corridas conservadas: `ultimos` da la vigente por tarifa
   desvio: DesvioPrecios.nullable(),

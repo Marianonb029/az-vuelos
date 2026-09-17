@@ -1102,9 +1102,7 @@
     "maxCombinaciones": 300
   },
   "precios": {
-    "mesesAdelante": 6,
     "cadenciaDias": 7,
-    "maxPares": 120,
     "margenDiasSegundoBoleto": 1,
     "diasCerca": 7,
     "diasHistorial": 90,
@@ -1114,7 +1112,19 @@
       { "hastaDiasAlViaje": 60, "cadaDias": 3 },
       { "hastaDiasAlViaje": null, "cadaDias": 7 }
     ],
-    "nota": "Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios ORIGEN DESTINO y cada corrida se guarda 90 días sin borrar la anterior; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio). Hasta tener ese desvío medido, cada fila estima ±1 % por día desde que se vio la tarifa (supuesto: las tarifas de largo radio se mueven del orden de 5–10 % por semana; se reemplaza por la tasa medida en cuanto hay dos corridas). Cadencia recomendada según lo que falta para el viaje: diaria en las últimas dos semanas, cada 3 días hasta 60 días, semanal más lejos."
+    "nota": "Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios (por continentes, según bajada.grupos) o pnpm precios ORIGEN DESTINO (un par) y cada corrida se guarda 90 días sin borrar la anterior; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio). Hasta tener ese desvío medido, cada fila estima ±1 % por día desde que se vio la tarifa (supuesto: las tarifas de largo radio se mueven del orden de 5–10 % por semana; se reemplaza por la tasa medida en cuanto hay dos corridas). Cadencia recomendada según lo que falta para el viaje: diaria en las últimas dos semanas, cada 3 días hasta 60 días, semanal más lejos."
+  },
+  "bajada": {
+    "grupos": [
+      { "origen": ["NA", "SA"], "destino": ["EU"], "nota": "1. América → Europa" },
+      { "origen": ["EU"], "destino": ["NA", "SA"], "nota": "2. Europa → América" },
+      { "origen": ["EU"], "destino": ["AS"], "nota": "3. Europa → Asia" },
+      { "origen": ["NA", "SA"], "destino": ["AS"], "nota": "4. América → Asia" }
+    ],
+    "maxPedidosPorCorrida": 1500,
+    "redescubrirDias": 30,
+    "hubsDelOrigen": true,
+    "nota": "Prioridad del dueño (17/09/2026). Orígenes: aeropuertos grandes y medianos con servicio regular del continente, los de más salidas primero. Por origen: un pedido sin destino descubre a qué destinos hay cache; después un pedido por par (sin mes: la API devuelve el mínimo de cada fecha de todo el horizonte) hacia los destinos del grupo y hacia los aeropuertos grandes del propio continente (primer boleto de un encadenado). Un par se vuelve a pedir pasados precios.cadenciaDias. 1.500 pedidos son ~25 min de API gratuita; cada corrida sigue donde quedó la anterior."
   },
   "mercado": {
     "conexionMinHoras": 3,

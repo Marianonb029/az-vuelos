@@ -8,7 +8,7 @@ import type { AeropuertoGeo, CandidatoAeropuerto, GapAerolinea, PuntajeDia, Ruta
 import config from "../../../config/espacio.json";
 
 const cfg = ConfigEspacio.parse(config).fase6;
-const geo = (iata: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad: iata, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true });
+const geo = (iata: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad: iata, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true, continente: "SA" as const });
 const cand = (iata: string, pais: string, rol: "origen" | "destino", esSolicitado: boolean, distanciaKm: number): CandidatoAeropuerto => ({ aeropuerto: geo(iata, pais), rol, esSolicitado, distanciaKm, salidasSemanales: 10, posicion: 1 });
 const ruta = (origen: string, destino: string, aerolineas: string[], nivel: 1 | 2, via: string | null = null): Ruta => ({ origen, destino, aerolineas, vuelosSemanales: nivel === 1 ? 21 : 7, escalas: via === null ? 0 : 1, via, nivel, etiquetaNivel: "x", fuente: "dataset", confianza: 0.7, tramoPrevio: null });
 const split = (origen: string, hub: string, feeders: string[], destino: string, aerolineas: string[]): Ruta => ({ ...ruta(origen, destino, aerolineas, 2, hub), confianza: 0.4, tramoPrevio: { hub, aerolineas: feeders } });

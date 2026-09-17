@@ -83,7 +83,7 @@ describe("Fase 2 — generarRutas (datasets reales)", () => {
 });
 
 describe("Fase 2 — reglas sobre un grafo sintético", () => {
-  const geo = (iata: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad: iata, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true });
+  const geo = (iata: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad: iata, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true, continente: "SA" as const });
   const aer = [geo("AAA", "AR"), geo("BBB", "ES"), geo("HUB", "ES"), geo("XXX", "FR")];
   const g = new Grafo(
     [

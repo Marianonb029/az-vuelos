@@ -90,7 +90,7 @@ const procesarAeropuertos = (filas: string[][]) => {
 const procesarAeropuertosGeo = (lineas: string[]) => {
   const cabecera = parsearLinea(lineas[0] ?? "");
   const col = (nombre: string) => cabecera.indexOf(nombre);
-  const [iTipo, iNombre, iLat, iLon, iPais, iCiudad, iRegular, iIcao, iIata] = ["type", "name", "latitude_deg", "longitude_deg", "iso_country", "municipality", "scheduled_service", "icao_code", "iata_code"].map(col);
+  const [iTipo, iNombre, iLat, iLon, iPais, iCiudad, iRegular, iIcao, iIata, iContinente] = ["type", "name", "latitude_deg", "longitude_deg", "iso_country", "municipality", "scheduled_service", "icao_code", "iata_code", "continent"].map(col);
   const porIata = new Map<string, AeropuertoGeo>();
   for (const linea of lineas.slice(1)) {
     const f = parsearLinea(linea);
@@ -107,6 +107,7 @@ const procesarAeropuertosGeo = (lineas: string[]) => {
       lon: Number(f[iLon ?? -1]),
       tipo: tipo === "large_airport" ? "grande" : "mediano",
       servicioRegular: f[iRegular ?? -1] === "yes",
+      continente: f[iContinente ?? -1] ?? "",
     });
     if (!porIata.has(iata) || candidato.tipo === "grande") porIata.set(iata, candidato);
   }

@@ -9,7 +9,7 @@ import config from "../../../config/espacio.json";
 import seed from "../../../data/seed/eze-mad-2027.json";
 
 const cfg = ConfigEspacio.parse(config);
-const geo = (iata: string, ciudad: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true });
+const geo = (iata: string, ciudad: string, pais: string): AeropuertoGeo => ({ iata, icao: null, nombre: iata, ciudad, pais, lat: 0, lon: 0, tipo: "grande", servicioRegular: true, continente: "SA" as const });
 const EZE = geo("EZE", "Buenos Aires (Ezeiza)", "AR");
 const MAD = geo("MAD", "Madrid", "ES");
 const BCN = geo("BCN", "Barcelona", "ES");

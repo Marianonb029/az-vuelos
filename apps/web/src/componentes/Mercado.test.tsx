@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
-const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
+const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", grupos: [{ grupo: 1, origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
 const HORA = 3600;
 const boleto = (origen: string, destino: string, aerolinea: string, precioUsd: number, saleH: number, duraH: number, extra: Partial<BoletoMercado> = {}): BoletoMercado => ({
   origen, destino, aerolinea, numeroVuelo: "1848", fechaIda: "2027-01-19", transbordos: 0, duracionMin: duraH * 60, itinerario: [origen, destino], salidaEpoch: saleH * HORA, llegadaEpoch: (saleH + duraH) * HORA,
@@ -19,7 +19,7 @@ const combinacion = (extra: Partial<Combinacion> & Pick<Combinacion, "boletos" |
   origen: "ASU", llegaA: "MAD", trasladoOrigenKm: 0, trasladoDestinoKm: 0, fechaIda: "2027-01-19", cambiosBoleto: extra.boletos.length - 1, aerolineas: [...new Set(extra.boletos.map((b) => b.aerolinea))], equipajeMano: true, equipajeBodega: false, vistoHaceDias: 5, desvioEstimadoPct: 5, refrescar: false, cadenciaDias: 7, ...extra,
 });
 const resultado: ResultadoMercado = {
-  origen: "ASU", destino: "MAD", fechaIda: "2027-01-19", flexDias: 3, desde: "2027-01-16", hasta: "2027-01-22", calculadoEn: "2026-09-17T12:00:00.000Z",
+  origen: "ASU", destino: "MAD", destinoEsContinente: false, fechaIda: "2027-01-19", flexDias: 3, desde: "2027-01-16", hasta: "2027-01-22", calculadoEn: "2026-09-17T12:00:00.000Z",
   combinaciones: [
     combinacion({ boletos: [boleto("ASU", "GRU", "G3", 150, 8, 2), boleto("GRU", "MAD", "TP", 480, 14, 12, { transbordos: 1, itinerario: ["GRU", "LIS", "MAD"], esperaMin: 240, equipajeMano: null })], totalUsd: 630, duracionTotalMin: 18 * 60, escalas: 2, equipajeMano: null }),
     combinacion({ boletos: [boleto("ASU", "MAD", "UA", 779, 10, 61, { transbordos: 4, itinerario: ["ASU", "AEP", "SCL", "IAH", "EWR", "MAD"], vistoEn: "2026-09-16" })], totalUsd: 779, duracionTotalMin: 61 * 60, escalas: 4, vistoHaceDias: 1, desvioEstimadoPct: 1 }),
@@ -27,7 +27,7 @@ const resultado: ResultadoMercado = {
   ],
   aeropuertos: [{ iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", trasladoKm: 0, rol: "origen" }, { iata: "IGU", nombre: "Foz do Iguaçu", ciudad: "Foz do Iguaçu", trasladoKm: 300, rol: "origen" }, { iata: "MAD", nombre: "Barajas", ciudad: "Madrid", trasladoKm: 0, rol: "destino" }],
   nombres: [{ iata: "G3", nombre: "GOL" }, { iata: "TP", nombre: "TAP" }, { iata: "UA", nombre: "United" }, { iata: "IB", nombre: "Iberia" }],
-  dataset: { actualizadoEn: "2026-09-16T10:00:00.000Z", corridas: [{ en: "2026-09-16T10:00:00.000Z", pares: 73, tarifas: 1590 }], tarifasVigentes: 1590, tarifasHistoricas: 0, tarifasParaEstePar: 900, paresBajados: 96, desvio: null, tasaDesvioDiariaPct: 1, tasaMedida: false, vencido: false },
+  dataset: { actualizadoEn: "2026-09-16T10:00:00.000Z", corridas: [{ en: "2026-09-16T10:00:00.000Z", pares: 73, tarifas: 1590 }], tarifasVigentes: 1590, tarifasHistoricas: 0, tarifasParaEstePar: 900, paresBajados: 96, porGrupo: [{ grupo: 1, pares: 120, tarifas: 3000 }], desvio: null, tasaDesvioDiariaPct: 1, tasaMedida: false, vencido: false },
   avisos: [],
 };
 
@@ -46,7 +46,11 @@ describe("Mercado", () => {
     // Con el campo vacío sólo se sugieren los aeropuertos con tarifas bajadas para ese rol.
     fireEvent.focus(screen.getByRole("combobox", { name: "Origen" }));
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["ASU — Silvio Pettirossi, Asunción40 tarifas bajadas"]);
+    expect(screen.getByTestId("cobertura-grupos").textContent).toContain("1. América del Norte+América del Sur → Europa: 120 pares, 3000 tarifas, 45 de 1115 aeropuertos de salida recorridos");
     elegir("Origen", "ASU", /ASU/);
+    // Como destino se ofrecen los continentes enteros además de los aeropuertos con tarifas.
+    fireEvent.focus(screen.getByRole("combobox", { name: "Destino" }));
+    expect(screen.getAllByRole("option").map((o) => o.textContent)[2]).toBe("Europa — todos los aeropuertos con tarifascontinente");
     elegir("Destino", "MAD", /MAD/);
     fireEvent.change(screen.getByLabelText("Fecha de ida"), { target: { value: "2027-01-19" } });
     fireEvent.click(screen.getByRole("radio", { name: "± 7 días" }));

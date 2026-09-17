@@ -1,14 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { DatasetPrecios, armarCombinaciones, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
+import { Continente, DatasetPrecios, armarCombinaciones, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
 import type { AeropuertoCandidato, CoberturaMercado, ResultadoMercado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, NombreAerolinea } from "@az/espacio";
 import type { ServicioEspacio } from "./espacio";
 
 export interface PedidoMercado {
   origen: string;
-  destino: string;
+  destino: string; // aeropuerto (IATA) o continente (NA, SA, EU, AS, AF, OC)
   fechaIda: string;
   flexDias: number;
 }
@@ -17,59 +17,75 @@ export type ResultadoServicioMercado = { ok: true; resultado: ResultadoMercado }
 
 export interface ServicioMercado {
   buscar: (pedido: PedidoMercado) => ResultadoServicioMercado;
-  cobertura: () => CoberturaMercado; // qué aeropuertos y pares tienen tarifas bajadas
+  cobertura: () => CoberturaMercado; // qué aeropuertos, pares y grupos de continentes tienen tarifas bajadas
   flexDiasDefecto: number; // config: ventana ± días cuando la consulta no la trae
 }
 
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
 
-// Fase 15: el mercado. Lo que la API de Travelpayouts tiene (data/local/precios.json, `pnpm precios`) para llegar
-// del origen al destino, saliendo del aeropuerto pedido o de un alternativo del modelo, en uno o dos boletos, con
-// el orden del dueño. El dataset se lee en cada consulta para reflejar la última corrida.
+// Fase 15/16: el mercado. Lo que la API de Travelpayouts tiene (data/local/precios.json, `pnpm precios`) para
+// llegar del origen a un destino —un aeropuerto o un continente entero—, saliendo del aeropuerto pedido o de un
+// alternativo del modelo, en uno o dos boletos, con el orden del dueño. El dataset se lee en cada consulta.
 export const crearServicioMercado = (directorioDatos: string, rutaConfig: string, espacio: () => ServicioEspacio, ahora = () => new Date(), rutaPrecios = resolve(directorioDatos, "local", "precios.json")): ServicioMercado => {
   const config = ConfigEspacio.parse(leerJson(rutaConfig));
   const aeropuertos = new Map(z.array(AeropuertoGeo).parse(leerJson(resolve(directorioDatos, "aeropuertos-geo.json"))).map((a) => [a.iata, a]));
   const nombres = new Map(z.array(NombreAerolinea).parse(leerJson(resolve(directorioDatos, "aerolineas-rutas.json"))).map((a) => [a.iata, a.nombre]));
   const leerDataset = (): { dataset: DatasetPrecios | null; aviso: string | null } => {
-    if (!existsSync(rutaPrecios)) return { dataset: null, aviso: "Sin dataset de precios: `pnpm precios ORIGEN DESTINO` baja las tarifas cacheadas de Travelpayouts para el par" };
+    if (!existsSync(rutaPrecios)) return { dataset: null, aviso: "Sin dataset de precios: `pnpm precios` baja las tarifas cacheadas de Travelpayouts por continentes; `pnpm precios ORIGEN DESTINO`, las de un par" };
     const parseado = DatasetPrecios.safeParse(leerJson(rutaPrecios));
-    return parseado.success ? { dataset: parseado.data, aviso: null } : { dataset: null, aviso: "data/local/precios.json tiene un formato anterior (sin itinerario ni corridas): `pnpm precios ORIGEN DESTINO` lo aparta y lo rehace" };
+    return parseado.success ? { dataset: parseado.data, aviso: null } : { dataset: null, aviso: "data/local/precios.json tiene un formato anterior: `pnpm precios` lo migra o lo aparta y lo rehace" };
   };
 
   const buscar = (pedido: PedidoMercado): ResultadoServicioMercado => {
     const { origen, destino, fechaIda, flexDias } = pedido;
-    const e = espacio().explorar(origen, destino, false);
-    if (!e.ok) return e;
+    const continente = Continente.safeParse(destino);
     const hoy = ahora().toISOString().slice(0, 10);
     const desde = sumarDias(fechaIda, -flexDias) < hoy ? hoy : sumarDias(fechaIda, -flexDias);
     const hasta = sumarDias(fechaIda, flexDias);
-    const origenes: AeropuertoCandidato[] = e.resultado.origenes.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
-    const destinos: AeropuertoCandidato[] = e.resultado.destinos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
     const { dataset, aviso } = leerDataset();
     const avisos = aviso ? [aviso] : [];
     const vigentes = dataset ? ultimos(dataset.precios) : [];
+    // Candidatos: con destino aeropuerto, los del modelo (alternativos con km de traslado); con destino
+    // continente, los orígenes del modelo y como llegada todo aeropuerto del continente con tarifas.
+    let origenes: AeropuertoCandidato[];
+    let destinos: AeropuertoCandidato[];
+    if (continente.success) {
+      const o = espacio().candidatosOrigen(origen);
+      if (!o.ok) return o;
+      origenes = o.candidatos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
+      const conTarifas = new Set(vigentes.map((p) => p.destino));
+      destinos = [...aeropuertos.values()].filter((a) => a.continente === continente.data && conTarifas.has(a.iata)).map((a) => ({ iata: a.iata, trasladoKm: 0 }));
+    } else {
+      const e = espacio().explorar(origen, destino, false);
+      if (!e.ok) return e;
+      origenes = e.resultado.origenes.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
+      destinos = e.resultado.destinos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
+    }
     const tasa = tasaDesvioDiaria(dataset?.desvio ?? null, config.precios.desvioDiarioSupuestoPct);
     const opciones = { conexionMinMin: Math.round(config.mercado.conexionMinHoras * 60), conexionMaxMin: Math.round(config.mercado.conexionMaxHoras * 60), tasaDesvioDiariaPct: tasa.tasaPct, cadencia: config.precios.cadencia, maxPorOrigen: config.mercado.maxPorOrigen };
     const combinaciones = ordenarCombinaciones(armarCombinaciones({ origenes, destinos, desde, hasta, hoy, precios: vigentes }, opciones), opciones);
     const setOrigenes = new Set(origenes.map((a) => a.iata));
     const setDestinos = new Set(destinos.map((a) => a.iata));
     const paraEstePar = vigentes.filter((p) => setOrigenes.has(p.origen) || setDestinos.has(p.destino));
-    if (dataset && paraEstePar.length === 0) avisos.push(`El dataset no tiene tarifas que salgan de ${origen} o sus alternativos ni que lleguen a ${destino}: corré \`pnpm precios ${origen} ${destino}\``);
+    const comando = continente.success ? "pnpm precios" : `pnpm precios ${origen} ${destino}`;
+    if (dataset && paraEstePar.length === 0) avisos.push(`El dataset no tiene tarifas que salgan de ${origen} o sus alternativos ni que lleguen a ${destino}: corré \`${comando}\``);
     if (dataset && paraEstePar.length > 0 && combinaciones.length === 0) avisos.push(`Hay ${paraEstePar.length} tarifas para estos aeropuertos pero ninguna sale entre ${desde} y ${hasta}: ampliá la ventana o cambiá la fecha`);
     const vencido = dataset ? diasEntre(dataset.actualizadoEn.slice(0, 10), hoy) > config.precios.cadenciaDias : false;
-    if (vencido && dataset) avisos.push(`Precios del ${dataset.actualizadoEn.slice(0, 10)}, más de ${config.precios.cadenciaDias} días: corré \`pnpm precios ${origen} ${destino}\``);
-    const escalas = new Set(combinaciones.flatMap((c) => c.boletos.flatMap((b) => b.itinerario)));
+    if (vencido && dataset) avisos.push(`Precios del ${dataset.actualizadoEn.slice(0, 10)}, más de ${config.precios.cadenciaDias} días: corré \`${comando}\``);
+    const usados = new Set(combinaciones.flatMap((c) => [c.origen, c.llegaA, ...c.boletos.flatMap((b) => b.itinerario)]));
     const conRol = [
       ...origenes.map((a) => ({ ...a, rol: "origen" as const })),
-      ...destinos.map((a) => ({ ...a, rol: "destino" as const })),
-      ...[...escalas].filter((i) => !setOrigenes.has(i) && !setDestinos.has(i)).map((iata) => ({ iata, trasladoKm: 0, rol: "escala" as const })),
+      ...destinos.filter((a) => !continente.success || usados.has(a.iata)).map((a) => ({ ...a, rol: "destino" as const })),
+      ...[...usados].filter((i) => !setOrigenes.has(i) && !setDestinos.has(i)).map((iata) => ({ iata, trasladoKm: 0, rol: "escala" as const })),
     ];
     const mencionadas = new Set(combinaciones.flatMap((c) => c.aerolineas));
+    const porGrupo = (dataset?.pares ?? []).reduce((m, p) => (p.grupo === null ? m : m.set(p.grupo, { pares: (m.get(p.grupo)?.pares ?? 0) + 1, tarifas: (m.get(p.grupo)?.tarifas ?? 0) + p.tarifas })), new Map<number, { pares: number; tarifas: number }>());
     return {
       ok: true,
       resultado: {
         origen,
         destino,
+        destinoEsContinente: continente.success,
         fechaIda,
         flexDias,
         desde,
@@ -86,6 +102,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
               tarifasHistoricas: dataset.precios.length - vigentes.length,
               tarifasParaEstePar: paraEstePar.length,
               paresBajados: dataset.pares.length,
+              porGrupo: [...porGrupo].sort((a, b) => a[0] - b[0]).map(([grupo, x]) => ({ grupo, ...x })),
               desvio: dataset.desvio,
               tasaDesvioDiariaPct: tasa.tasaPct,
               tasaMedida: tasa.medida,
@@ -99,7 +116,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
 
   const cobertura = (): CoberturaMercado => {
     const { dataset } = leerDataset();
-    if (!dataset) return { actualizadoEn: null, aeropuertos: [], pares: [] };
+    if (!dataset) return { actualizadoEn: null, grupos: [], aeropuertos: [], pares: [] };
     const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
     const sumar = (iata: string, rol: "comoOrigen" | "comoDestino") => {
       const c = conteo.get(iata) ?? { comoOrigen: 0, comoDestino: 0 };
@@ -112,8 +129,15 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
       sumar(p.destino, "comoDestino");
       pares.set(`${p.origen}|${p.destino}`, (pares.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
     }
+    const descubiertos = new Set(dataset.descubrimientos.map((d) => d.origen));
+    const grupos = config.bajada.grupos.map((g, i) => {
+      const delGrupo = dataset.pares.filter((p) => p.grupo === i + 1);
+      const origenesDelGrupo = [...aeropuertos.values()].filter((a) => g.origen.includes(a.continente) && a.servicioRegular);
+      return { grupo: i + 1, origen: g.origen, destino: g.destino, pares: delGrupo.length, tarifas: delGrupo.reduce((s, p) => s + p.tarifas, 0), origenesDescubiertos: origenesDelGrupo.filter((a) => descubiertos.has(a.iata)).length, origenesPendientes: origenesDelGrupo.filter((a) => !descubiertos.has(a.iata)).length };
+    });
     return {
       actualizadoEn: dataset.actualizadoEn,
+      grupos,
       aeropuertos: [...conteo].map(([iata, c]) => ({ iata, ...c })).sort((a, b) => b.comoOrigen + b.comoDestino - (a.comoOrigen + a.comoDestino) || a.iata.localeCompare(b.iata)),
       pares: [...pares].map(([k, tarifas]) => ({ origen: k.slice(0, 3), destino: k.slice(4), tarifas })).sort((a, b) => b.tarifas - a.tarifas),
     };

@@ -20,7 +20,7 @@ import {
   puntuarDia,
   ventanasVerdes,
 } from "@az/espacio";
-import type { CorridaEspacio, Feriado, OrdenRutas, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, Ventana } from "@az/espacio";
+import type { CandidatoAeropuerto, CorridaEspacio, Feriado, OrdenRutas, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, Ventana } from "@az/espacio";
 
 export type ResultadoServicioEspacio = { ok: true; resultado: ResultadoEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioCalendario = { ok: true; resultado: ResultadoCalendario } | { ok: false; motivo: string };
@@ -39,6 +39,8 @@ export interface PedidoRutas {
 
 export interface ServicioEspacio {
   explorar: (origen: string, destino: string, conGaps?: boolean) => ResultadoServicioEspacio;
+  // Sólo los aeropuertos de salida candidatos (Fase 1), para el mercado cuando el destino es un continente.
+  candidatosOrigen: (origen: string) => { ok: true; candidatos: CandidatoAeropuerto[] } | { ok: false; motivo: string };
   paisesDe: (origen: string, destino: string) => string[] | null; // para pedir feriados antes del calendario
   calendario: (origen: string, destino: string, desde: string, hasta: string, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioCalendario;
   // Países de todos los orígenes candidatos más el destino: las combinaciones puntúan cada origen con su propio calendario.
@@ -88,10 +90,11 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
 
   const filaPrecios = (): { variable: string; fuente: string; actualizadoEn: string | null; detalle: string } => {
     const d = precios();
-    if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: `Sin dataset legible${existsSync(rutaPrecios) ? " (formato anterior)" : ""}: \`pnpm precios ASU MAD\` baja, por cada par de boletos que el modelo propone para llegar al destino, los precios encontrados por usuarios de Aviasales en los últimos días para los próximos meses (token gratuito en TRAVELPAYOUTS_TOKEN)` };
+    if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: `Sin dataset legible${existsSync(rutaPrecios) ? " (formato anterior)" : ""}: \`pnpm precios\` baja por continentes (${configBase.bajada.grupos.map((g) => g.nota).join("; ")}) los precios encontrados por usuarios de Aviasales; \`pnpm precios ORIGEN DESTINO\`, los pares de boletos del modelo para un par (token gratuito en TRAVELPAYOUTS_TOKEN)` };
     const vigentes = ultimos(d.precios);
     const desvio = d.desvio ? `desvío medido contra la corrida anterior: mediana ${d.desvio.medianaPct} %, p90 ${d.desvio.p90Pct} % sobre ${d.desvio.comparados} tarifas (${d.desvio.subieron} subieron, ${d.desvio.bajaron} bajaron)` : `sin corrida anterior para medir el desvío: se asume ${configBase.precios.desvioDiarioSupuestoPct} % por día desde que se vio cada tarifa`;
-    return { variable: "Precios cacheados (Travelpayouts)", fuente: d.fuente, actualizadoEn: d.actualizadoEn, detalle: `${vigentes.length} tarifas vigentes (${d.precios.length - vigentes.length} de corridas anteriores conservadas ${configBase.precios.diasHistorial} días; ${d.corridas.length} corridas) en ${d.pares.length} pares de boletos (${d.pares.map((x) => `${x.origen}→${x.destino}`).slice(0, 12).join(", ")}${d.pares.length > 12 ? "…" : ""}); ${desvio}. Cada fila de Rutas dice hace cuántos días se vio su tarifa y cuánto puede haberse movido. No son cotizaciones vivas` };
+    const porGrupo = configBase.bajada.grupos.map((g, i) => `${g.nota}: ${d.pares.filter((p) => p.grupo === i + 1).length} pares`).join("; ");
+    return { variable: "Precios cacheados (Travelpayouts)", fuente: d.fuente, actualizadoEn: d.actualizadoEn, detalle: `${vigentes.length} tarifas vigentes (${d.precios.length - vigentes.length} de corridas anteriores conservadas ${configBase.precios.diasHistorial} días; ${d.corridas.length} corridas) en ${d.pares.length} pares, ${d.descubrimientos.length} aeropuertos de salida recorridos. Bajada por continentes, en orden de prioridad (${porGrupo}; ${d.pares.filter((p) => p.grupo === null).length} pedidos a mano); cada corrida sigue donde quedó la anterior, hasta ${configBase.bajada.maxPedidosPorCorrida} pedidos, y un par se vuelve a pedir pasados ${configBase.precios.cadenciaDias} días. ${desvio}. Cada fila de Rutas dice hace cuántos días se vio su tarifa y cuánto puede haberse movido. No son cotizaciones vivas` };
   };
 
   const fuentes = (): FuenteDato[] => [
@@ -262,6 +265,10 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
 
   return {
     explorar,
+    candidatosOrigen: (origen) => {
+      const o = expandirAeropuertos(origen, "origen", aeropuertos, grafo, config.fase1);
+      return o.ok ? { ok: true, candidatos: o.candidatos } : o;
+    },
     calendario,
     combinaciones,
     priorizar,

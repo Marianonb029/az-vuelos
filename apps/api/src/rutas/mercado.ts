@@ -1,11 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
-import { FechaIso, IataAeropuerto } from "@az/core";
+import { Continente, FechaIso, IataAeropuerto } from "@az/core";
 import type { CoberturaMercado, ResultadoMercado } from "@az/core";
 import type { ServicioMercado } from "../servicios/mercado";
 
 const Consulta = z
-  .object({ origen: IataAeropuerto, destino: IataAeropuerto, fechaIda: FechaIso, flexDias: z.coerce.number().int().min(0).max(45).optional() })
+  .object({ origen: IataAeropuerto, destino: z.union([IataAeropuerto, Continente]), fechaIda: FechaIso, flexDias: z.coerce.number().int().min(0).max(45).optional() })
   .refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" });
 
 // Fase 15: el mercado. Combinaciones de uno o dos boletos cacheados de Travelpayouts para llegar al destino,

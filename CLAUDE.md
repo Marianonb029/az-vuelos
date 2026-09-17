@@ -1,6 +1,6 @@
 # AZ Vuelos
 
-Muestra **lo que el mercado tiene** para llegar de un origen a un destino: las tarifas cacheadas de la API de datos de Travelpayouts (lo que otros usuarios de Aviasales encontraron), en uno o dos boletos encadenados, sin límite de transbordos, ordenadas por aeropuerto de salida, precio, equipaje de bodega, horas totales, escalas y aerolíneas (Fase 15), con la antigüedad y el desvío estimado de cada tarifa. Detrás, el **modelo sin precios** (Fases 1–14: alternativos, grafo de rutas vigentes, competencia, presión de la fecha, índice) elige qué pares de boletos bajar. El brief original (`docs/BRIEF.md`) pedía leer precios en sitios oficiales; la Fase 9 lo reemplazó por el modelo y la Fase 15 puso los precios ciertos de la API como salida. `docs/DECISIONES.md` manda sobre el brief.
+Muestra **lo que el mercado tiene** para llegar de un origen a un destino: las tarifas cacheadas de la API de datos de Travelpayouts (lo que otros usuarios de Aviasales encontraron), en uno o dos boletos encadenados, sin límite de transbordos, ordenadas por aeropuerto de salida, precio, equipaje de bodega, horas totales, escalas y aerolíneas (Fase 15), con la antigüedad y el desvío estimado de cada tarifa. La bajada es **por continentes** con la prioridad del dueño (Fase 16: América → Europa, Europa → América, Europa → Asia, América → Asia), descubriendo desde cada aeropuerto de salida a qué destinos hay cache; el destino de una búsqueda puede ser un aeropuerto o un continente. Detrás, el **modelo sin precios** (Fases 1–14) sigue eligiendo los pares de un par concreto (`pnpm precios ORIGEN DESTINO`). El brief original (`docs/BRIEF.md`) pedía leer precios en sitios oficiales; la Fase 9 lo reemplazó por el modelo y la Fase 15 puso los precios ciertos de la API como salida. `docs/DECISIONES.md` manda sobre el brief.
 
 ## Stack
 
@@ -25,7 +25,8 @@ pnpm lint
 pnpm catalogos   # rutas (VRS) y aeropuertos: mensual
 pnpm eventos     # eventos masivos (Wikidata): mensual
 pnpm corroborar ASU GRU MAD         # aerolíneas por aeropuerto: Wikipedia contra VRS (aparece en Datos)
-pnpm precios ASU MAD                # tarifas cacheadas de Travelpayouts para los pares del modelo; se acumulan sin borrar: diaria/3 días/semanal según lo que falte para el viaje
+pnpm precios [pedidos]              # bajada por continentes (bajada.grupos, en orden de prioridad); sigue donde quedó; se acumula sin borrar
+pnpm precios ASU MAD                # los pares de boletos del modelo para un par
 pnpm tendencia ASU MAD 2027-02-25   # etiqueta de precios de Google Flights para el par
 ```
 

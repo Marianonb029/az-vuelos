@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FechaIso, IataAerolinea, IataAeropuerto, DesvioPrecios, FechaHoraIso, PrecioRuta } from "@az/core";
+import { Continente, DesvioPrecios, FechaHoraIso, FechaIso, IataAerolinea, IataAeropuerto, PrecioRuta } from "@az/core";
 
 // ---------------------------------------------------------------------------
 // Datasets (generados por `pnpm catalogos`)
@@ -15,6 +15,7 @@ export const AeropuertoGeo = z.object({
   lon: z.number().min(-180).max(180),
   tipo: z.enum(["grande", "mediano"]),
   servicioRegular: z.boolean(),
+  continente: Continente, // OurAirports: NA, SA, EU, AS, AF, OC, AN
 });
 
 // [aerolínea, origen, destino, escalas, codeshare, númerosDeVuelo?] — compacto porque son decenas de miles.

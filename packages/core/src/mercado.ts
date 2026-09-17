@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { diasEntre } from "./fechas";
 import { PrecioCacheado } from "./precios";
-import { FechaIso, IataAeropuerto } from "./schema";
+import { Continente, FechaIso, IataAeropuerto } from "./schema";
 
 // El mercado: lo que la API de Travelpayouts tiene para llegar de un origen a un destino, ordenado con el
 // criterio del dueño (Fase 15). Cada fila es una combinación de uno o dos boletos cacheados (el segundo sale del
@@ -36,7 +36,8 @@ export type Combinacion = z.infer<typeof Combinacion>;
 // Respuesta de GET /mercado: las combinaciones ya ordenadas más lo que el Tablero necesita del dataset.
 export const ResultadoMercado = z.object({
   origen: IataAeropuerto,
-  destino: IataAeropuerto,
+  destino: z.union([IataAeropuerto, Continente]), // un aeropuerto, o un continente entero (todos sus aeropuertos con tarifas)
+  destinoEsContinente: z.boolean(),
   fechaIda: FechaIso,
   flexDias: z.number().int().min(0),
   desde: FechaIso,
@@ -53,6 +54,7 @@ export const ResultadoMercado = z.object({
       tarifasHistoricas: z.number().int().min(0), // corridas anteriores conservadas
       tarifasParaEstePar: z.number().int().min(0), // vigentes que salen de un origen candidato o llegan a un destino candidato
       paresBajados: z.number().int().min(0),
+      porGrupo: z.array(z.object({ grupo: z.number().int(), pares: z.number().int(), tarifas: z.number().int() })), // bajada por continentes
       desvio: z.object({ comparados: z.number().int(), medianaPct: z.number(), p90Pct: z.number(), subieron: z.number().int(), bajaron: z.number().int(), entre: z.tuple([z.iso.datetime(), z.iso.datetime()]) }).nullable(),
       tasaDesvioDiariaPct: z.number().min(0),
       tasaMedida: z.boolean(), // false: la tasa es el supuesto de config
@@ -66,6 +68,7 @@ export type ResultadoMercado = z.infer<typeof ResultadoMercado>;
 // Qué aeropuertos tienen tarifas bajadas: para sugerirlos en el formulario en vez del catálogo entero.
 export const CoberturaMercado = z.object({
   actualizadoEn: z.iso.datetime().nullable(), // null: sin dataset
+  grupos: z.array(z.object({ grupo: z.number().int(), origen: z.array(Continente), destino: z.array(Continente), pares: z.number().int(), tarifas: z.number().int(), origenesDescubiertos: z.number().int(), origenesPendientes: z.number().int() })),
   aeropuertos: z.array(z.object({ iata: IataAeropuerto, comoOrigen: z.number().int().min(0), comoDestino: z.number().int().min(0) })), // tarifas vigentes que salen / llegan
   pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0) })),
 });

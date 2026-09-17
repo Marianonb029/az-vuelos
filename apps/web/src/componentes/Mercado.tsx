@@ -1,6 +1,7 @@
 import { Fragment, useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta } from "@az/core";
+import { NOMBRE_CONTINENTE, buscarAeropuertos, etiquetaAeropuerto, fechaCorta } from "@az/core";
+import type { Continente } from "@az/core";
 import type { Aeropuerto, CoberturaMercado, ResultadoMercado } from "@az/core";
 import { obtenerCobertura, obtenerMercado } from "../lib/api";
 import { Bloque } from "./Bloque";
@@ -17,6 +18,10 @@ interface Props {
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
+// Un continente entero como destino: se ofrece como si fuera un aeropuerto más (código de dos letras).
+const CONTINENTES: Aeropuerto[] = (Object.keys(NOMBRE_CONTINENTE) as Continente[]).filter((c) => c !== "AN").map((c) => ({ iata: c, nombre: `${NOMBRE_CONTINENTE[c]} — todos los aeropuertos con tarifas`, ciudad: "", pais: "" }));
+const esContinente = (a: Aeropuerto | null) => a !== null && a.iata.length === 2;
+const etiqueta = (a: Aeropuerto) => (esContinente(a) ? a.nombre : etiquetaAeropuerto(a));
 const FLEX: { valor: "0" | "3" | "7" | "15"; etiqueta: string }[] = [
   { valor: "0", etiqueta: "Ese día" },
   { valor: "3", etiqueta: "± 3 días" },
@@ -56,11 +61,13 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           const c = conDatos.get(a.iata);
           return c && c[rol] > 0 ? `${c[rol]} tarifas bajadas` : undefined;
         };
-        const lista = texto.trim() === "" ? aeropuertos.filter((a) => (conDatos.get(a.iata)?.[rol] ?? 0) > 0).sort((a, b) => (conDatos.get(b.iata)?.[rol] ?? 0) - (conDatos.get(a.iata)?.[rol] ?? 0)) : buscarAeropuertos(aeropuertos, texto);
-        return lista.map((a) => {
+        const t = texto.trim().toLowerCase();
+        const continentes = rol === "comoDestino" ? CONTINENTES.filter((c) => t === "" || c.nombre.toLowerCase().includes(t)) : [];
+        const lista = t === "" ? aeropuertos.filter((a) => (conDatos.get(a.iata)?.[rol] ?? 0) > 0).sort((a, b) => (conDatos.get(b.iata)?.[rol] ?? 0) - (conDatos.get(a.iata)?.[rol] ?? 0)) : buscarAeropuertos(aeropuertos, texto);
+        return [...continentes.map((c) => ({ clave: c.iata, valor: c, etiqueta: c.nombre, marca: "continente" })), ...lista.map((a) => {
           const m = marca(a);
           return { clave: a.iata, valor: a, etiqueta: etiquetaAeropuerto(a), ...(m === undefined ? {} : { marca: m }) };
-        });
+        })];
       },
     [aeropuertos, conDatos],
   );
@@ -113,13 +120,19 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
             : cobertura.actualizadoEn === null
               ? "No hay tarifas bajadas todavía: corré pnpm precios ORIGEN DESTINO (token de Travelpayouts) y volvé."
               : `Tarifas bajadas el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} pares, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
+          {cobertura && cobertura.grupos.length > 0 && (
+            <span className="block" data-testid="cobertura-grupos">
+              Bajada por continentes (pnpm precios, en este orden):{" "}
+              {cobertura.grupos.map((g) => `${g.grupo}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
+            </span>
+          )}
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="m-origen" etiqueta="Origen" error={errores.origen}>
             <Combobox id="m-origen" placeholder="Con tarifas bajadas, o código / ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opcionesOrigen} onCambio={setOrigen} invalido={errores.origen !== undefined} />
           </Campo>
           <Campo id="m-destino" etiqueta="Destino" error={errores.destino}>
-            <Combobox id="m-destino" placeholder="Con tarifas bajadas, o código / ciudad" valor={destino} etiquetaValor={etiquetaAeropuerto} buscar={opcionesDestino} onCambio={setDestino} invalido={errores.destino !== undefined} />
+            <Combobox id="m-destino" placeholder="Un continente, o aeropuerto con tarifas, o código / ciudad" valor={destino} etiquetaValor={etiqueta} buscar={opcionesDestino} onCambio={setDestino} invalido={errores.destino !== undefined} />
           </Campo>
         </div>
         <div className="flex flex-wrap items-end gap-6">
@@ -142,7 +155,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
       {resultado && (
         <Bloque
           orden={1}
-          titulo={`Mercado: ${resultado.origen} → ${resultado.destino}, salida entre ${fechaCorta(resultado.desde)} y ${fechaCorta(resultado.hasta)}`}
+          titulo={`Mercado: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}, salida entre ${fechaCorta(resultado.desde)} y ${fechaCorta(resultado.hasta)}`}
           objetivo="Todo lo que la API de Travelpayouts tiene para llegar: un boleto, o dos encadenados donde termina el primero. Orden: aeropuerto de salida (el pedido primero, después por cercanía), precio, sin bodega antes que con bodega, horas totales, escalas, aerolíneas distintas. Precios vistos por otros usuarios de Aviasales, no cotización viva: cada fila dice hace cuánto y cuánto puede haberse movido."
         >
           {resultado.dataset && (
@@ -159,7 +172,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
             </p>
           ))}
           <p className="text-sm text-slate-600" data-testid="resumen-mercado">
-            {filas.length} combinaciones · {new Set(filas.map((c) => c.origen)).size} aeropuertos de salida · {filas.filter((c) => c.boletos.length === 1).length} de un boleto y {filas.filter((c) => c.boletos.length === 2).length} de dos
+            {filas.length} combinaciones · {new Set(filas.map((c) => c.origen)).size} aeropuertos de salida{resultado.destinoEsContinente ? ` · ${new Set(filas.map((c) => c.llegaA)).size} destinos` : ""} · {filas.filter((c) => c.boletos.length === 1).length} de un boleto y {filas.filter((c) => c.boletos.length === 2).length} de dos
           </p>
           <div className="overflow-x-auto">
             <table className="min-w-[88rem] w-full text-sm">

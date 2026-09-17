@@ -39,7 +39,8 @@ writeFileSync(
     fuente: "fixture",
     moneda: "usd",
     actualizadoEn: "2026-09-16T10:00:00.000Z",
-    pares: [{ origen: "ASU", destino: "MAD", meses: ["2027-01"], tarifas: 4 }],
+    pares: [{ origen: "ASU", destino: "MAD", tarifas: 4, bajadoEn: "2026-09-16T10:00:00.000Z", grupo: 1 }],
+    descubrimientos: [{ origen: "ASU", en: "2026-09-16T10:00:00.000Z", destinos: ["GRU", "MAD"] }],
     corridas: [{ en: "2026-09-16T10:00:00.000Z", pares: 1, tarifas: 4 }],
     precios: [
       t("ASU", "MAD", "UA", "2027-01-19", 779, 10, 61, { transbordos: 4, itinerario: ["ASU", "AEP", "SCL", "IAH", "EWR", "MAD"], vistoEn: "2026-09-16" }),
@@ -67,7 +68,8 @@ describe("GET /mercado", () => {
     expect(doble).toMatchObject({ escalas: 2, cambiosBoleto: 1, duracionTotalMin: 18 * 60, aerolineas: ["G3", "TP"], equipajeMano: null, equipajeBodega: false, vistoHaceDias: 7, desvioEstimadoPct: 7, cadenciaDias: 7, refrescar: false });
     expect(r.combinaciones[1]?.vistoHaceDias).toBe(1);
     expect(r.combinaciones[2]?.trasladoOrigenKm).toBeGreaterThan(0);
-    expect(r.dataset).toMatchObject({ tarifasVigentes: 4, tarifasHistoricas: 1, tarifasParaEstePar: 4, paresBajados: 1, tasaMedida: false, tasaDesvioDiariaPct: 1, vencido: false });
+    expect(r.dataset).toMatchObject({ tarifasVigentes: 4, tarifasHistoricas: 1, tarifasParaEstePar: 4, paresBajados: 1, porGrupo: [{ grupo: 1, pares: 1, tarifas: 4 }], tasaMedida: false, tasaDesvioDiariaPct: 1, vencido: false });
+    expect(r.destinoEsContinente).toBe(false);
     expect(r.aeropuertos.find((a) => a.iata === "EWR")?.rol).toBe("escala");
     expect(r.nombres.map((n) => n.iata)).toEqual(["G3", "IB", "TP", "UA"]);
     expect(r.avisos).toEqual([]);
@@ -79,6 +81,19 @@ describe("GET /mercado", () => {
     expect(r.flexDias).toBe(3);
     expect(r.combinaciones).toEqual([]);
     expect(r.avisos[0]).toContain("ninguna sale entre 2027-02-26 y 2027-03-04");
+  });
+
+  it("acepta un continente como destino: todos sus aeropuertos con tarifas, agrupados por origen", async () => {
+    const res = await app.inject({ method: "GET", url: "/mercado?origen=ASU&destino=EU&fechaIda=2027-01-19&flexDias=3" });
+    expect(res.statusCode).toBe(200);
+    const r = ResultadoMercado.parse(res.json());
+    expect(r.destinoEsContinente).toBe(true);
+    expect(r.combinaciones.map((c) => `${c.origen} ${c.boletos.map((b) => b.itinerario.join("-")).join("+")} → ${c.llegaA}`)).toEqual(["ASU ASU-GRU+GRU-LIS-MAD → MAD", "ASU ASU-AEP-SCL-IAH-EWR-MAD → MAD", "IGU IGU-MAD → MAD", "GRU GRU-LIS-MAD → MAD"]);
+    expect(r.aeropuertos.find((a) => a.iata === "MAD")?.rol).toBe("destino");
+    const cobertura = await app.inject({ method: "GET", url: "/mercado/cobertura" });
+    const grupos = (cobertura.json() as { grupos: { grupo: number }[] }).grupos;
+    expect(grupos).toHaveLength(4);
+    expect(grupos[0]).toMatchObject({ grupo: 1, origen: ["NA", "SA"], destino: ["EU"], pares: 1, tarifas: 4, origenesDescubiertos: 1 });
   });
 
   it("valida la consulta", async () => {

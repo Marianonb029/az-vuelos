@@ -1,4 +1,5 @@
-import { fechaCorta } from "@az/core";
+import { NOMBRE_CONTINENTE, fechaCorta } from "@az/core";
+import type { Continente } from "@az/core";
 import type { Combinacion, ResultadoMercado } from "@az/core";
 import type { ResultadoRutas } from "@az/espacio";
 import { Bloque } from "./Bloque";
@@ -37,7 +38,7 @@ export const Tablero = ({ mercado, modelo }: Props) => {
   const porEscalas = [0, 1, 2, 3].map((e) => ({ e, filas: lista.filter((c) => (e === 3 ? c.escalas >= 3 : c.escalas === e)) }));
   return (
     <div className="grid gap-4">
-      <Bloque orden={1} titulo={`Esta búsqueda: ${origen} → ${destino}, salida ${fechaCorta(mercado.desde)} a ${fechaCorta(mercado.hasta)}`} objetivo="Se rehace con cada búsqueda. No guarda registro.">
+      <Bloque orden={1} titulo={`Esta búsqueda: ${origen} → ${mercado.destinoEsContinente ? NOMBRE_CONTINENTE[destino as Continente] : destino}, salida ${fechaCorta(mercado.desde)} a ${fechaCorta(mercado.hasta)}`} objetivo="Se rehace con cada búsqueda. No guarda registro.">
         <div className="grid gap-2 sm:grid-cols-4" data-testid="tablero-resumen">
           <Cifra etiqueta="combinaciones" valor={lista.length} detalle={`${desdePedido.length} desde ${origen}; ${alPedido.length} llegan a ${destino}; ${lista.filter((c) => c.boletos.length === 2).length} de dos boletos`} />
           <Cifra etiqueta="más barata" valor={masBarata ? `USD ${masBarata.totalUsd.toLocaleString("es")}` : "—"} detalle={masBarata ? `${ruta(masBarata)} · ${horas(masBarata.duracionTotalMin)} · ${masBarata.escalas} escalas · sale ${fechaCorta(masBarata.fechaIda)}${desde(masBarata)}` : "sin combinaciones"} />
@@ -107,7 +108,8 @@ export const Tablero = ({ mercado, modelo }: Props) => {
         {dataset && (
           <p className="text-xs text-slate-600" data-testid="tablero-corridas">
             Dataset del {dataset.actualizadoEn.slice(0, 10)}
-            {dataset.vencido ? " (vencido)" : ""}: {dataset.tarifasVigentes.toLocaleString("es")} tarifas vigentes, {dataset.tarifasHistoricas.toLocaleString("es")} de corridas anteriores conservadas, {dataset.paresBajados} pares bajados. Corridas: {dataset.corridas.map((c) => `${c.en.slice(0, 10)} (${c.pares} pares, ${c.tarifas.toLocaleString("es")} tarifas)`).join(" · ")}.
+            {dataset.vencido ? " (vencido)" : ""}: {dataset.tarifasVigentes.toLocaleString("es")} tarifas vigentes, {dataset.tarifasHistoricas.toLocaleString("es")} de corridas anteriores conservadas, {dataset.paresBajados} pares bajados
+            {dataset.porGrupo.length > 0 ? ` (bajada por continentes: ${dataset.porGrupo.map((g) => `grupo ${g.grupo}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas`).join(" · ")})` : ""}. Corridas: {dataset.corridas.map((c) => `${c.en.slice(0, 10)} (${c.pares} pares, ${c.tarifas.toLocaleString("es")} tarifas)`).join(" · ")}.
           </p>
         )}
       </Bloque>
