@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AZ Vuelos</title>
+<style>
+  body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1.25rem; color: #1e293b; line-height: 1.55; }
+  h1 { font-size: 1.75rem; margin-bottom: .25rem; }
+  p.sub { color: #475569; margin-top: 0; }
+  h2 { font-size: 1.1rem; margin-top: 2rem; }
+  ul { padding-left: 1.2rem; }
+  code { background: #f1f5f9; padding: .1rem .35rem; border-radius: .25rem; }
+  footer { margin-top: 3rem; font-size: .85rem; color: #64748b; }
+</style>
+</head>
+<body>
+<h1>AZ Vuelos</h1>
+<p class="sub">Rutas aéreas ordenadas por chance de tarifa baja, sin leer precios.</p>
+
+<p>AZ Vuelos es una herramienta personal que, para un origen, un destino y una fecha, arma todas las combinaciones razonables para llegar (aeropuertos alternativos, escalas, boletos separados) y las ordena por las variables que mueven el precio de un pasaje: kilómetros volados, competencia de aerolíneas por tramo, perfil de la aerolínea, presión de la fecha (feriados, fines de semana largos, temporada, eventos) y anticipación. Por cada combinación dice en qué aerolíneas buscar.</p>
+
+<h2>Fuentes de datos</h2>
+<ul>
+  <li>Rutas vigentes: Virtual Radar Server standing data (CC0).</li>
+  <li>Aeropuertos: OurAirports. Aerolíneas: OpenTravelData.</li>
+  <li>Feriados: Nager.Date. Eventos masivos: Wikidata.</li>
+  <li>Precios cacheados: Travelpayouts (Aviasales Data API).</li>
+</ul>
+
+<h2>Código</h2>
+<p>El proyecto es de código abierto: <a href="https://github.com/Marianonb029/az-vuelos">github.com/Marianonb029/az-vuelos</a>.</p>
+
+<footer>Proyecto personal de Mariano Benítez. Sin publicidad ni venta de pasajes: los enlaces a metabuscadores son sólo búsquedas.</footer>
+</body>
+</html>
