@@ -5,9 +5,11 @@ import { Mercado } from "./Mercado";
 import { Tablero } from "./Tablero";
 
 const aeropuertos: Aeropuerto[] = [
+  { iata: "AAA", nombre: "Anaa Airport", ciudad: "Anaa", pais: "Polinesia Francesa" }, // sin tarifas: no se sugiere con el campo vacío
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
+const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
 const HORA = 3600;
 const boleto = (origen: string, destino: string, aerolinea: string, precioUsd: number, saleH: number, duraH: number, extra: Partial<BoletoMercado> = {}): BoletoMercado => ({
   origen, destino, aerolinea, numeroVuelo: "1848", fechaIda: "2027-01-19", transbordos: 0, duracionMin: duraH * 60, itinerario: [origen, destino], salidaEpoch: saleH * HORA, llegadaEpoch: (saleH + duraH) * HORA,
@@ -36,10 +38,14 @@ const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
 
 describe("Mercado", () => {
   it("pide el mercado con la ventana elegida, agrupa por aeropuerto de salida y muestra las seis variables y la antigüedad", async () => {
-    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(resultado) } as unknown as Response);
+    const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
     const onResultado = vi.fn();
     render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} />);
+    await waitFor(() => expect(screen.getByTestId("cobertura").textContent).toContain("Tarifas bajadas el 2026-09-17: 1 pares, salidas desde ASU; llegadas a MAD"));
+    // Con el campo vacío sólo se sugieren los aeropuertos con tarifas bajadas para ese rol.
+    fireEvent.focus(screen.getByRole("combobox", { name: "Origen" }));
+    expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["ASU — Silvio Pettirossi, Asunción40 tarifas bajadas"]);
     elegir("Origen", "ASU", /ASU/);
     elegir("Destino", "MAD", /MAD/);
     fireEvent.change(screen.getByLabelText("Fecha de ida"), { target: { value: "2027-01-19" } });

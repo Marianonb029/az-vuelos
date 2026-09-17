@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
 import { DatasetPrecios, armarCombinaciones, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
-import type { AeropuertoCandidato, ResultadoMercado } from "@az/core";
+import type { AeropuertoCandidato, CoberturaMercado, ResultadoMercado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, NombreAerolinea } from "@az/espacio";
 import type { ServicioEspacio } from "./espacio";
 
@@ -17,6 +17,7 @@ export type ResultadoServicioMercado = { ok: true; resultado: ResultadoMercado }
 
 export interface ServicioMercado {
   buscar: (pedido: PedidoMercado) => ResultadoServicioMercado;
+  cobertura: () => CoberturaMercado; // qué aeropuertos y pares tienen tarifas bajadas
   flexDiasDefecto: number; // config: ventana ± días cuando la consulta no la trae
 }
 
@@ -96,5 +97,27 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     };
   };
 
-  return { buscar, flexDiasDefecto: config.mercado.flexDiasDefecto };
+  const cobertura = (): CoberturaMercado => {
+    const { dataset } = leerDataset();
+    if (!dataset) return { actualizadoEn: null, aeropuertos: [], pares: [] };
+    const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
+    const sumar = (iata: string, rol: "comoOrigen" | "comoDestino") => {
+      const c = conteo.get(iata) ?? { comoOrigen: 0, comoDestino: 0 };
+      c[rol]++;
+      conteo.set(iata, c);
+    };
+    const pares = new Map<string, number>();
+    for (const p of ultimos(dataset.precios)) {
+      sumar(p.origen, "comoOrigen");
+      sumar(p.destino, "comoDestino");
+      pares.set(`${p.origen}|${p.destino}`, (pares.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
+    }
+    return {
+      actualizadoEn: dataset.actualizadoEn,
+      aeropuertos: [...conteo].map(([iata, c]) => ({ iata, ...c })).sort((a, b) => b.comoOrigen + b.comoDestino - (a.comoOrigen + a.comoDestino) || a.iata.localeCompare(b.iata)),
+      pares: [...pares].map(([k, tarifas]) => ({ origen: k.slice(0, 3), destino: k.slice(4), tarifas })).sort((a, b) => b.tarifas - a.tarifas),
+    };
+  };
+
+  return { buscar, cobertura, flexDiasDefecto: config.mercado.flexDiasDefecto };
 };

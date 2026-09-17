@@ -1,8 +1,8 @@
-import { Fragment, useCallback, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta } from "@az/core";
-import type { Aeropuerto, ResultadoMercado } from "@az/core";
-import { obtenerMercado } from "../lib/api";
+import type { Aeropuerto, CoberturaMercado, ResultadoMercado } from "@az/core";
+import { obtenerCobertura, obtenerMercado } from "../lib/api";
 import { Bloque } from "./Bloque";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
@@ -35,8 +35,37 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoMercado | null>(null);
+  const [cobertura, setCobertura] = useState<CoberturaMercado | null>(null);
 
-  const opciones = useCallback((texto: string): Opcion<Aeropuerto>[] => buscarAeropuertos(aeropuertos, texto).map((a) => ({ clave: a.iata, valor: a, etiqueta: etiquetaAeropuerto(a) })), [aeropuertos]);
+  // Qué aeropuertos tienen tarifas bajadas: con el campo vacío se sugieren esos (no el catálogo entero) y al
+  // teclear se marca cuáles tienen datos.
+  useEffect(() => {
+    let activo = true;
+    obtenerCobertura()
+      .then((c) => activo && setCobertura(c))
+      .catch(() => activo && setCobertura(null));
+    return () => {
+      activo = false;
+    };
+  }, []);
+  const conDatos = new Map(cobertura?.aeropuertos.map((a) => [a.iata, a]) ?? []);
+  const opcionesDe = useCallback(
+    (rol: "comoOrigen" | "comoDestino") =>
+      (texto: string): Opcion<Aeropuerto>[] => {
+        const marca = (a: Aeropuerto) => {
+          const c = conDatos.get(a.iata);
+          return c && c[rol] > 0 ? `${c[rol]} tarifas bajadas` : undefined;
+        };
+        const lista = texto.trim() === "" ? aeropuertos.filter((a) => (conDatos.get(a.iata)?.[rol] ?? 0) > 0).sort((a, b) => (conDatos.get(b.iata)?.[rol] ?? 0) - (conDatos.get(a.iata)?.[rol] ?? 0)) : buscarAeropuertos(aeropuertos, texto);
+        return lista.map((a) => {
+          const m = marca(a);
+          return { clave: a.iata, valor: a, etiqueta: etiquetaAeropuerto(a), ...(m === undefined ? {} : { marca: m }) };
+        });
+      },
+    [aeropuertos, conDatos],
+  );
+  const opcionesOrigen = opcionesDe("comoOrigen");
+  const opcionesDestino = opcionesDe("comoDestino");
   const errores = {
     origen: intentado && origen === null ? "Elegí un aeropuerto de origen" : undefined,
     destino: intentado && destino === null ? "Elegí un aeropuerto de destino" : intentado && destino?.iata === origen?.iata ? "Debe ser distinto del origen" : undefined,
@@ -78,12 +107,19 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
   return (
     <div className="grid gap-6">
       <form onSubmit={(e) => void buscar(e)} noValidate className="grid gap-5">
+        <p className="text-xs text-slate-600" data-testid="cobertura">
+          {cobertura === null
+            ? "Leyendo qué pares tienen tarifas bajadas…"
+            : cobertura.actualizadoEn === null
+              ? "No hay tarifas bajadas todavía: corré pnpm precios ORIGEN DESTINO (token de Travelpayouts) y volvé."
+              : `Tarifas bajadas el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} pares, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
+        </p>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="m-origen" etiqueta="Origen" error={errores.origen}>
-            <Combobox id="m-origen" placeholder="Código, aeropuerto o ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opciones} onCambio={setOrigen} invalido={errores.origen !== undefined} />
+            <Combobox id="m-origen" placeholder="Con tarifas bajadas, o código / ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opcionesOrigen} onCambio={setOrigen} invalido={errores.origen !== undefined} />
           </Campo>
           <Campo id="m-destino" etiqueta="Destino" error={errores.destino}>
-            <Combobox id="m-destino" placeholder="Código, aeropuerto o ciudad" valor={destino} etiquetaValor={etiquetaAeropuerto} buscar={opciones} onCambio={setDestino} invalido={errores.destino !== undefined} />
+            <Combobox id="m-destino" placeholder="Con tarifas bajadas, o código / ciudad" valor={destino} etiquetaValor={etiquetaAeropuerto} buscar={opcionesDestino} onCambio={setDestino} invalido={errores.destino !== undefined} />
           </Campo>
         </div>
         <div className="flex flex-wrap items-end gap-6">

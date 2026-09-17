@@ -63,6 +63,14 @@ export const ResultadoMercado = z.object({
 });
 export type ResultadoMercado = z.infer<typeof ResultadoMercado>;
 
+// Qué aeropuertos tienen tarifas bajadas: para sugerirlos en el formulario en vez del catálogo entero.
+export const CoberturaMercado = z.object({
+  actualizadoEn: z.iso.datetime().nullable(), // null: sin dataset
+  aeropuertos: z.array(z.object({ iata: IataAeropuerto, comoOrigen: z.number().int().min(0), comoDestino: z.number().int().min(0) })), // tarifas vigentes que salen / llegan
+  pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0) })),
+});
+export type CoberturaMercado = z.infer<typeof CoberturaMercado>;
+
 export interface AeropuertoCandidato {
   iata: string;
   trasladoKm: number; // distancia al aeropuerto pedido (0 si es el pedido)

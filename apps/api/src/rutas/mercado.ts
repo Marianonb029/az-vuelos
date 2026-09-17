@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { FechaIso, IataAeropuerto } from "@az/core";
-import type { ResultadoMercado } from "@az/core";
+import type { CoberturaMercado, ResultadoMercado } from "@az/core";
 import type { ServicioMercado } from "../servicios/mercado";
 
 const Consulta = z
@@ -11,6 +11,8 @@ const Consulta = z
 // Fase 15: el mercado. Combinaciones de uno o dos boletos cacheados de Travelpayouts para llegar al destino,
 // saliendo de la fecha pedida ± flexDias, con el orden del dueño. Nada se lee de terceros acá: es el dataset.
 export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercado) => {
+  // Qué aeropuertos y pares tienen tarifas bajadas: el formulario sugiere esos, no el catálogo entero.
+  app.get("/mercado/cobertura", async (): Promise<CoberturaMercado> => mercado().cobertura());
   app.get("/mercado", async (req, reply): Promise<ResultadoMercado | undefined> => {
     const consulta = Consulta.safeParse(req.query);
     if (!consulta.success) {
