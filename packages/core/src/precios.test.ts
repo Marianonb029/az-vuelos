@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { medirDesvio, preciarRuta, reducirPrecios, ventanaBoleto } from "./precios";
 import type { PrecioCacheado } from "./precios";
 
-const t = (origen: string, destino: string, aerolinea: string, fechaIda: string, precioUsd: number, transbordos = 0, encontradoEn = "2026-09-16T10:00:00.000Z"): PrecioCacheado => ({ origen, destino, aerolinea, numeroVuelo: `${aerolinea}1`, fechaIda, transbordos, precioUsd, enlace: "/search/x", encontradoEn });
+const t = (origen: string, destino: string, aerolinea: string, fechaIda: string, precioUsd: number, transbordos = 0, encontradoEn = "2026-09-16T10:00:00.000Z"): PrecioCacheado => ({ origen, destino, aerolinea, numeroVuelo: `${aerolinea}1`, fechaIda, transbordos, duracionMin: 600, precioUsd, enlace: "/search/x", encontradoEn });
 const plegar = (iata: string) => (iata === "JJ" || iata === "PZ" ? "LA" : iata);
 
 describe("precios cacheados (Travelpayouts)", () => {
@@ -27,6 +27,7 @@ describe("precios cacheados (Travelpayouts)", () => {
     const p = preciarRuta(boletos, precios, plegar);
     expect(p.completo).toBe(true);
     expect(p.totalUsd).toBe(630);
+    expect(p.duracionMin).toBe(1200);
     expect(p.boletos.map((b) => `${b.tramo} ${b.aerolinea} ${b.fechaIda} ${b.precioUsd}`)).toEqual(["ASU→GRU G3 2027-01-19 150", "GRU→LIS→MAD TP 2027-01-20 480"]);
     const parcial = preciarRuta([boletos[0] as (typeof boletos)[number], { ...(boletos[1] as (typeof boletos)[number]), aerolineas: ["AF"] }], precios, plegar);
     expect(parcial.completo).toBe(false);

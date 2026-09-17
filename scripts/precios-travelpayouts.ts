@@ -55,6 +55,7 @@ interface ItemV3 {
   flight_number?: string;
   departure_at?: string;
   transfers?: number;
+  duration?: number; // minutos, ida
   price?: number;
   link?: string;
 }
@@ -85,7 +86,7 @@ for (const par of lista) {
       if (it.origin_airport !== par.origen || it.destination_airport !== par.destino) continue;
       const fecha = it.departure_at?.slice(0, 10);
       if (!fecha || !it.airline || typeof it.price !== "number") continue;
-      nuevos.push({ origen: par.origen, destino: par.destino, aerolinea: it.airline, numeroVuelo: it.flight_number ?? "", fechaIda: fecha, transbordos: it.transfers ?? 0, precioUsd: it.price, enlace: it.link ?? "", encontradoEn });
+      nuevos.push({ origen: par.origen, destino: par.destino, aerolinea: it.airline, numeroVuelo: it.flight_number ?? "", fechaIda: fecha, transbordos: it.transfers ?? 0, duracionMin: typeof it.duration === "number" ? it.duration : null, precioUsd: it.price, enlace: it.link ?? "", encontradoEn });
       tarifas++;
     }
     hechos++;

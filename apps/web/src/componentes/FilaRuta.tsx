@@ -132,11 +132,12 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
             <>
               <span className="block font-semibold tabular-nums text-slate-900">
                 USD {r.precio.totalUsd.toLocaleString("es")}
+                {r.precio.duracionMin !== null && <span className="ml-1 font-normal text-slate-600">· {Math.floor(r.precio.duracionMin / 60)} h {r.precio.duracionMin % 60} min en vuelo{r.precio.boletos.length > 1 ? " (sin las esperas entre boletos)" : ""}</span>}
                 {!r.precio.completo && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] uppercase text-amber-800">parcial</span>}
               </span>
               {r.precio.boletos.map((b) => (
                 <span key={b.tramo} className="block">
-                  {b.tramo}: {b.precioUsd === null ? <span className="text-slate-500">sin precio</span> : `USD ${b.precioUsd.toLocaleString("es")} · ${nombre(b.aerolinea ?? "")} ${b.numeroVuelo ?? ""} · sale ${b.fechaIda?.slice(5) ?? ""}${b.fechaExacta ? "" : " (no hay para la fecha pedida: día cercano)"}${b.transbordos ? ` · ${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}` : " · directo"}`}
+                  {b.tramo}: {b.precioUsd === null ? <span className="text-slate-500">sin precio</span> : `USD ${b.precioUsd.toLocaleString("es")} · ${nombre(b.aerolinea ?? "")} ${b.numeroVuelo ?? ""} · sale ${b.fechaIda?.slice(5) ?? ""}${b.fechaExacta ? "" : " (no hay para la fecha pedida: día cercano)"}${b.transbordos ? ` · ${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}` : " · directo"}${b.duracionMin !== null ? ` · ${Math.floor(b.duracionMin / 60)} h ${b.duracionMin % 60} min` : ""}`}
                 </span>
               ))}
               <span className="block text-slate-400">visto en Aviasales el {r.precio.encontradoEn?.slice(0, 10)}; no es cotización viva</span>

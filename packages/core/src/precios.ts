@@ -12,6 +12,7 @@ export const PrecioCacheado = z.object({
   numeroVuelo: z.string(),
   fechaIda: FechaIso,
   transbordos: z.number().int().min(0),
+  duracionMin: z.number().int().min(0).nullable().default(null), // duración total del boleto (minutos), si el cache la trae
   precioUsd: z.number().min(0),
   enlace: z.string(), // ruta relativa de Aviasales para abrir esa búsqueda
   encontradoEn: FechaHoraIso, // cuándo lo bajó `pnpm precios`
@@ -95,6 +96,7 @@ export const PrecioBoleto = z.object({
   fechaIda: FechaIso.nullable(),
   fechaExacta: z.boolean(), // false: no había precio para la fecha pedida y se tomó uno de un día cercano (ver fechaIda)
   transbordos: z.number().int().min(0).nullable(),
+  duracionMin: z.number().int().min(0).nullable(),
   precioUsd: z.number().min(0).nullable(), // null: sin precio cacheado para ese boleto
   enlace: z.string().nullable(),
 });
@@ -102,6 +104,7 @@ export type PrecioBoleto = z.infer<typeof PrecioBoleto>;
 
 export const PrecioRuta = z.object({
   totalUsd: z.number().min(0).nullable(), // suma de los boletos con precio; null si ninguno lo tiene
+  duracionMin: z.number().int().min(0).nullable(), // suma de las duraciones de los boletos con precio, sin las esperas entre boletos
   completo: z.boolean(), // todos los boletos tienen precio
   boletos: z.array(PrecioBoleto),
   encontradoEn: FechaHoraIso.nullable(), // el más viejo de los usados
@@ -120,13 +123,14 @@ export const preciarRuta = (boletos: readonly BoletoAPreciar[], precios: readonl
     const exacta = enVentana.length > 0;
     const mejor = (exacta ? enVentana : cercanos).sort((x, y) => x.precioUsd - y.precioUsd)[0];
     return mejor
-      ? { tramo: b.tramo, aerolinea: plegar(mejor.aerolinea), numeroVuelo: mejor.numeroVuelo, fechaIda: mejor.fechaIda, fechaExacta: exacta, transbordos: mejor.transbordos, precioUsd: mejor.precioUsd, enlace: mejor.enlace }
-      : { tramo: b.tramo, aerolinea: null, numeroVuelo: null, fechaIda: null, fechaExacta: false, transbordos: null, precioUsd: null, enlace: null };
+      ? { tramo: b.tramo, aerolinea: plegar(mejor.aerolinea), numeroVuelo: mejor.numeroVuelo, fechaIda: mejor.fechaIda, fechaExacta: exacta, transbordos: mejor.transbordos, duracionMin: mejor.duracionMin, precioUsd: mejor.precioUsd, enlace: mejor.enlace }
+      : { tramo: b.tramo, aerolinea: null, numeroVuelo: null, fechaIda: null, fechaExacta: false, transbordos: null, duracionMin: null, precioUsd: null, enlace: null };
   });
   const conPrecio = resultado.filter((b) => b.precioUsd !== null);
   const usados = precios.filter((p) => resultado.some((b) => b.numeroVuelo === p.numeroVuelo && b.fechaIda === p.fechaIda && b.precioUsd === p.precioUsd));
   return {
     totalUsd: conPrecio.length === 0 ? null : Math.round(conPrecio.reduce((s, b) => s + (b.precioUsd ?? 0), 0)),
+    duracionMin: conPrecio.length === 0 || conPrecio.some((b) => b.duracionMin === null) ? null : conPrecio.reduce((s, b) => s + (b.duracionMin ?? 0), 0),
     completo: conPrecio.length === boletos.length && boletos.length > 0,
     boletos: resultado,
     encontradoEn: usados.map((p) => p.encontradoEn).sort()[0] ?? null,
