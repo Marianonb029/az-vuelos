@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { DatasetPrecios, diasEntre, preciarRuta, ultimos, ventanaBoleto } from "@az/core";
-import type { BoletoAPreciar, FuenteDato } from "@az/core";
+import { DatasetPrecios, claveGrupo, diasEntre, preciarRuta, ultimos, ventanaBoleto } from "@az/core";
+import type { BoletoAPreciar, FuenteDato, PrecioCacheado } from "@az/core";
 import {
   AeropuertoGeo,
   ConfigEspacio,
@@ -93,7 +93,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: `Sin dataset legible${existsSync(rutaPrecios) ? " (formato anterior)" : ""}: \`pnpm precios\` baja por continentes (${configBase.bajada.grupos.map((g) => g.nota).join("; ")}) los precios encontrados por usuarios de Aviasales; \`pnpm precios ORIGEN DESTINO\`, los pares de boletos del modelo para un par (token gratuito en TRAVELPAYOUTS_TOKEN)` };
     const vigentes = ultimos(d.precios);
     const desvio = d.desvio ? `desvío medido contra la corrida anterior: mediana ${d.desvio.medianaPct} %, p90 ${d.desvio.p90Pct} % sobre ${d.desvio.comparados} tarifas (${d.desvio.subieron} subieron, ${d.desvio.bajaron} bajaron)` : `sin corrida anterior para medir el desvío: se asume ${configBase.precios.desvioDiarioSupuestoPct} % por día desde que se vio cada tarifa`;
-    const porGrupo = configBase.bajada.grupos.map((g, i) => `${g.nota}: ${d.pares.filter((p) => p.grupo === i + 1).length} pares`).join("; ");
+    const porGrupo = configBase.bajada.grupos.map((g) => `${g.nota}: ${d.pares.filter((p) => p.grupo === claveGrupo(g)).length} pares`).join("; ");
     return { variable: "Precios cacheados (Travelpayouts)", fuente: d.fuente, actualizadoEn: d.actualizadoEn, detalle: `${vigentes.length} tarifas vigentes (${d.precios.length - vigentes.length} de corridas anteriores conservadas ${configBase.precios.diasHistorial} días; ${d.corridas.length} corridas) en ${d.pares.length} pares, ${d.descubrimientos.length} aeropuertos de salida recorridos. Bajada por continentes, en orden de prioridad (${porGrupo}; ${d.pares.filter((p) => p.grupo === null).length} pedidos a mano); cada corrida sigue donde quedó la anterior, hasta ${configBase.bajada.maxPedidosPorCorrida} pedidos, y un par se vuelve a pedir pasados ${configBase.precios.cadenciaDias} días. ${desvio}. Cada fila de Rutas dice hace cuántos días se vio su tarifa y cuánto puede haberse movido. No son cotizaciones vivas` };
   };
 
@@ -229,6 +229,13 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     // `margenDiasSegundoBoleto` después) y el vuelo aparte hacia/desde el alternativo.
     const dataset = precios();
     const vigentes = dataset ? ultimos(dataset.precios) : [];
+    // Indexadas por par: con decenas de miles de tarifas, cada boleto mira sólo las de su par.
+    const porPar = new Map<string, PrecioCacheado[]>();
+    for (const p of vigentes) {
+      const lista = porPar.get(`${p.origen}|${p.destino}`);
+      if (lista) lista.push(p);
+      else porPar.set(`${p.origen}|${p.destino}`, [p]);
+    }
     const conPrecio = dataset
       ? lista.map((r) => {
           const previos = r.tramos.filter((t) => t.traslado && t.destino === r.origen);
@@ -244,7 +251,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
             const base = "traslado" in b ? { tramo: `${b.origen}→${b.destino}`, origen: b.origen, destino: b.destino, aerolineas: b.aerolineas, transbordos: 0 } : b;
             return { ...base, ...ventanaBoleto(fechaIda, i, config.precios.margenDiasSegundoBoleto) };
           });
-          return { ...r, precio: preciarRuta(boletos, vigentes, plegar, config.precios.diasCerca) };
+          return { ...r, precio: preciarRuta(boletos, boletos.flatMap((b) => porPar.get(`${b.origen}|${b.destino}`) ?? []), plegar, config.precios.diasCerca) };
         })
       : lista;
     const resumenPrecios = dataset

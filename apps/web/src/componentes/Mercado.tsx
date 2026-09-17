@@ -2,9 +2,10 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { NOMBRE_CONTINENTE, buscarAeropuertos, etiquetaAeropuerto, fechaCorta } from "@az/core";
 import type { Continente } from "@az/core";
-import type { Aeropuerto, CoberturaMercado, ResultadoMercado } from "@az/core";
-import { obtenerCobertura, obtenerMercado } from "../lib/api";
+import type { Aeropuerto, CoberturaMercado, FechasMercado, ResultadoMercado } from "@az/core";
+import { obtenerCobertura, obtenerFechas, obtenerMercado } from "../lib/api";
 import { Bloque } from "./Bloque";
+import { CalendarioFechas } from "./CalendarioFechas";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
@@ -41,6 +42,24 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoMercado | null>(null);
   const [cobertura, setCobertura] = useState<CoberturaMercado | null>(null);
+  const [fechas, setFechas] = useState<FechasMercado | null>(null);
+  const [cargandoFechas, setCargandoFechas] = useState(false);
+
+  // Con origen y destino elegidos se piden los días con combinaciones: el calendario habilita sólo esos.
+  useEffect(() => {
+    setFechas(null);
+    setFechaIda("");
+    if (!origen || !destino || origen.iata === destino.iata) return;
+    let activo = true;
+    setCargandoFechas(true);
+    obtenerFechas(origen.iata, destino.iata)
+      .then((f) => activo && setFechas(f))
+      .catch(() => activo && setFechas(null))
+      .finally(() => activo && setCargandoFechas(false));
+    return () => {
+      activo = false;
+    };
+  }, [origen, destino]);
 
   // Qué aeropuertos tienen tarifas bajadas: con el campo vacío se sugieren esos (no el catálogo entero) y al
   // teclear se marca cuáles tienen datos.
@@ -123,7 +142,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           {cobertura && cobertura.grupos.length > 0 && (
             <span className="block" data-testid="cobertura-grupos">
               Bajada por continentes (pnpm precios, en este orden):{" "}
-              {cobertura.grupos.map((g) => `${g.grupo}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
+              {cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
             </span>
           )}
         </p>
@@ -136,8 +155,8 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           </Campo>
         </div>
         <div className="flex flex-wrap items-end gap-6">
-          <Campo id="m-ida" etiqueta="Fecha de ida" error={errores.ida}>
-            <input id="m-ida" type="date" value={fechaIda} min={hoy} onChange={(e) => setFechaIda(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" />
+          <Campo id="m-ida" etiqueta="Fecha de ida (sólo los días con tarifas)" error={errores.ida}>
+            <CalendarioFechas fechas={fechas?.fechas ?? null} valor={fechaIda} onCambio={setFechaIda} hoy={hoy} cargando={cargandoFechas} />
           </Campo>
           <Campo id="m-flex" etiqueta="Salida">
             <Toggle id="m-flex" valor={flex} opciones={FLEX} onCambio={cambiarFlex} />

@@ -1,9 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { Continente, FechaIso, IataAeropuerto } from "@az/core";
-import type { CoberturaMercado, ResultadoMercado } from "@az/core";
+import type { CoberturaMercado, FechasMercado, ResultadoMercado } from "@az/core";
 import type { ServicioMercado } from "../servicios/mercado";
 
+const ConsultaPar = z.object({ origen: IataAeropuerto, destino: z.union([IataAeropuerto, Continente]) }).refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" });
 const Consulta = z
   .object({ origen: IataAeropuerto, destino: z.union([IataAeropuerto, Continente]), fechaIda: FechaIso, flexDias: z.coerce.number().int().min(0).max(45).optional() })
   .refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" });
@@ -13,6 +14,20 @@ const Consulta = z
 export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercado) => {
   // Qué aeropuertos y pares tienen tarifas bajadas: el formulario sugiere esos, no el catálogo entero.
   app.get("/mercado/cobertura", async (): Promise<CoberturaMercado> => mercado().cobertura());
+  // Días con combinaciones para un origen y destino: el calendario habilita sólo esos.
+  app.get("/mercado/fechas", async (req, reply): Promise<FechasMercado | undefined> => {
+    const consulta = ConsultaPar.safeParse(req.query);
+    if (!consulta.success) {
+      await reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
+      return undefined;
+    }
+    const r = mercado().fechas(consulta.data.origen, consulta.data.destino);
+    if (!r.ok) {
+      await reply.code(404).send({ error: r.motivo });
+      return undefined;
+    }
+    return r.resultado;
+  });
   app.get("/mercado", async (req, reply): Promise<ResultadoMercado | undefined> => {
     const consulta = Consulta.safeParse(req.query);
     if (!consulta.success) {

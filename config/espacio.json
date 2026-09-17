@@ -1116,15 +1116,17 @@
   },
   "bajada": {
     "grupos": [
-      { "origen": ["NA", "SA"], "destino": ["EU"], "nota": "1. América → Europa" },
-      { "origen": ["EU"], "destino": ["NA", "SA"], "nota": "2. Europa → América" },
-      { "origen": ["EU"], "destino": ["AS"], "nota": "3. Europa → Asia" },
-      { "origen": ["NA", "SA"], "destino": ["AS"], "nota": "4. América → Asia" }
+      { "origen": ["SA"], "destino": ["EU"], "nota": "1. Sudamérica → Europa" },
+      { "origen": ["NA"], "destino": ["EU"], "nota": "2. Norteamérica → Europa" },
+      { "origen": ["EU"], "destino": ["NA", "SA"], "nota": "3. Europa → América" },
+      { "origen": ["EU"], "destino": ["AS"], "nota": "4. Europa → Asia" },
+      { "origen": ["NA", "SA"], "destino": ["AS"], "nota": "5. América → Asia" }
     ],
     "maxPedidosPorCorrida": 1500,
     "redescubrirDias": 30,
     "hubsDelOrigen": true,
-    "nota": "Prioridad del dueño (17/09/2026). Orígenes: aeropuertos grandes y medianos con servicio regular del continente, los de más salidas primero. Por origen: un pedido sin destino descubre a qué destinos hay cache; después un pedido por par (sin mes: la API devuelve el mínimo de cada fecha de todo el horizonte) hacia los destinos del grupo y hacia los aeropuertos grandes del propio continente (primer boleto de un encadenado). Un par se vuelve a pedir pasados precios.cadenciaDias. 1.500 pedidos son ~25 min de API gratuita; cada corrida sigue donde quedó la anterior."
+    "paisesExcluidos": ["RU"],
+    "nota": "Prioridad del dueño (17/09/2026; el 17/09 pidió Sudamérica antes que Norteamérica y excluir Rusia, que OurAirports cuenta como Europa y en Aviasales concentra un cuarto de las tarifas). Orígenes: aeropuertos grandes y medianos con servicio regular del continente, los de más salidas primero. Por origen: un pedido sin destino descubre a qué destinos hay cache; después un pedido por par (sin mes: la API devuelve el mínimo de cada fecha de todo el horizonte) hacia los destinos del grupo y hacia los aeropuertos grandes del propio continente (primer boleto de un encadenado). Un par se vuelve a pedir pasados precios.cadenciaDias. 1.500 pedidos son ~25 min de API gratuita; cada corrida sigue donde quedó la anterior."
   },
   "mercado": {
     "conexionMinHoras": 3,

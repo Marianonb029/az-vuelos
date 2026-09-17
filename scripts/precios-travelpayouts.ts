@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { DatasetPrecios, leerEnlace, medirDesvio, reducirPrecios, ultimos } from "@az/core";
+import { DatasetPrecios, claveGrupo, leerEnlace, medirDesvio, reducirPrecios, ultimos } from "@az/core";
 import type { Descubrimiento, ParBajado, PrecioCacheado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, RutaCompacta } from "@az/espacio";
 import { crearServicioEspacio } from "../apps/api/src/servicios/espacio";
@@ -75,7 +75,7 @@ const nuevos: PrecioCacheado[] = [];
 const paresBajados: ParBajado[] = [];
 let sinEnlace = 0;
 // Un par: sólo lo que sale y llega al aeropuerto exacto (la API acepta ciudades); todo lo demás se guarda.
-const bajarPar = async (o: string, d: string, grupo: number | null) => {
+const bajarPar = async (o: string, d: string, grupo: string | null) => {
   let tarifas = 0;
   for (const it of await pedir(o, d)) {
     if (it.origin_airport !== o || it.destination_airport !== d) continue;
@@ -142,8 +142,9 @@ if (modoPar) {
   for (const r of RutaCompacta.array().parse(JSON.parse(readFileSync(resolve(DATOS, "rutas.json"), "utf8")))) salidas.set(r[1], (salidas.get(r[1]) ?? 0) + 1);
   console.log(`bajada por continentes: ${config.bajada.grupos.map((g) => g.nota).join(" · ")} · hasta ${presupuesto} pedidos (~${Math.ceil(presupuesto / 60)} min)`);
   let ultimoGuardado = 0;
-  for (const [i, grupo] of config.bajada.grupos.entries()) {
-    const origenes = [...catalogo.values()].filter((a) => grupo.origen.includes(a.continente) && a.servicioRegular).sort((a, b) => (salidas.get(b.iata) ?? 0) - (salidas.get(a.iata) ?? 0));
+  for (const grupo of config.bajada.grupos) {
+    const excluido = (pais: string) => config.bajada.paisesExcluidos.includes(pais);
+    const origenes = [...catalogo.values()].filter((a) => grupo.origen.includes(a.continente) && a.servicioRegular && !excluido(a.pais)).sort((a, b) => (salidas.get(b.iata) ?? 0) - (salidas.get(a.iata) ?? 0));
     let descubiertos = 0;
     let paresGrupo = 0;
     for (const a of origenes) {
@@ -157,12 +158,12 @@ if (modoPar) {
       }
       const objetivos = desc.destinos.filter((d) => {
         const c = catalogo.get(d);
-        return c !== undefined && d !== a.iata && (grupo.destino.includes(c.continente) || (config.bajada.hubsDelOrigen && grupo.origen.includes(c.continente) && c.tipo === "grande"));
+        return c !== undefined && d !== a.iata && !excluido(c.pais) && (grupo.destino.includes(c.continente) || (config.bajada.hubsDelOrigen && grupo.origen.includes(c.continente) && c.tipo === "grande"));
       });
       for (const d of objetivos) {
         if (pedidos >= presupuesto) break;
         if (vigente(a.iata, d)) continue;
-        await bajarPar(a.iata, d, i + 1);
+        await bajarPar(a.iata, d, claveGrupo(grupo));
         paresGrupo++;
       }
       if (pedidos - ultimoGuardado >= 200) {

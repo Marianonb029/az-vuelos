@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
-const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", grupos: [{ grupo: 1, origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
+const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
 const HORA = 3600;
 const boleto = (origen: string, destino: string, aerolinea: string, precioUsd: number, saleH: number, duraH: number, extra: Partial<BoletoMercado> = {}): BoletoMercado => ({
   origen, destino, aerolinea, numeroVuelo: "1848", fechaIda: "2027-01-19", transbordos: 0, duracionMin: duraH * 60, itinerario: [origen, destino], salidaEpoch: saleH * HORA, llegadaEpoch: (saleH + duraH) * HORA,
@@ -27,7 +27,7 @@ const resultado: ResultadoMercado = {
   ],
   aeropuertos: [{ iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", trasladoKm: 0, rol: "origen" }, { iata: "IGU", nombre: "Foz do Iguaçu", ciudad: "Foz do Iguaçu", trasladoKm: 300, rol: "origen" }, { iata: "MAD", nombre: "Barajas", ciudad: "Madrid", trasladoKm: 0, rol: "destino" }],
   nombres: [{ iata: "G3", nombre: "GOL" }, { iata: "TP", nombre: "TAP" }, { iata: "UA", nombre: "United" }, { iata: "IB", nombre: "Iberia" }],
-  dataset: { actualizadoEn: "2026-09-16T10:00:00.000Z", corridas: [{ en: "2026-09-16T10:00:00.000Z", pares: 73, tarifas: 1590 }], tarifasVigentes: 1590, tarifasHistoricas: 0, tarifasParaEstePar: 900, paresBajados: 96, porGrupo: [{ grupo: 1, pares: 120, tarifas: 3000 }], desvio: null, tasaDesvioDiariaPct: 1, tasaMedida: false, vencido: false },
+  dataset: { actualizadoEn: "2026-09-16T10:00:00.000Z", corridas: [{ en: "2026-09-16T10:00:00.000Z", pares: 73, tarifas: 1590 }], tarifasVigentes: 1590, tarifasHistoricas: 0, tarifasParaEstePar: 900, paresBajados: 96, porGrupo: [{ grupo: "NA+SA→EU", pares: 120, tarifas: 3000 }], desvio: null, tasaDesvioDiariaPct: 1, tasaMedida: false, vencido: false },
   avisos: [],
 };
 
@@ -38,7 +38,8 @@ const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
 
 describe("Mercado", () => {
   it("pide el mercado con la ventana elegida, agrupa por aeropuerto de salida y muestra las seis variables y la antigüedad", async () => {
-    const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : resultado) } as unknown as Response));
+    const fechas = { origen: "ASU", destino: "MAD", fechas: [{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480 }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300 }] };
+    const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : url.includes("/fechas") ? fechas : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
     const onResultado = vi.fn();
     render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} />);
@@ -52,7 +53,12 @@ describe("Mercado", () => {
     fireEvent.focus(screen.getByRole("combobox", { name: "Destino" }));
     expect(screen.getAllByRole("option").map((o) => o.textContent)[2]).toBe("Europa — todos los aeropuertos con tarifascontinente");
     elegir("Destino", "MAD", /MAD/);
-    fireEvent.change(screen.getByLabelText("Fecha de ida"), { target: { value: "2027-01-19" } });
+    // El calendario pide los días con tarifas del par y habilita sólo esos, con el mínimo de cada uno.
+    await waitFor(() => expect(screen.getByTestId("calendario-nota").textContent).toContain("2 días con tarifas en este mes · 2 en total, entre 19/01/2027 y 20/01/2027"));
+    expect(fetchMock).toHaveBeenCalledWith("/api/mercado/fechas?origen=ASU&destino=MAD", undefined);
+    expect((screen.getByRole("button", { name: "18/01/2027" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole("button", { name: "19/01/2027" }).textContent).toBe("19480");
+    fireEvent.click(screen.getByRole("button", { name: "19/01/2027" }));
     fireEvent.click(screen.getByRole("radio", { name: "± 7 días" }));
     fireEvent.click(screen.getByRole("button", { name: "Buscar en el mercado" }));
     await waitFor(() => expect(screen.getByTestId("resumen-mercado")).toBeTruthy());

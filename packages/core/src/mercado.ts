@@ -54,7 +54,7 @@ export const ResultadoMercado = z.object({
       tarifasHistoricas: z.number().int().min(0), // corridas anteriores conservadas
       tarifasParaEstePar: z.number().int().min(0), // vigentes que salen de un origen candidato o llegan a un destino candidato
       paresBajados: z.number().int().min(0),
-      porGrupo: z.array(z.object({ grupo: z.number().int(), pares: z.number().int(), tarifas: z.number().int() })), // bajada por continentes
+      porGrupo: z.array(z.object({ grupo: z.string(), pares: z.number().int(), tarifas: z.number().int() })), // bajada por continentes, clave "SA→EU"
       desvio: z.object({ comparados: z.number().int(), medianaPct: z.number(), p90Pct: z.number(), subieron: z.number().int(), bajaron: z.number().int(), entre: z.tuple([z.iso.datetime(), z.iso.datetime()]) }).nullable(),
       tasaDesvioDiariaPct: z.number().min(0),
       tasaMedida: z.boolean(), // false: la tasa es el supuesto de config
@@ -65,10 +65,18 @@ export const ResultadoMercado = z.object({
 });
 export type ResultadoMercado = z.infer<typeof ResultadoMercado>;
 
+// Días con combinaciones para un origen y destino: el calendario del formulario habilita sólo esos.
+export const FechasMercado = z.object({
+  origen: IataAeropuerto,
+  destino: z.union([IataAeropuerto, Continente]),
+  fechas: z.array(z.object({ fecha: FechaIso, combinaciones: z.number().int().min(1), minUsd: z.number().min(0) })), // ordenadas
+});
+export type FechasMercado = z.infer<typeof FechasMercado>;
+
 // Qué aeropuertos tienen tarifas bajadas: para sugerirlos en el formulario en vez del catálogo entero.
 export const CoberturaMercado = z.object({
   actualizadoEn: z.iso.datetime().nullable(), // null: sin dataset
-  grupos: z.array(z.object({ grupo: z.number().int(), origen: z.array(Continente), destino: z.array(Continente), pares: z.number().int(), tarifas: z.number().int(), origenesDescubiertos: z.number().int(), origenesPendientes: z.number().int() })),
+  grupos: z.array(z.object({ prioridad: z.number().int(), grupo: z.string(), origen: z.array(Continente), destino: z.array(Continente), pares: z.number().int(), tarifas: z.number().int(), origenesDescubiertos: z.number().int(), origenesPendientes: z.number().int() })),
   aeropuertos: z.array(z.object({ iata: IataAeropuerto, comoOrigen: z.number().int().min(0), comoDestino: z.number().int().min(0) })), // tarifas vigentes que salen / llegan
   pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0) })),
 });

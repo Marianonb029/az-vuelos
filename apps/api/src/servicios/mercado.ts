@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { Continente, DatasetPrecios, armarCombinaciones, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
-import type { AeropuertoCandidato, CoberturaMercado, ResultadoMercado } from "@az/core";
+import { Continente, DatasetPrecios, armarCombinaciones, claveGrupo, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
+import type { AeropuertoCandidato, CoberturaMercado, FechasMercado, PrecioCacheado, ResultadoMercado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, NombreAerolinea } from "@az/espacio";
 import type { ServicioEspacio } from "./espacio";
 
@@ -15,8 +15,11 @@ export interface PedidoMercado {
 
 export type ResultadoServicioMercado = { ok: true; resultado: ResultadoMercado } | { ok: false; motivo: string };
 
+export type ResultadoServicioFechas = { ok: true; resultado: FechasMercado } | { ok: false; motivo: string };
+
 export interface ServicioMercado {
   buscar: (pedido: PedidoMercado) => ResultadoServicioMercado;
+  fechas: (origen: string, destino: string) => ResultadoServicioFechas; // días con combinaciones, para el calendario
   cobertura: () => CoberturaMercado; // qué aeropuertos, pares y grupos de continentes tienen tarifas bajadas
   flexDiasDefecto: number; // config: ventana ± días cuando la consulta no la trae
 }
@@ -36,33 +39,59 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     return parseado.success ? { dataset: parseado.data, aviso: null } : { dataset: null, aviso: "data/local/precios.json tiene un formato anterior: `pnpm precios` lo migra o lo aparta y lo rehace" };
   };
 
+  // Candidatos: con destino aeropuerto, los del modelo (alternativos con km de traslado); con destino
+  // continente, los orígenes del modelo y como llegada todo aeropuerto del continente con tarifas, salvo
+  // los países excluidos de la bajada.
+  const candidatos = (origen: string, destino: string, vigentes: readonly PrecioCacheado[]): { ok: true; origenes: AeropuertoCandidato[]; destinos: AeropuertoCandidato[]; continente: boolean } | { ok: false; motivo: string } => {
+    const continente = Continente.safeParse(destino);
+    if (continente.success) {
+      const o = espacio().candidatosOrigen(origen);
+      if (!o.ok) return o;
+      const conTarifas = new Set(vigentes.map((p) => p.destino));
+      return {
+        ok: true,
+        continente: true,
+        origenes: o.candidatos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) })),
+        destinos: [...aeropuertos.values()].filter((a) => a.continente === continente.data && conTarifas.has(a.iata) && !config.bajada.paisesExcluidos.includes(a.pais)).map((a) => ({ iata: a.iata, trasladoKm: 0 })),
+      };
+    }
+    const e = espacio().explorar(origen, destino, false);
+    if (!e.ok) return e;
+    return { ok: true, continente: false, origenes: e.resultado.origenes.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) })), destinos: e.resultado.destinos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) })) };
+  };
+  const opcionesDe = (tasaPct: number) => ({ conexionMinMin: Math.round(config.mercado.conexionMinHoras * 60), conexionMaxMin: Math.round(config.mercado.conexionMaxHoras * 60), tasaDesvioDiariaPct: tasaPct, cadencia: config.precios.cadencia, maxPorOrigen: config.mercado.maxPorOrigen });
+
+  // Días con al menos una combinación en todo el horizonte, con el mínimo de cada uno: el calendario del
+  // formulario habilita sólo esos.
+  const fechas = (origen: string, destino: string): ResultadoServicioFechas => {
+    const { dataset } = leerDataset();
+    const vigentes = dataset ? ultimos(dataset.precios) : [];
+    const c = candidatos(origen, destino, vigentes);
+    if (!c.ok) return c;
+    const hoy = ahora().toISOString().slice(0, 10);
+    const lista = armarCombinaciones({ origenes: c.origenes, destinos: c.destinos, desde: hoy, hasta: sumarDias(hoy, 400), hoy, precios: vigentes }, opcionesDe(config.precios.desvioDiarioSupuestoPct));
+    const porFecha = new Map<string, { combinaciones: number; minUsd: number }>();
+    for (const x of lista) {
+      const f = porFecha.get(x.fechaIda) ?? { combinaciones: 0, minUsd: x.totalUsd };
+      porFecha.set(x.fechaIda, { combinaciones: f.combinaciones + 1, minUsd: Math.min(f.minUsd, x.totalUsd) });
+    }
+    return { ok: true, resultado: { origen, destino, fechas: [...porFecha].sort((a, b) => a[0].localeCompare(b[0])).map(([fecha, f]) => ({ fecha, ...f })) } };
+  };
+
   const buscar = (pedido: PedidoMercado): ResultadoServicioMercado => {
     const { origen, destino, fechaIda, flexDias } = pedido;
-    const continente = Continente.safeParse(destino);
     const hoy = ahora().toISOString().slice(0, 10);
     const desde = sumarDias(fechaIda, -flexDias) < hoy ? hoy : sumarDias(fechaIda, -flexDias);
     const hasta = sumarDias(fechaIda, flexDias);
     const { dataset, aviso } = leerDataset();
     const avisos = aviso ? [aviso] : [];
     const vigentes = dataset ? ultimos(dataset.precios) : [];
-    // Candidatos: con destino aeropuerto, los del modelo (alternativos con km de traslado); con destino
-    // continente, los orígenes del modelo y como llegada todo aeropuerto del continente con tarifas.
-    let origenes: AeropuertoCandidato[];
-    let destinos: AeropuertoCandidato[];
-    if (continente.success) {
-      const o = espacio().candidatosOrigen(origen);
-      if (!o.ok) return o;
-      origenes = o.candidatos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
-      const conTarifas = new Set(vigentes.map((p) => p.destino));
-      destinos = [...aeropuertos.values()].filter((a) => a.continente === continente.data && conTarifas.has(a.iata)).map((a) => ({ iata: a.iata, trasladoKm: 0 }));
-    } else {
-      const e = espacio().explorar(origen, destino, false);
-      if (!e.ok) return e;
-      origenes = e.resultado.origenes.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
-      destinos = e.resultado.destinos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
-    }
+    const c = candidatos(origen, destino, vigentes);
+    if (!c.ok) return c;
+    const { origenes, destinos } = c;
+    const continente = { success: c.continente };
     const tasa = tasaDesvioDiaria(dataset?.desvio ?? null, config.precios.desvioDiarioSupuestoPct);
-    const opciones = { conexionMinMin: Math.round(config.mercado.conexionMinHoras * 60), conexionMaxMin: Math.round(config.mercado.conexionMaxHoras * 60), tasaDesvioDiariaPct: tasa.tasaPct, cadencia: config.precios.cadencia, maxPorOrigen: config.mercado.maxPorOrigen };
+    const opciones = opcionesDe(tasa.tasaPct);
     const combinaciones = ordenarCombinaciones(armarCombinaciones({ origenes, destinos, desde, hasta, hoy, precios: vigentes }, opciones), opciones);
     const setOrigenes = new Set(origenes.map((a) => a.iata));
     const setDestinos = new Set(destinos.map((a) => a.iata));
@@ -79,7 +108,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
       ...[...usados].filter((i) => !setOrigenes.has(i) && !setDestinos.has(i)).map((iata) => ({ iata, trasladoKm: 0, rol: "escala" as const })),
     ];
     const mencionadas = new Set(combinaciones.flatMap((c) => c.aerolineas));
-    const porGrupo = (dataset?.pares ?? []).reduce((m, p) => (p.grupo === null ? m : m.set(p.grupo, { pares: (m.get(p.grupo)?.pares ?? 0) + 1, tarifas: (m.get(p.grupo)?.tarifas ?? 0) + p.tarifas })), new Map<number, { pares: number; tarifas: number }>());
+    const porGrupo = (dataset?.pares ?? []).reduce((m, p) => (p.grupo === null ? m : m.set(p.grupo, { pares: (m.get(p.grupo)?.pares ?? 0) + 1, tarifas: (m.get(p.grupo)?.tarifas ?? 0) + p.tarifas })), new Map<string, { pares: number; tarifas: number }>());
     return {
       ok: true,
       resultado: {
@@ -102,7 +131,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
               tarifasHistoricas: dataset.precios.length - vigentes.length,
               tarifasParaEstePar: paraEstePar.length,
               paresBajados: dataset.pares.length,
-              porGrupo: [...porGrupo].sort((a, b) => a[0] - b[0]).map(([grupo, x]) => ({ grupo, ...x })),
+              porGrupo: [...porGrupo].sort((a, b) => a[0].localeCompare(b[0])).map(([grupo, x]) => ({ grupo, ...x })),
               desvio: dataset.desvio,
               tasaDesvioDiariaPct: tasa.tasaPct,
               tasaMedida: tasa.medida,
@@ -131,9 +160,9 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     }
     const descubiertos = new Set(dataset.descubrimientos.map((d) => d.origen));
     const grupos = config.bajada.grupos.map((g, i) => {
-      const delGrupo = dataset.pares.filter((p) => p.grupo === i + 1);
-      const origenesDelGrupo = [...aeropuertos.values()].filter((a) => g.origen.includes(a.continente) && a.servicioRegular);
-      return { grupo: i + 1, origen: g.origen, destino: g.destino, pares: delGrupo.length, tarifas: delGrupo.reduce((s, p) => s + p.tarifas, 0), origenesDescubiertos: origenesDelGrupo.filter((a) => descubiertos.has(a.iata)).length, origenesPendientes: origenesDelGrupo.filter((a) => !descubiertos.has(a.iata)).length };
+      const delGrupo = dataset.pares.filter((p) => p.grupo === claveGrupo(g));
+      const origenesDelGrupo = [...aeropuertos.values()].filter((a) => g.origen.includes(a.continente) && a.servicioRegular && !config.bajada.paisesExcluidos.includes(a.pais));
+      return { prioridad: i + 1, grupo: claveGrupo(g), origen: g.origen, destino: g.destino, pares: delGrupo.length, tarifas: delGrupo.reduce((s, p) => s + p.tarifas, 0), origenesDescubiertos: origenesDelGrupo.filter((a) => descubiertos.has(a.iata)).length, origenesPendientes: origenesDelGrupo.filter((a) => !descubiertos.has(a.iata)).length };
     });
     return {
       actualizadoEn: dataset.actualizadoEn,
@@ -143,5 +172,5 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     };
   };
 
-  return { buscar, cobertura, flexDiasDefecto: config.mercado.flexDiasDefecto };
+  return { buscar, fechas, cobertura, flexDiasDefecto: config.mercado.flexDiasDefecto };
 };

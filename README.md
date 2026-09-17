@@ -19,7 +19,7 @@ Historia del producto: `docs/BRIEF.md` (brief original) y `docs/DECISIONES.md` (
 
 | Pestaña | Para qué sirve |
 |---|---|
-| **Rutas** | Origen, destino, fecha y ventana (ese día / ±3 / ±7 / ±15) → combinaciones del mercado agrupadas por aeropuerto de salida, con boletos (itinerario, aerolínea, vuelo, horario local, equipaje, agencia, enlace a Aviasales), precio, equipaje, horas totales, escalas, aerolíneas, día de salida y antigüedad con desvío estimado. Debajo, plegado, el modelo sin precios con su propio formulario. |
+| **Rutas** | Origen, destino (aeropuerto o continente), fecha —un calendario que habilita sólo los días con tarifas para ese par, con el mínimo de cada día— y ventana (ese día / ±3 / ±7 / ±15) → combinaciones del mercado agrupadas por aeropuerto de salida, con boletos (itinerario, aerolínea, vuelo, horario local, equipaje, agencia, enlace a Aviasales), precio, equipaje, horas totales, escalas, aerolíneas, día de salida y antigüedad con desvío estimado. Debajo, plegado, el modelo sin precios con su propio formulario. |
 | **Tablero** | Métricas de la última búsqueda (no guarda registro): combinaciones, más barata / más corta / menos escalas, qué se paga por menos escalas, dónde está lo barato (salida, aerolíneas, escalas, agencias, día), frescura (a refrescar, antigüedad, desvío, equipaje informado) y las corridas del dataset. Plegado, el resumen del modelo. |
 | **Datos** | Glosario de cada término de Rutas y Tablero y la ficha de cada dato: fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. |
 
@@ -48,7 +48,7 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 | `pnpm eventos` | Eventos masivos confirmados (Wikidata), ~2 min |
 | `pnpm tendencia ASU MAD 2027-02-25` | Lee en Google Flights si los precios del par están bajos / típicos / altos respecto de 12 meses (usa el Chrome instalado; no acepta consentimiento) |
 | `pnpm corroborar ASU GRU MAD` | Compara, por aeropuerto, las aerolíneas de Wikipedia (Airlines and destinations) contra las de VRS; el resultado aparece en Datos |
-| `pnpm precios [pedidos]` | Bajada por continentes (Travelpayouts, token gratuito en `TRAVELPAYOUTS_TOKEN`): en el orden de `bajada.grupos` (América → Europa, Europa → América, Europa → Asia, América → Asia), por cada aeropuerto de salida descubre a qué destinos hay cache y baja un pedido por par (el mínimo de cada fecha de todo el horizonte). Hasta 1.500 pedidos por corrida (~25 min); la siguiente sigue donde quedó. Se acumula sin borrar corridas anteriores |
+| `pnpm precios [pedidos]` | Bajada por continentes (Travelpayouts, token gratuito en `TRAVELPAYOUTS_TOKEN`): en el orden de `bajada.grupos` (Sudamérica → Europa, Norteamérica → Europa, Europa → América, Europa → Asia, América → Asia; Rusia excluida), por cada aeropuerto de salida descubre a qué destinos hay cache y baja un pedido por par (el mínimo de cada fecha de todo el horizonte). Hasta 1.500 pedidos por corrida (~25 min); la siguiente sigue donde quedó. Se acumula sin borrar corridas anteriores |
 | `pnpm precios ASU MAD` | Lo mismo para los pares de boletos que el modelo propone para un par concreto (~1–2 min) |
 
 La API corre el refresco automático una vez por día para lo que venció (`pnpm catalogos`, `pnpm eventos`).

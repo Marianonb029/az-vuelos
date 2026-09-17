@@ -39,7 +39,7 @@ writeFileSync(
     fuente: "fixture",
     moneda: "usd",
     actualizadoEn: "2026-09-16T10:00:00.000Z",
-    pares: [{ origen: "ASU", destino: "MAD", tarifas: 4, bajadoEn: "2026-09-16T10:00:00.000Z", grupo: 1 }],
+    pares: [{ origen: "ASU", destino: "MAD", tarifas: 4, bajadoEn: "2026-09-16T10:00:00.000Z", grupo: "SA→EU" }],
     descubrimientos: [{ origen: "ASU", en: "2026-09-16T10:00:00.000Z", destinos: ["GRU", "MAD"] }],
     corridas: [{ en: "2026-09-16T10:00:00.000Z", pares: 1, tarifas: 4 }],
     precios: [
@@ -68,7 +68,7 @@ describe("GET /mercado", () => {
     expect(doble).toMatchObject({ escalas: 2, cambiosBoleto: 1, duracionTotalMin: 18 * 60, aerolineas: ["G3", "TP"], equipajeMano: null, equipajeBodega: false, vistoHaceDias: 7, desvioEstimadoPct: 7, cadenciaDias: 7, refrescar: false });
     expect(r.combinaciones[1]?.vistoHaceDias).toBe(1);
     expect(r.combinaciones[2]?.trasladoOrigenKm).toBeGreaterThan(0);
-    expect(r.dataset).toMatchObject({ tarifasVigentes: 4, tarifasHistoricas: 1, tarifasParaEstePar: 4, paresBajados: 1, porGrupo: [{ grupo: 1, pares: 1, tarifas: 4 }], tasaMedida: false, tasaDesvioDiariaPct: 1, vencido: false });
+    expect(r.dataset).toMatchObject({ tarifasVigentes: 4, tarifasHistoricas: 1, tarifasParaEstePar: 4, paresBajados: 1, porGrupo: [{ grupo: "SA→EU", pares: 1, tarifas: 4 }], tasaMedida: false, tasaDesvioDiariaPct: 1, vencido: false });
     expect(r.destinoEsContinente).toBe(false);
     expect(r.aeropuertos.find((a) => a.iata === "EWR")?.rol).toBe("escala");
     expect(r.nombres.map((n) => n.iata)).toEqual(["G3", "IB", "TP", "UA"]);
@@ -91,9 +91,16 @@ describe("GET /mercado", () => {
     expect(r.combinaciones.map((c) => `${c.origen} ${c.boletos.map((b) => b.itinerario.join("-")).join("+")} → ${c.llegaA}`)).toEqual(["ASU ASU-GRU+GRU-LIS-MAD → MAD", "ASU ASU-AEP-SCL-IAH-EWR-MAD → MAD", "IGU IGU-MAD → MAD", "GRU GRU-LIS-MAD → MAD"]);
     expect(r.aeropuertos.find((a) => a.iata === "MAD")?.rol).toBe("destino");
     const cobertura = await app.inject({ method: "GET", url: "/mercado/cobertura" });
-    const grupos = (cobertura.json() as { grupos: { grupo: number }[] }).grupos;
-    expect(grupos).toHaveLength(4);
-    expect(grupos[0]).toMatchObject({ grupo: 1, origen: ["NA", "SA"], destino: ["EU"], pares: 1, tarifas: 4, origenesDescubiertos: 1 });
+    const grupos = (cobertura.json() as { grupos: { grupo: string }[] }).grupos;
+    expect(grupos).toHaveLength(5);
+    expect(grupos[0]).toMatchObject({ prioridad: 1, grupo: "SA→EU", origen: ["SA"], destino: ["EU"], pares: 1, tarifas: 4, origenesDescubiertos: 1 });
+  });
+
+  it("lista los días con combinaciones y el mínimo de cada uno, para el calendario", async () => {
+    const res = await app.inject({ method: "GET", url: "/mercado/fechas?origen=ASU&destino=MAD" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ origen: "ASU", destino: "MAD", fechas: [{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480 }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300 }] });
+    expect((await app.inject({ method: "GET", url: "/mercado/fechas?origen=ASU&destino=EU" })).json()).toMatchObject({ fechas: [{ fecha: "2027-01-19" }, { fecha: "2027-01-20" }] });
   });
 
   it("valida la consulta", async () => {

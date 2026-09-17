@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CoberturaMercado, FuenteDato, ResultadoMercado } from "@az/core";
+import { CoberturaMercado, FechasMercado, FuenteDato, ResultadoMercado } from "@az/core";
 import { ResultadoCalendario, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
 import type { OrdenRutas } from "@az/espacio";
 
@@ -19,6 +19,7 @@ const pedir = async <T>(esquema: z.ZodType<T>, ruta: string, init?: RequestInit)
 // Fase 15: el mercado. Combinaciones de boletos cacheados de Travelpayouts para llegar al destino, fecha ± flexDias.
 export const obtenerMercado = (origen: string, destino: string, fechaIda: string, flexDias: number) => pedir(ResultadoMercado, `/mercado?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}&flexDias=${flexDias}`);
 export const obtenerCobertura = () => pedir(CoberturaMercado, "/mercado/cobertura");
+export const obtenerFechas = (origen: string, destino: string) => pedir(FechasMercado, `/mercado/fechas?origen=${origen}&destino=${destino}`);
 
 // Fase 7: rutas ordenadas por costo estimado (sin precios) para una fecha de ida y vuelta opcional.
 export const obtenerRutas = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, equipaje: "mano" | "valija", orden: OrdenRutas) =>

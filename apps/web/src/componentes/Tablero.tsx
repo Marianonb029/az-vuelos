@@ -109,7 +109,7 @@ export const Tablero = ({ mercado, modelo }: Props) => {
           <p className="text-xs text-slate-600" data-testid="tablero-corridas">
             Dataset del {dataset.actualizadoEn.slice(0, 10)}
             {dataset.vencido ? " (vencido)" : ""}: {dataset.tarifasVigentes.toLocaleString("es")} tarifas vigentes, {dataset.tarifasHistoricas.toLocaleString("es")} de corridas anteriores conservadas, {dataset.paresBajados} pares bajados
-            {dataset.porGrupo.length > 0 ? ` (bajada por continentes: ${dataset.porGrupo.map((g) => `grupo ${g.grupo}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas`).join(" · ")})` : ""}. Corridas: {dataset.corridas.map((c) => `${c.en.slice(0, 10)} (${c.pares} pares, ${c.tarifas.toLocaleString("es")} tarifas)`).join(" · ")}.
+            {dataset.porGrupo.length > 0 ? ` (bajada por continentes: ${dataset.porGrupo.map((g) => `${g.grupo}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas`).join(" · ")})` : ""}. Corridas: {dataset.corridas.map((c) => `${c.en.slice(0, 10)} (${c.pares} pares, ${c.tarifas.toLocaleString("es")} tarifas)`).join(" · ")}.
           </p>
         )}
       </Bloque>

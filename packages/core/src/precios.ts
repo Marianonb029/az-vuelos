@@ -39,9 +39,10 @@ export type DesvioPrecios = z.infer<typeof DesvioPrecios>;
 
 export const CorridaPrecios = z.object({ en: FechaHoraIso, pares: z.number().int().min(0), tarifas: z.number().int().min(0) });
 
-// Un par bajado: cuándo, cuántas tarifas trajo y en qué grupo de prioridad de la bajada por continentes cayó
-// (null: se pidió a mano con `pnpm precios ORIGEN DESTINO`).
-export const ParBajado = z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0), bajadoEn: FechaHoraIso, grupo: z.number().int().min(1).nullable() });
+// Un par bajado: cuándo, cuántas tarifas trajo y en qué grupo de la bajada por continentes cayó, como clave
+// estable "SA→EU" (los números de prioridad cambian al reordenar config; null: `pnpm precios ORIGEN DESTINO`).
+export const ParBajado = z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0), bajadoEn: FechaHoraIso, grupo: z.string().nullable() });
+export const claveGrupo = (g: { origen: readonly string[]; destino: readonly string[] }) => `${g.origen.join("+")}→${g.destino.join("+")}`;
 export type ParBajado = z.infer<typeof ParBajado>;
 
 // Descubrimiento: a qué destinos tiene cache la API desde un aeropuerto (pedido sin destino).

@@ -83,6 +83,7 @@ export const ConfigBajada = z.object({
   maxPedidosPorCorrida: z.number().int().min(1),
   redescubrirDias: z.number().int().min(1), // un origen se vuelve a preguntar (sin destino) pasado esto
   hubsDelOrigen: z.boolean(), // además de los destinos del grupo, bajar origen→aeropuerto grande del mismo continente (el primer boleto de un encadenado)
+  paisesExcluidos: z.array(z.string().length(2)), // ISO 3166-1: ni como origen ni como destino de la bajada, ni como llegada cuando el destino es un continente
   nota: z.string(),
 });
 
