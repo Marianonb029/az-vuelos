@@ -13,6 +13,7 @@ import {
   analizarGaps,
   armarRutasPosibles,
   calcularCalendario,
+  distanciaKm,
   expandirAeropuertos,
   generarCombinaciones,
   generarRutas,
@@ -281,10 +282,12 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     let destinos: CandidatoAeropuerto[];
     const avisos: string[] = [];
     if (continente.success) {
-      // Todo aeropuerto del continente con servicio regular (salvo países excluidos de la bajada), sin radio ni tope.
+      // Todo aeropuerto del continente con servicio regular (salvo países excluidos de la bajada), sin radio ni tope;
+      // la distancia se mide desde el origen pedido y ordena los destinos (más cercano primero).
+      const origenGeo = o.candidatos[0]?.aeropuerto;
       destinos = aeropuertos
         .filter((a) => a.continente === continente.data && a.servicioRegular && !config.bajada.paisesExcluidos.includes(a.pais))
-        .map((a, i) => ({ aeropuerto: a, rol: "destino" as const, esSolicitado: false, distanciaKm: 0, salidasSemanales: grafo.registrosSalientes(a.iata), posicion: i + 1 }));
+        .map((a, i) => ({ aeropuerto: a, rol: "destino" as const, esSolicitado: false, distanciaKm: origenGeo ? Math.round(distanciaKm(origenGeo, a)) : 0, salidasSemanales: grafo.registrosSalientes(a.iata), posicion: i + 1 }));
     } else {
       const d = expandirAeropuertos(destino, "destino", aeropuertos, grafo, config.fase1);
       if (!d.ok) return d;
@@ -296,8 +299,8 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     const tarifasPorPar = new Map<string, number>();
     for (const p of dataset ? ultimos(dataset.precios) : []) tarifasPorPar.set(`${p.origen}|${p.destino}`, (tarifasPorPar.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
     if (!dataset) avisos.push("Sin dataset de precios: la columna 'en el mercado' queda vacía hasta correr pnpm precios");
-    const rutas = armarRutasPosibles({ origenes: o.candidatos, destinos, rutas: { conservadas: generadas.conservadas, descartadas: generadas.descartadas, separadas }, tarifasPorPar }, grafo, new Map(aeropuertos.map((a) => [a.iata, a])));
-    const mencionadas = new Set(rutas.flatMap((r) => [...r.aerolineas, ...r.aerolineasPrevio, ...r.tramos.flatMap((t) => t.aerolineas)]));
+    const rutas = armarRutasPosibles({ origenes: o.candidatos, destinos, rutas: { conservadas: generadas.conservadas, descartadas: generadas.descartadas, separadas }, tarifasPorPar, trasladoTierraMaxKm: config.fase7.trasladoAereoDesdeKm }, grafo, new Map(aeropuertos.map((a) => [a.iata, a])));
+    const mencionadas = new Set(rutas.flatMap((r) => [...r.aerolineas, ...r.aerolineasPrevio, ...r.tramos.flatMap((t) => t.aerolineas), ...(r.tramoFinal?.aerolineas ?? [])]));
     const usados = new Set(rutas.flatMap((r) => r.itinerario));
     return {
       ok: true,

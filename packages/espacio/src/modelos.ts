@@ -155,20 +155,23 @@ export const ResultadoEspacio = z.object({
 export const RutaPosible = z.object({
   origen: IataAeropuerto,
   trasladoOrigenKm: z.number().min(0), // 0: el aeropuerto pedido
-  destino: IataAeropuerto,
-  itinerario: z.array(IataAeropuerto).min(2), // aeropuertos por los que pasa, boletos incluidos
-  boletos: z.number().int().min(1).max(2),
+  destino: IataAeropuerto, // donde termina la ruta del grafo (el pedido o un alternativo)
+  trasladoDestinoKm: z.number().min(0), // km del alternativo al destino pedido (0: es el pedido; con destino continente, km desde el origen pedido)
+  itinerario: z.array(IataAeropuerto).min(2), // aeropuertos por los que pasa, boletos y tramo final incluidos
+  boletos: z.number().int().min(1).max(3), // el tramo final en vuelo aparte cuenta como boleto
   escalas: z.number().int().min(0),
   hub: IataAeropuerto.nullable(), // boletos separados: dónde se cambia de boleto
   aerolineasPrevio: z.array(IataAerolinea), // las que venden el primer boleto (origen → hub); vacío con boleto único
   aerolineas: z.array(IataAerolinea).min(1), // las que venden el boleto principal
   tramos: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, km: z.number().min(0), aerolineas: z.array(IataAerolinea) })), // quién opera cada tramo
+  // Ruta que termina en un alternativo: cómo se llega al destino pedido (vuelo aparte con estas aerolíneas, o por tierra).
+  tramoFinal: z.object({ origen: IataAeropuerto, destino: IataAeropuerto, km: z.number().min(0), aerolineas: z.array(IataAerolinea), porTierra: z.boolean() }).nullable(),
   km: z.number().min(0),
   nivel: Nivel,
   etiquetaNivel: z.string(),
   vuelosSemanales: z.number().int().min(0),
   conservada: z.boolean(), // false: nivel bajo (menos de 7 vuelos semanales proxy); el modelo la descarta, acá se muestra
-  tarifasMercado: z.array(z.number().int().min(0)), // por boleto: cuántas tarifas vigentes hay en el dataset de precios para ese par
+  tarifasMercado: z.array(z.number().int().min(0)), // por boleto (tramo final en vuelo incluido): cuántas tarifas vigentes hay en el dataset de precios para ese par
 });
 export type RutaPosible = z.infer<typeof RutaPosible>;
 
@@ -179,7 +182,7 @@ export const ResultadoRutasPosibles = z.object({
   calculadoEn: z.iso.datetime(),
   origenes: z.array(z.object({ iata: IataAeropuerto, nombre: z.string(), ciudad: z.string(), trasladoKm: z.number().min(0) })),
   destinos: z.number().int().min(0), // aeropuertos de llegada considerados
-  rutas: z.array(RutaPosible), // ya ordenadas: origen (pedido primero, después por cercanía), destino, boletos, escalas, más aerolíneas
+  rutas: z.array(RutaPosible), // ya ordenadas: origen (pedido primero, después por cercanía), destino (pedido primero, después por cercanía al pedido), boletos, escalas, más aerolíneas
   nombres: z.array(NombreAerolinea),
   aeropuertos: z.array(z.object({ iata: IataAeropuerto, nombre: z.string(), ciudad: z.string() })),
   avisos: z.array(z.string()),

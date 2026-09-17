@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
 const ruta = (extra: Partial<RutaPosible> & Pick<RutaPosible, "origen" | "destino" | "itinerario" | "aerolineas">): RutaPosible => ({
-  trasladoOrigenKm: 0, boletos: 1, escalas: extra.itinerario.length - 2, hub: null, aerolineasPrevio: [], km: 9500, nivel: 2, etiquetaNivel: "Alta", vuelosSemanales: 7, conservada: true, tarifasMercado: [0],
+  trasladoOrigenKm: 0, trasladoDestinoKm: 0, boletos: 1, escalas: extra.itinerario.length - 2, hub: null, tramoFinal: null, aerolineasPrevio: [], km: 9500, nivel: 2, etiquetaNivel: "Alta", vuelosSemanales: 7, conservada: true, tarifasMercado: [0],
   tramos: extra.itinerario.slice(1).map((d, i) => ({ origen: extra.itinerario[i] ?? "", destino: d, km: 4000, aerolineas: extra.aerolineas })),
   ...extra,
 });
@@ -63,5 +63,35 @@ describe("Combinaciones (Fase 17)", () => {
     // El filtro reduce a lo que contiene el texto (aeropuerto, ciudad o aerolínea).
     fireEvent.change(screen.getByLabelText("Filtrar (aeropuerto, ciudad o aerolínea)"), { target: { value: "Lisboa" } });
     expect(screen.getByTestId("resumen-posibles").textContent).toContain('1 rutas (filtro "Lisboa")');
+  });
+});
+
+describe("Combinaciones hacia un aeropuerto", () => {
+  it("muestra los alternativos por cercanía al pedido, con el tramo final (vuelo aparte o tierra) en cabecera y fila", async () => {
+    const aAeropuerto: ResultadoRutasPosibles = {
+      ...resultado,
+      destino: "MAD",
+      destinoEsContinente: false,
+      rutas: [
+        ruta({ origen: "ASU", destino: "MAD", itinerario: ["ASU", "MAD"], aerolineas: ["UX"], escalas: 0, tarifasMercado: [11] }),
+        ruta({ origen: "ASU", destino: "LIS", trasladoDestinoKm: 513, itinerario: ["ASU", "GRU", "LIS", "MAD"], aerolineas: ["TP"], boletos: 3, escalas: 2, hub: "GRU", aerolineasPrevio: ["G3"], tramoFinal: { origen: "LIS", destino: "MAD", km: 513, aerolineas: ["TP", "IB"], porTierra: false }, tarifasMercado: [29, 47, 5] }),
+      ],
+    };
+    const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : aAeropuerto) } as unknown as Response));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<Combinaciones aeropuertos={aeropuertos} />);
+    elegir("Origen", "ASU", /ASU/);
+    elegir("Destino (aeropuerto o continente)", "MAD", /MAD/);
+    fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));
+    await waitFor(() => expect(screen.getByTestId("resumen-posibles")).toBeTruthy());
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("1 llegan por un alternativo con tramo final a MAD");
+    const cabeceras = screen.getAllByRole("button", { name: /^[▸▾] → / }).map((b) => b.textContent ?? "");
+    expect(cabeceras[0]).toContain("→ MAD (Madrid) · el destino pedido");
+    expect(cabeceras[1]).toContain("→ LIS (Lisboa) · a 513 km de MAD: vuelo aparte con TAP, Iberia · 1 rutas");
+    fireEvent.click(screen.getByRole("button", { name: /→ LIS/ }));
+    const fila = screen.getByTestId("fila-posible").textContent ?? "";
+    expect(fila).toContain("ASU → GRU → LIS → MAD2 boletos en GRU+ vuelo aparte a MAD");
+    expect(fila).toContain("LIS→MAD: TAP, Iberia");
+    expect(fila).toContain("sí: 29 + 47 + 5 tarifas");
   });
 });

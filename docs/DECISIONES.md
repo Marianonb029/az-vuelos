@@ -601,6 +601,14 @@ Pedido del dueño: una pestaña antes de Rutas con todas las rutas aéreas posib
 - **UI** (`Combinaciones.tsx`, primera pestaña): agrupado por aeropuerto de salida y, dentro, por destino plegado con conteos (rutas, de un boleto, de dos, con tarifas en el mercado); se abre un destino para ver sus rutas. Filtro por aeropuerto, ciudad o aerolínea. Con 12–14 mil filas, abrirlo todo no tendría sentido; el plegado y el filtro son la forma de usarlo.
 - Lo que no hace, declarado: no cruza fechas ni horarios (VRS no los trae); no calcula precio ni índice; tres boletos no se arman (igual que en el mercado).
 
+## Fase 17.1 (17/09/2026) — Combinaciones: destinos por cercanía al pedido y tramo final siempre al pedido
+
+Pedido del dueño: dentro de cada aeropuerto de salida, primero las combinaciones al destino pedido y después las que llegan al aeropuerto más cercano al pedido, y así (no A–Z); y toda ruta a un alternativo con el tramo final al destino pedido. Objetivo: ver todas las aerolíneas y rutas que pueden combinar hacia el destino, evitando los vuelos directos y conocidos, para encontrar precios bajos por rutas alternativas.
+
+- **Orden de destinos**: el pedido primero; después los alternativos por distancia al pedido (`trasladoDestinoKm`, de la Fase 1). Con destino continente, por distancia desde el origen pedido (más cercano primero).
+- **Tramo final**: una ruta que termina en un alternativo lleva `tramoFinal` al pedido: **vuelo aparte** con las aerolíneas que operan ese par en el grafo (cuenta como boleto y como escala, y su par se mira en el mercado), o **por tierra** si está a menos de `fase7.trasladoAereoDesdeKm` 400 km y no hay vuelo. Sin vuelo ni tierra, la ruta no sirve y no se lista: ASU → MAD pasa de 11.809 a 9.822 rutas (8.527 llegan por un alternativo). La cabecera de cada destino dice a cuántos km está del pedido y cómo se llega (ZAZ a 249 km: vuelo aparte con Air Nostrum; BIQ a 372 km: por tierra).
+- Lo que sigue igual: un boleto antes que dos, menos escalas, más vendedoras, más frecuencia; baja frecuencia en gris; "en el mercado" ahora incluye el par del tramo final.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

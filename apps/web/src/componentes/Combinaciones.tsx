@@ -25,19 +25,21 @@ const Fila = ({ r, nombre }: { r: RutaPosible; nombre: (iata: string) => string 
     <tr className={`border-b border-slate-100 ${r.conservada ? "" : "text-slate-400"}`} data-testid="fila-posible">
       <td className={`${celda} whitespace-nowrap font-medium ${r.conservada ? "text-slate-900" : ""}`}>
         {r.itinerario.join(" → ")}
-        {r.boletos === 2 && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 boletos en {r.hub}</span>}
+        {r.hub && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 boletos en {r.hub}</span>}
+        {r.tramoFinal && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] uppercase text-amber-800">{r.tramoFinal.porTierra ? `+ tierra a ${r.tramoFinal.destino}` : `+ vuelo aparte a ${r.tramoFinal.destino}`}</span>}
         {!r.conservada && <span className="ml-1 rounded bg-slate-100 px-1 text-[10px] uppercase">baja frecuencia</span>}
       </td>
       <td className={celda}>
-        {r.boletos === 2 && (
+        {r.hub && (
           <span className="block">
             {r.origen}→{r.hub}: {r.aerolineasPrevio.map(nombre).join(", ")}
           </span>
         )}
         <span className="block">
-          {r.boletos === 2 ? `${r.hub}→${r.destino}: ` : ""}
+          {r.hub ? `${r.hub}→${r.destino}: ` : ""}
           {r.aerolineas.map(nombre).join(", ")}
         </span>
+        {r.tramoFinal && <span className="block text-amber-800">{r.tramoFinal.origen}→{r.tramoFinal.destino}: {r.tramoFinal.porTierra ? `por tierra (${r.tramoFinal.km} km)` : r.tramoFinal.aerolineas.map(nombre).join(", ")}</span>}
       </td>
       <td className={celda}>
         {r.tramos.map((t) => (
@@ -45,6 +47,11 @@ const Fila = ({ r, nombre }: { r: RutaPosible; nombre: (iata: string) => string 
             {t.origen}→{t.destino} ({t.km.toLocaleString("es")} km): {t.aerolineas.join(", ") || "sin datos"}
           </span>
         ))}
+        {r.tramoFinal && (
+          <span className="block whitespace-nowrap text-amber-800">
+            {r.tramoFinal.origen}→{r.tramoFinal.destino} ({r.tramoFinal.km.toLocaleString("es")} km): {r.tramoFinal.porTierra ? "tren o bus" : r.tramoFinal.aerolineas.join(", ")}
+          </span>
+        )}
       </td>
       <td className={`${celda} whitespace-nowrap tabular-nums`}>{r.km.toLocaleString("es")} km</td>
       <td className={`${celda} whitespace-nowrap`}>
@@ -151,7 +158,7 @@ export const Combinaciones = ({ aeropuertos }: Props) => {
         <Bloque
           orden={1}
           titulo={`Combinaciones: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}`}
-          objetivo="Por aeropuerto de salida (el pedido primero, después por cercanía) y por destino; dentro, primero un boleto, menos escalas, más aerolíneas que venden, más frecuencia. Abrí un destino para ver sus rutas. Las de baja frecuencia (menos de 7 vuelos semanales proxy) van en gris."
+          objetivo="Por aeropuerto de salida (el pedido primero, después por cercanía) y, dentro, por destino: el pedido primero y después los alternativos por cercanía al pedido, siempre con el tramo final al pedido (vuelo aparte con sus aerolíneas, o por tierra hasta 400 km). En cada destino: un boleto antes que dos, menos escalas, más aerolíneas que venden, más frecuencia. Abrí un destino para ver sus rutas. Las de baja frecuencia (menos de 7 vuelos semanales proxy) van en gris."
         >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
@@ -159,7 +166,7 @@ export const Combinaciones = ({ aeropuertos }: Props) => {
             </p>
           ))}
           <p className="text-sm text-slate-600" data-testid="resumen-posibles">
-            {rutas.length.toLocaleString("es")} rutas{f ? ` (filtro "${filtro}")` : ""} · {porOrigen.length} aeropuertos de salida · {resultado.destinos} destinos considerados · {rutas.filter((r) => r.boletos === 1).length.toLocaleString("es")} de un boleto y {rutas.filter((r) => r.boletos === 2).length.toLocaleString("es")} de dos · {rutas.filter((r) => r.tarifasMercado.every((n) => n > 0)).length.toLocaleString("es")} con tarifas en el mercado
+            {rutas.length.toLocaleString("es")} rutas{f ? ` (filtro "${filtro}")` : ""} · {porOrigen.length} aeropuertos de salida · {resultado.destinos} destinos considerados · {rutas.filter((r) => r.hub === null).length.toLocaleString("es")} de un boleto y {rutas.filter((r) => r.hub !== null).length.toLocaleString("es")} de dos{resultado.destinoEsContinente ? "" : ` · ${rutas.filter((r) => r.tramoFinal !== null).length.toLocaleString("es")} llegan por un alternativo con tramo final a ${resultado.destino}`} · {rutas.filter((r) => r.tarifasMercado.every((n) => n > 0)).length.toLocaleString("es")} con tarifas en el mercado
           </p>
           {porOrigen.map(({ o, rutas: deOrigen }) => {
             const info = resultado.origenes.find((x) => x.iata === o);
@@ -172,10 +179,12 @@ export const Combinaciones = ({ aeropuertos }: Props) => {
                 {destinos.map((d) => {
                   const deDestino = deOrigen.filter((r) => r.destino === d);
                   const k = clave(o, d);
+                  const primera = deDestino[0];
+                  const llegada = !primera || resultado.destinoEsContinente ? "" : primera.tramoFinal === null ? " · el destino pedido" : ` · a ${primera.trasladoDestinoKm.toLocaleString("es")} km de ${resultado.destino}: ${primera.tramoFinal.porTierra ? "por tierra (tren o bus)" : `vuelo aparte con ${primera.tramoFinal.aerolineas.map(nombre).join(", ")}`}`;
                   return (
                     <div key={k}>
                       <button type="button" onClick={() => alternar(k)} aria-expanded={abiertos.has(k)} className="w-full rounded px-4 py-1 text-left text-xs text-slate-800 hover:bg-slate-50">
-                        {abiertos.has(k) ? "▾" : "▸"} → {d} {ciudad(d) ? `(${ciudad(d)})` : ""} · {deDestino.length} rutas: {deDestino.filter((r) => r.boletos === 1).length} de un boleto, {deDestino.filter((r) => r.boletos === 2).length} de dos · {deDestino.filter((r) => r.tarifasMercado.every((n) => n > 0)).length} con tarifas en el mercado
+                        {abiertos.has(k) ? "▾" : "▸"} → {d} {ciudad(d) ? `(${ciudad(d)})` : ""}{llegada} · {deDestino.length} rutas: {deDestino.filter((r) => r.hub === null).length} de un boleto, {deDestino.filter((r) => r.hub !== null).length} de dos · {deDestino.filter((r) => r.tarifasMercado.every((n) => n > 0)).length} con tarifas en el mercado
                       </button>
                       {abiertos.has(k) && (
                         <div className="overflow-x-auto pl-4">
