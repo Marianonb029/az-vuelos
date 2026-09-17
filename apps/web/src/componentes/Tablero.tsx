@@ -1,10 +1,8 @@
 import { NOMBRE_CONTINENTE, fechaCorta } from "@az/core";
 import type { Continente } from "@az/core";
 import type { Combinacion, ResultadoMercado } from "@az/core";
-import type { ResultadoRutas } from "@az/espacio";
 import { Bloque } from "./Bloque";
 import { horas } from "./FilaMercado";
-import { TableroModelo } from "./TableroModelo";
 import { Cifra, Ranking, pct, top } from "./TableroPiezas";
 
 const ruta = (c: Combinacion) => c.boletos.map((b) => b.itinerario.join("→")).join(" + ");
@@ -12,12 +10,11 @@ const minimo = <T,>(lista: readonly T[], valor: (x: T) => number) => [...lista].
 
 interface Props {
   mercado: ResultadoMercado | null;
-  modelo: ResultadoRutas | null;
 }
 
 // Pestaña Tablero: métricas de la última búsqueda en el mercado (qué hay, dónde está lo barato, qué tan fresco
-// es) y, debajo, el resumen del modelo sin precios si se corrió. No guarda nada.
-export const Tablero = ({ mercado, modelo }: Props) => {
+// es). No guarda nada.
+export const Tablero = ({ mercado }: Props) => {
   if (!mercado) return <p className="text-sm text-slate-600">Todavía no hay una búsqueda: buscá un par en Rutas y el tablero se arma con ese resultado.</p>;
   const { combinaciones: lista, origen, destino, dataset } = mercado;
   const nombres = new Map(mercado.nombres.map((n) => [n.iata, n.nombre]));
@@ -113,14 +110,6 @@ export const Tablero = ({ mercado, modelo }: Props) => {
           </p>
         )}
       </Bloque>
-      {modelo && (
-        <details className="rounded-lg border border-slate-200 bg-white p-4">
-          <summary className="cursor-pointer text-sm font-medium text-slate-800">Modelo sin precios: resumen de la última priorización (qué pares baja pnpm precios)</summary>
-          <div className="mt-4">
-            <TableroModelo resultado={modelo} />
-          </div>
-        </details>
-      )}
     </div>
   );
 };

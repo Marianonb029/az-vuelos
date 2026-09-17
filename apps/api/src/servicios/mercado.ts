@@ -39,25 +39,20 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     return parseado.success ? { dataset: parseado.data, aviso: null } : { dataset: null, aviso: "data/local/precios.json tiene un formato anterior: `pnpm precios` lo migra o lo aparta y lo rehace" };
   };
 
-  // Candidatos: con destino aeropuerto, los del modelo (alternativos con km de traslado); con destino
-  // continente, los orígenes del modelo y como llegada todo aeropuerto del continente con tarifas, salvo
-  // los países excluidos de la bajada.
+  // Candidatos: los orígenes son el pedido y sus alternativos del modelo (con km de traslado). La llegada es
+  // exactamente el aeropuerto pedido (Fase 15.2: nada de "termina en otro aeropuerto") o, con destino continente,
+  // todo aeropuerto del continente con tarifas, salvo los países excluidos de la bajada.
   const candidatos = (origen: string, destino: string, vigentes: readonly PrecioCacheado[]): { ok: true; origenes: AeropuertoCandidato[]; destinos: AeropuertoCandidato[]; continente: boolean } | { ok: false; motivo: string } => {
     const continente = Continente.safeParse(destino);
+    const o = espacio().candidatosOrigen(origen);
+    if (!o.ok) return o;
+    const origenes = o.candidatos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) }));
     if (continente.success) {
-      const o = espacio().candidatosOrigen(origen);
-      if (!o.ok) return o;
       const conTarifas = new Set(vigentes.map((p) => p.destino));
-      return {
-        ok: true,
-        continente: true,
-        origenes: o.candidatos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) })),
-        destinos: [...aeropuertos.values()].filter((a) => a.continente === continente.data && conTarifas.has(a.iata) && !config.bajada.paisesExcluidos.includes(a.pais)).map((a) => ({ iata: a.iata, trasladoKm: 0 })),
-      };
+      return { ok: true, continente: true, origenes, destinos: [...aeropuertos.values()].filter((a) => a.continente === continente.data && conTarifas.has(a.iata) && !config.bajada.paisesExcluidos.includes(a.pais)).map((a) => ({ iata: a.iata, trasladoKm: 0 })) };
     }
-    const e = espacio().explorar(origen, destino, false);
-    if (!e.ok) return e;
-    return { ok: true, continente: false, origenes: e.resultado.origenes.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) })), destinos: e.resultado.destinos.map((c) => ({ iata: c.aeropuerto.iata, trasladoKm: Math.round(c.distanciaKm) })) };
+    if (!aeropuertos.has(destino)) return { ok: false, motivo: `El aeropuerto ${destino} no está en el dataset de OurAirports (grandes y medianos con IATA)` };
+    return { ok: true, continente: false, origenes, destinos: [{ iata: destino, trasladoKm: 0 }] };
   };
   const opcionesDe = (tasaPct: number) => ({ conexionMinMin: Math.round(config.mercado.conexionMinHoras * 60), conexionMaxMin: Math.round(config.mercado.conexionMaxHoras * 60), tasaDesvioDiariaPct: tasaPct, cadencia: config.precios.cadencia, maxPorOrigen: config.mercado.maxPorOrigen });
 

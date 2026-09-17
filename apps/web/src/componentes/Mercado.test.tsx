@@ -86,7 +86,7 @@ describe("Mercado", () => {
 
 describe("Tablero (mercado)", () => {
   it("resume la búsqueda: mejores por criterio, por escalas, dónde está lo barato y frescura", () => {
-    render(<Tablero mercado={resultado} modelo={null} />);
+    render(<Tablero mercado={resultado} />);
     const resumen = screen.getByTestId("tablero-resumen").textContent ?? "";
     expect(resumen).toContain("3combinaciones2 desde ASU; 3 llegan a MAD; 1 de dos boletos");
     expect(resumen).toContain("USD 300más barataIGU→MAD");

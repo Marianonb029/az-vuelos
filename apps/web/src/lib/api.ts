@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { CoberturaMercado, FechasMercado, FuenteDato, ResultadoMercado } from "@az/core";
-import { ResultadoCalendario, ResultadoEspacio, ResultadoRutas, ResultadoRutasPosibles } from "@az/espacio";
-import type { OrdenRutas } from "@az/espacio";
+import { ResultadoRutasPosibles } from "@az/espacio";
 
 const BASE = "/api";
 
@@ -23,19 +22,6 @@ export const obtenerFechas = (origen: string, destino: string) => pedir(FechasMe
 
 // Fase 17: todas las rutas que el grafo permite hacia un aeropuerto o continente, sin fecha ni precio.
 export const obtenerRutasPosibles = (origen: string, destino: string) => pedir(ResultadoRutasPosibles, `/rutas-posibles?origen=${origen}&destino=${destino}`);
-
-// Fase 7: rutas ordenadas por costo estimado (sin precios) para una fecha de ida y vuelta opcional.
-export const obtenerRutas = (origen: string, destino: string, fechaIda: string, fechaVuelta: string | null, equipaje: "mano" | "valija", orden: OrdenRutas) =>
-  pedir(ResultadoRutas, `/rutas?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}${fechaVuelta === null ? "" : `&fechaVuelta=${fechaVuelta}`}&equipaje=${equipaje}&orden=${orden}`);
-
-// Validación del índice: precios vistos por la persona y qué tan bien los ordena el índice.
-
-// Espacio de búsqueda (aeropuertos alternativos, rutas, boletos separados, gaps) y calendario de presión.
-export const obtenerEspacio = (origen: string, destino: string) => pedir(ResultadoEspacio, `/espacio?origen=${origen}&destino=${destino}`);
-export const obtenerCalendario = (origen: string, destino: string, desde: string, hasta: string) =>
-  pedir(ResultadoCalendario, `/espacio/calendario?origen=${origen}&destino=${destino}&desde=${desde}&hasta=${hasta}`);
-export const urlExportarEspacio = (origen: string, destino: string, desde: string, hasta: string, formato: "json" | "xlsx") =>
-  `${BASE}/espacio/exportar?origen=${origen}&destino=${destino}&desde=${desde}&hasta=${hasta}&formato=${formato}`;
 
 // Variables de la priorización: fuente, última actualización, exactitud y vencimiento.
 export const obtenerDatos = () => pedir(z.array(FuenteDato), "/datos");

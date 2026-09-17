@@ -609,6 +609,14 @@ Pedido del dueño: dentro de cada aeropuerto de salida, primero las combinacione
 - **Tramo final**: una ruta que termina en un alternativo lleva `tramoFinal` al pedido: **vuelo aparte** con las aerolíneas que operan ese par en el grafo (cuenta como boleto y como escala, y su par se mira en el mercado), o **por tierra** si está a menos de `fase7.trasladoAereoDesdeKm` 400 km y no hay vuelo. Sin vuelo ni tierra, la ruta no sirve y no se lista: ASU → MAD pasa de 11.809 a 9.822 rutas (8.527 llegan por un alternativo). La cabecera de cada destino dice a cuántos km está del pedido y cómo se llega (ZAZ a 249 km: vuelo aparte con Air Nostrum; BIQ a 372 km: por tierra).
 - Lo que sigue igual: un boleto antes que dos, menos escalas, más vendedoras, más frecuencia; baja frecuencia en gris; "en el mercado" ahora incluye el par del tramo final.
 
+## Fase 15.2 (17/09/2026) — el mercado llega sólo al aeropuerto elegido; fuera el modelo plegado
+
+Pedido del dueño con una captura de ASU → LIS el 19/01/2027: el calendario habilitaba el día, pero las combinaciones terminaban en MAD ("a 513 km de LIS") y FCO ("a 1.840 km"): "el output son rutas que no tienen como destino la que escogí". Y quitar el bloque "Modelo sin precios" plegado en Rutas.
+
+- **Llegada = el aeropuerto elegido, y nada más.** Con destino aeropuerto, los candidatos de llegada eran los alternativos de la Fase 1 (hasta 2.000 km del pedido); tenía sentido en el modelo, no en el mercado: si la persona elige LIS, quiere LIS. Los orígenes siguen siendo el pedido más sus alternativos (agrupados y explicados: "desde IGR, a 311 km de ASU"), porque eso sí era el criterio 1 del orden. Las alternativas de llegada viven en Combinaciones, con su tramo final. El calendario (`/mercado/fechas`) y la cobertura quedan consistentes: ASU → LIS tiene 135 días con tarifas (13 en enero de 2027) y el 19/01 ya no se habilita.
+- **Fuera el modelo plegado**: `RutasPriorizadas`, `FilaRuta`, `TableroModelo`, `ResultadosEspacio`, `CalendarioPresion` y las funciones de `api.ts` que los alimentaban se borran de la web (código muerto: Combinaciones cubre lo que aportaban). `GET /rutas` y `GET /espacio*` siguen en la API: los usan `pnpm precios ORIGEN DESTINO` y la exportación.
+- Glosario sin "Termina en X" ni la sección del modelo.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

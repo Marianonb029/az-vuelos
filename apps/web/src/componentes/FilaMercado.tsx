@@ -43,11 +43,7 @@ export const FilaMercado = ({ c, posicion, resultado, nombre }: Props) => {
         {c.boletos.map((b, i) => (
           <Boleto key={`${b.aerolinea}-${b.itinerario.join("")}-${i}`} b={b} nombre={nombre} />
         ))}
-        {resultado.destinoEsContinente ? (
-          <span className="mt-0.5 block font-medium text-slate-800">→ llega a {c.llegaA} ({resultado.aeropuertos.find((a) => a.iata === c.llegaA)?.ciudad ?? ""})</span>
-        ) : (
-          c.llegaA !== resultado.destino && <span className="mt-0.5 block rounded bg-amber-50 px-1 text-amber-800">termina en {c.llegaA}, a {c.trasladoDestinoKm.toLocaleString("es")} km de {resultado.destino}: el traslado va aparte</span>
-        )}
+        {resultado.destinoEsContinente && <span className="mt-0.5 block font-medium text-slate-800">→ llega a {c.llegaA} ({resultado.aeropuertos.find((a) => a.iata === c.llegaA)?.ciudad ?? ""})</span>}
       </td>
       <td className={`${celda} whitespace-nowrap`}>
         <span className="block text-base font-semibold tabular-nums text-slate-900">USD {c.totalUsd.toLocaleString("es")}</span>

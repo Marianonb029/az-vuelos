@@ -6,7 +6,7 @@ Muestra **lo que el mercado tiene** para llegar de un origen a un destino: las t
 
 pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquema)
 
-- `apps/web` — React 18 + Vite + Tailwind v4. Cuatro pestañas: Combinaciones (todas las rutas del grafo, sin fecha ni precio, Fase 17), Rutas (el mercado; plegado, el modelo sin precios), Tablero (métricas de la última búsqueda, sin registro) y Datos (glosario y ficha de cada dato).
+- `apps/web` — React 18 + Vite + Tailwind v4. Cuatro pestañas: Combinaciones (todas las rutas del grafo, sin fecha ni precio, Fase 17), Rutas (el mercado: llega exactamente al aeropuerto elegido o a un continente), Tablero (métricas de la última búsqueda, sin registro) y Datos (glosario y ficha de cada dato).
 - `apps/api` — Node 24 + Fastify 5. Cálculo sobre datasets, sin base de datos ni registros de uso: `GET /mercado` (Fase 15), `GET /rutas-posibles` (Fase 17), `GET /rutas` (modelo), `GET /espacio*`, `GET /datos`. Lee de `data/local/` lo que dejan los scripts (tendencias, corroboración, precios cacheados). Refresco automático diario de fuentes vencidas.
 - `packages/core` — primitivos Zod, catálogos IATA, fechas, esquema de fuentes, enlaces a metabuscadores (sólo URLs), precios cacheados (`precios.ts`: esquema, lectura del enlace, corridas, desvío) y el mercado (`mercado.ts`: combinaciones de uno o dos boletos, orden 1–6, antigüedad y cadencia). Sin I/O.
 - `packages/espacio` — motor (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas vigentes, gaps, calendario con señales de demanda, combinaciones y Fase 7 (índice por ruta). Sin I/O.
@@ -35,7 +35,7 @@ Requisitos: Node ≥ 22 y pnpm ≥ 10. Chrome sólo para `pnpm tendencia`.
 
 ## Reglas innegociables
 
-1. El único precio que se muestra es el **cacheado de Travelpayouts**, con la fecha en que se vio, el desvío (medido entre corridas o supuesto declarado) y la cadencia con que toca rebajarlo; nunca como cotización viva. El orden del mercado es el del dueño (salida, precio, bodega, horas, escalas, aerolíneas); el **índice** del modelo sólo ordena la lista plegada y queda en "La cuenta".
+1. El único precio que se muestra es el **cacheado de Travelpayouts**, con la fecha en que se vio, el desvío (medido entre corridas o supuesto declarado) y la cadencia con que toca rebajarlo; nunca como cotización viva. El orden del mercado es el del dueño (salida, precio, bodega, horas, escalas, aerolíneas); el **índice** del modelo no se muestra: el modelo elige pares para la bajada y alimenta Combinaciones.
 2. Toda variable declara su fuente, última actualización y exactitud (`GET /datos`); lo aproximado y lo supuesto se dice.
 3. No se lee ningún sitio de terceros desde la app: los enlaces a metabuscadores son sólo URLs. Las lecturas son scripts a pedido: `pnpm precios` (API de Travelpayouts con token), `pnpm corroborar` (Wikipedia), `pnpm tendencia` (Google Flights, sin aceptar consentimiento).
 4. Nada de datos de demo, mocks ni fallbacks en producción; fixtures sólo en tests.

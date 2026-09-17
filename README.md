@@ -20,8 +20,8 @@ Historia del producto: `docs/BRIEF.md` (brief original) y `docs/DECISIONES.md` (
 | Pestaña | Para qué sirve |
 |---|---|
 | **Combinaciones** | Origen y destino (aeropuerto o continente) → todas las rutas que el grafo de aerolíneas permite desde el origen y sus alternativos, en un boleto o dos por un hub, sin fecha ni precio: itinerario, quién vende cada boleto, quién opera cada tramo, km, frecuencia y si el par ya tiene tarifas en el mercado. Plegado por salida y destino, con filtro. Para buscar alternativas a mano. |
-| **Rutas** | Origen, destino (aeropuerto o continente), fecha —un calendario que habilita sólo los días con tarifas para ese par, con el mínimo de cada día— y ventana (ese día / ±3 / ±7 / ±15) → combinaciones del mercado agrupadas por aeropuerto de salida, con boletos (itinerario, aerolínea, vuelo, horario local, equipaje, agencia, enlace a Aviasales), precio, equipaje, horas totales, escalas, aerolíneas, día de salida y antigüedad con desvío estimado. Debajo, plegado, el modelo sin precios con su propio formulario. |
-| **Tablero** | Métricas de la última búsqueda (no guarda registro): combinaciones, más barata / más corta / menos escalas, qué se paga por menos escalas, dónde está lo barato (salida, aerolíneas, escalas, agencias, día), frescura (a refrescar, antigüedad, desvío, equipaje informado) y las corridas del dataset. Plegado, el resumen del modelo. |
+| **Rutas** | Origen, destino (aeropuerto o continente), fecha —un calendario que habilita sólo los días con tarifas para ese par, con el mínimo de cada día— y ventana (ese día / ±3 / ±7 / ±15) → combinaciones del mercado agrupadas por aeropuerto de salida, con boletos (itinerario, aerolínea, vuelo, horario local, equipaje, agencia, enlace a Aviasales), precio, equipaje, horas totales, escalas, aerolíneas, día de salida y antigüedad con desvío estimado. La llegada es exactamente el aeropuerto elegido (o, con continente, cualquiera con tarifas). |
+| **Tablero** | Métricas de la última búsqueda (no guarda registro): combinaciones, más barata / más corta / menos escalas, qué se paga por menos escalas, dónde está lo barato (salida, aerolíneas, escalas, agencias, día), frescura (a refrescar, antigüedad, desvío, equipaje informado) y las corridas del dataset. |
 | **Datos** | Glosario de cada término de Rutas y Tablero y la ficha de cada dato: fuente, última actualización, exactitud (exacta / vigente / aproximada / supuesto), cadencia de refresco y si venció. |
 
 Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y un número de peso en la decisión (1 = lo que más pesa).
@@ -29,17 +29,13 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 ## Cómo leer una fila del mercado
 
 - **Boletos**: cada boleto con su itinerario completo (los aeropuertos por los que pasa, leídos del enlace de la tarifa), la aerolínea que lo vende, el número de vuelo, precio, transbordos, duración, hora local de salida y llegada, equipaje (inferido de la clave de tarifa; "no informado" si no viene), la agencia que lo vendía y el enlace para abrirlo en Aviasales. Entre dos boletos, la espera en el aeropuerto de cambio (3 a 24 h; sin protección de conexión).
-- **Termina en X**: la combinación llega a un aeropuerto alternativo (LIS por MAD): el traslado al pedido va aparte y no está en el precio.
 - **Antigüedad**: "vista hace N días" cuenta desde que un usuario de Aviasales vio la tarifa (no desde que se bajó el dataset). "Puede haberse movido ±X %" = días × tasa diaria; la tasa es la medida entre corridas (mediana del cambio / días entre ellas) o, hasta tenerla, 1 % por día (config). "Refrescar" en rojo: la tarifa es más vieja que la cadencia que le toca (diaria a menos de 14 días del viaje, cada 3 días hasta 60, semanal más lejos).
 - **Corridas**: cada `pnpm precios` se agrega al dataset sin borrar el anterior (90 días). Lo vigente es la última versión de cada tarifa; lo anterior mide el desvío.
 - **Destino: un continente**: en vez de un aeropuerto, todos los aeropuertos del continente con tarifas; la lista queda por aeropuerto de salida y, dentro, por precio, y cada fila dice a dónde llega.
 
-## El modelo sin precios (plegado en Rutas)
+## El modelo sin precios
 
-- **Índice** (interno, en "La cuenta") = km equivalentes (distancia + tasas internacionales + traslado) × un factor por variable (competencia por tramo ponderada por km, con corredor de largo radio; low cost según equipaje; hub conector; presión de la fecha; escalas; boletos separados; visa; anticipación; estadía). No es un precio; los supuestos están en `config/espacio.json`.
-- **Ordenar por**: *Chance de tarifa baja* o *Cercanía y competencia* (por aeropuerto de salida, primero el destino pedido y después cada alternativo con cómo se llega).
-- **Para qué sirve ahora**: `pnpm precios` toma de esta lista los pares de boletos a bajar (directos, origen→hub, hub→destino, vuelos aparte); las columnas explican por qué cada par está.
-- **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; los 6 con más salidas entran siempre (GRU, GIG, SCL para ASU), el resto por distancia.
+Sigue en `packages/espacio` y en la API (`GET /rutas`, `GET /espacio*`): es lo que elige qué pares baja `pnpm precios ORIGEN DESTINO` y lo que arma la pestaña Combinaciones (Fases 1–2). Ya no tiene pantalla propia. Índice y factores: `config/espacio.json`, con sus supuestos declarados.
 
 ## Señales y comandos
 

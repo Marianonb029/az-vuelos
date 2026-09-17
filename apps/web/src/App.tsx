@@ -1,9 +1,7 @@
 import { useState } from "react";
 import type { ResultadoMercado } from "@az/core";
-import type { ResultadoRutas } from "@az/espacio";
 import { Combinaciones } from "./componentes/Combinaciones";
 import { Mercado } from "./componentes/Mercado";
-import { RutasPriorizadas } from "./componentes/RutasPriorizadas";
 import { Tablero } from "./componentes/Tablero";
 import { TableroDatos } from "./componentes/TableroDatos";
 import { aeropuertos } from "./lib/catalogos";
@@ -18,12 +16,11 @@ const PESTANAS: { id: Pestana; titulo: string; para: string }[] = [
   { id: "datos", titulo: "Datos", para: "Glosario de lo que se ve en Rutas y ficha de cada dato: fuente, última actualización y exactitud" },
 ];
 
-// Cuatro pestañas: Combinaciones (todo lo que el grafo permite, sin precio), la salida (Rutas: el mercado, y plegado el modelo sin precios), las
+// Cuatro pestañas: Combinaciones (todo lo que el grafo permite, sin precio), la salida (Rutas: el mercado), las
 // métricas de la última búsqueda (Tablero) y el glosario con la ficha de cada dato (Datos). Nada guarda registros.
 export const App = () => {
   const [pestana, setPestana] = useState<Pestana>("combinaciones");
   const [mercado, setMercado] = useState<ResultadoMercado | null>(null);
-  const [modelo, setModelo] = useState<ResultadoRutas | null>(null);
 
   return (
     <main className="mx-auto max-w-6xl p-6">
@@ -49,17 +46,11 @@ export const App = () => {
       <section aria-label="Combinaciones" hidden={pestana !== "combinaciones"}>
         <Combinaciones aeropuertos={aeropuertos} />
       </section>
-      <section aria-label="Mercado" hidden={pestana !== "rutas"} className="grid gap-6">
+      <section aria-label="Mercado" hidden={pestana !== "rutas"}>
         <Mercado aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setMercado} />
-        <details className="rounded-lg border border-slate-200 bg-white p-4">
-          <summary className="cursor-pointer text-sm font-medium text-slate-800">Modelo sin precios: rutas posibles según el grafo de aerolíneas (es lo que decide qué pares baja pnpm precios)</summary>
-          <div className="mt-4">
-            <RutasPriorizadas aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setModelo} />
-          </div>
-        </details>
       </section>
       <section aria-label="Tablero" hidden={pestana !== "tablero"}>
-        <Tablero mercado={mercado} modelo={modelo} />
+        <Tablero mercado={mercado} />
       </section>
       <section aria-label="Datos" hidden={pestana !== "datos"}>
         <TableroDatos visible={pestana === "datos"} />
