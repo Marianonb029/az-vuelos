@@ -29,7 +29,8 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 - **Cómo se armó la lista** (bloque 2): cada recorte del espacio de búsqueda con su cantidad y su criterio.
 - **Dos boletos con conexión**: el segundo boleto puede tener su propia escala vendida junta (ASU→GRU con GOL + TAP GRU→LIS→MAD; ASU→PTY + KLM PTY→AMS→MAD): lo que los sitios de las aerolíneas muestran como "1 transbordo" desde el hub.
 - **Buscar en:** las aerolíneas que venden ese boleto (o cada uno de los dos). Ahí se compara el precio; las demás de la columna de tramos sólo operan y sirven para medir competencia.
-- **Fecha**: la banda (verde ≤33, amarillo 34–66, rojo ≥67) y cada señal que sumó o restó con su fuente (feriados Nager.Date por país, fines de semana largos, temporadas de config, eventos de Wikidata/config, día de la semana), también en la ciudad de la escala. **Ver** muestra además qué se revisó y no sumó (feriados y eventos de cada país y ciudad del viaje), la cuenta exacta del índice y los enlaces a los metabuscadores.
+- **Precio cacheado (Travelpayouts)**: lo que otros usuarios de Aviasales encontraron en los últimos días para cada boleto de la combinación (aerolínea, vuelo, fecha, transbordos), sumado; "parcial" si falta un boleto. No es cotización viva: cada corrida mide cuánto cambiaron los precios desde la anterior y ese es el margen a asumir.
+- **Ver** muestra además qué se revisó y no sumó (verde ≤33, amarillo 34–66, rojo ≥67) y cada señal que sumó o restó con su fuente (feriados Nager.Date por país, fines de semana largos, temporadas de config, eventos de Wikidata/config, día de la semana), también en la ciudad de la escala. **Ver** muestra además qué se revisó y no sumó (feriados y eventos de cada país y ciudad del viaje), la cuenta exacta del índice y los enlaces a los metabuscadores.
 - **Aeropuertos alternativos**: hasta 2.000 km del pedido, medianos o grandes, con vuelos internacionales y ≥21 salidas semanales; los 6 con más salidas entran siempre (GRU, GIG, SCL para ASU), el resto por distancia. A más de 400 km el traslado es otro vuelo, con sus aerolíneas y su boleto; si no hay vuelo, la ruta no es alcanzable.
 
 ## Señales y comandos
@@ -40,6 +41,7 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 | `pnpm eventos` | Eventos masivos confirmados (Wikidata), ~2 min |
 | `pnpm tendencia ASU MAD 2027-02-25` | Lee en Google Flights si los precios del par están bajos / típicos / altos respecto de 12 meses (usa el Chrome instalado; no acepta consentimiento) |
 | `pnpm corroborar ASU GRU MAD` | Compara, por aeropuerto, las aerolíneas de Wikipedia (Airlines and destinations) contra las de VRS; el resultado aparece en Datos |
+| `pnpm precios ASU MAD [meses]` | Baja de Travelpayouts (Aviasales Data API, token gratuito en `TRAVELPAYOUTS_TOKEN`) los precios cacheados de cada boleto de las combinaciones del par para los próximos meses; Rutas los muestra por combinación y Datos el desvío entre corridas. Correr cada 7 días por par buscado |
 
 La API corre el refresco automático una vez por día para lo que venció (`pnpm catalogos`, `pnpm eventos`).
 
