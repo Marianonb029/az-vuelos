@@ -27,6 +27,7 @@ pnpm eventos     # eventos masivos (Wikidata): mensual
 pnpm corroborar ASU GRU MAD         # aerolíneas por aeropuerto: Wikipedia contra VRS (aparece en Datos)
 pnpm precios [pedidos]              # bajada por continentes (bajada.grupos, en orden de prioridad); sigue donde quedó; se acumula sin borrar
 pnpm precios ASU MAD                # los pares de boletos del modelo para un par
+scripts\precios-nocturno.cmd        # lo que corre la tarea programada de Windows (03:00, diaria): pnpm precios sin pnpm (node + tsx); log en data/local
 pnpm tendencia ASU MAD 2027-02-25   # etiqueta de precios de Google Flights para el par
 ```
 

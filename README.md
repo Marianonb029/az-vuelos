@@ -50,6 +50,7 @@ Cada salida es un bloque con título (su objetivo), una línea de cómo usarlo y
 | `pnpm corroborar ASU GRU MAD` | Compara, por aeropuerto, las aerolíneas de Wikipedia (Airlines and destinations) contra las de VRS; el resultado aparece en Datos |
 | `pnpm precios [pedidos]` | Bajada por continentes (Travelpayouts, token gratuito en `TRAVELPAYOUTS_TOKEN`): en el orden de `bajada.grupos` (Sudamérica → Europa, Norteamérica → Europa, Europa → América, Europa → Asia, América → Asia; Rusia excluida), por cada aeropuerto de salida descubre a qué destinos hay cache y baja un pedido por par (el mínimo de cada fecha de todo el horizonte). Hasta 1.500 pedidos por corrida (~25 min); la siguiente sigue donde quedó. Se acumula sin borrar corridas anteriores |
 | `pnpm precios ASU MAD` | Lo mismo para los pares de boletos que el modelo propone para un par concreto (~1–2 min) |
+| `scripts\precios-nocturno.cmd` | Lo que corre la tarea programada de Windows "AZ Vuelos - precios nocturno" (todos los días a las 03:00): `pnpm precios` con node + tsx del repo, registro en `data/local/precios-nocturno.log`. Se crea con `schtasks /Create /TN "AZ Vuelos - precios nocturno" /TR "cmd /c \"C:\ruta\al\repo\scripts\precios-nocturno.cmd\"" /SC DAILY /ST 03:00` |
 
 La API corre el refresco automático una vez por día para lo que venció (`pnpm catalogos`, `pnpm eventos`).
 

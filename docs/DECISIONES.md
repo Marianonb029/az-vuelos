@@ -585,6 +585,12 @@ Pedidos del dueño tras la primera corrida por continentes: (1) sí a excluir Ru
 - **Calendario** (`CalendarioFechas.tsx`, `GET /mercado/fechas?origen&destino`): reemplaza el campo de fecha. Con origen y destino elegidos pide los días que tienen al menos una combinación en todo el horizonte (400 días) y habilita sólo esos, con el **mínimo visto de cada día** en la celda; se abre en el primer mes con tarifas. Sin origen y destino, todo deshabilitado y lo dice. Es también un calendario de precios: ASU → Europa muestra 243 días con tarifas entre 17/09/2026 y 01/09/2027.
 - **Rendimiento**: el modelo (lista plegada) preciaba cada boleto recorriendo las 24.000 tarifas; ahora las indexa por par. `/rutas` volvió a menos de 5 s.
 
+## Fase 16.2 (17/09/2026) — corrida nocturna programada; la API devuelve 400 para aeropuertos que no conoce
+
+- **Tarea programada de Windows** "AZ Vuelos - precios nocturno", diaria a las 03:00, pedida por el dueño: corre `scripts/precios-nocturno.cmd`, que hace lo mismo que `pnpm precios` (1.500 pedidos, sigue donde quedó) y deja el registro en `data/local/precios-nocturno.log`. Hallazgo al armarla: en esta máquina pnpm quedó instalado dentro del AppData **virtualizado** de la app de escritorio de Claude (`AppData\Local\Packages\Claude_…\LocalCache\Roaming\npm`), así que fuera de la app `%APPDATA%\npm\pnpm.cmd` no existe y la tarea no lo veía. El wrapper llama a `node` (instalación real en Program Files) con el `tsx` del propio repo, sin pnpm. El token sale de la variable de entorno del usuario (`setx`), que la tarea sí ve.
+- **400 de la API**: `prices_for_dates` devuelve 400 para aeropuertos que no conoce (STD y otros 27 aeródromos chicos en la primera pasada por Norteamérica). Cortaba la corrida; ahora se cuenta como "sin tarifas", se anota en descubrimientos para no repetirlo hasta el redescubrimiento y sigue.
+- Estado tras la tercera corrida: Sudamérica → Europa **completo** (273 de 273 aeropuertos de salida, 1.502 pares, 14.783 tarifas); Norteamérica → Europa 66 de 842; 44.163 tarifas y 4.011 pares en total. Norteamérica → Europa necesita unas 3–4 noches; después la tarea sigue con Europa → América, Europa → Asia y América → Asia sin intervención.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
