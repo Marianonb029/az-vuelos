@@ -136,7 +136,7 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
               </span>
               {r.precio.boletos.map((b) => (
                 <span key={b.tramo} className="block">
-                  {b.tramo}: {b.precioUsd === null ? <span className="text-slate-500">sin precio</span> : `USD ${b.precioUsd.toLocaleString("es")} · ${nombre(b.aerolinea ?? "")} ${b.numeroVuelo ?? ""} · sale ${b.fechaIda?.slice(5) ?? ""}${b.transbordos ? ` · ${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}` : " · directo"}`}
+                  {b.tramo}: {b.precioUsd === null ? <span className="text-slate-500">sin precio</span> : `USD ${b.precioUsd.toLocaleString("es")} · ${nombre(b.aerolinea ?? "")} ${b.numeroVuelo ?? ""} · sale ${b.fechaIda?.slice(5) ?? ""}${b.fechaExacta ? "" : " (no hay para la fecha pedida: día cercano)"}${b.transbordos ? ` · ${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}` : " · directo"}`}
                 </span>
               ))}
               <span className="block text-slate-400">visto en Aviasales el {r.precio.encontradoEn?.slice(0, 10)}; no es cotización viva</span>

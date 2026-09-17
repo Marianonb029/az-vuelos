@@ -32,6 +32,15 @@ describe("precios cacheados (Travelpayouts)", () => {
     expect(parcial.completo).toBe(false);
     expect(parcial.totalUsd).toBe(150);
     expect(parcial.boletos[1]?.precioUsd).toBeNull();
+    expect(p.boletos.every((b) => b.fechaExacta)).toBe(true);
+  });
+
+  it("sin precio para la fecha pedida, toma el mínimo de días cercanos y lo marca como fecha no exacta", () => {
+    const precios = [t("ASU", "GRU", "G3", "2027-01-23", 170), t("ASU", "GRU", "G3", "2027-01-25", 140), t("ASU", "GRU", "G3", "2027-02-10", 90)];
+    const boleto = { tramo: "ASU→GRU", origen: "ASU", destino: "GRU", aerolineas: ["G3"], transbordos: 0, ...ventanaBoleto("2027-01-19", 0, 1) };
+    expect(preciarRuta([boleto], precios, plegar).boletos[0]?.precioUsd).toBeNull();
+    const cerca = preciarRuta([boleto], precios, plegar, 7).boletos[0];
+    expect(cerca).toMatchObject({ precioUsd: 140, fechaIda: "2027-01-25", fechaExacta: false }); // el del 10/02 queda fuera de los 7 días
   });
 
   it("mide el desvío entre corridas sobre las mismas claves", () => {

@@ -72,6 +72,7 @@ export const ConfigPrecios = z.object({
   cadenciaDias: z.number().int().min(1), // pasado esto, Datos marca los precios como vencidos
   maxPares: z.number().int().min(1), // pares de boletos por corrida (uno por segundo, un pedido por mes)
   margenDiasSegundoBoleto: z.number().int().min(0), // el segundo boleto puede salir hasta N días después del primero
+  diasCerca: z.number().int().min(0), // sin precio para la fecha pedida, se muestra el mínimo hasta N días alrededor, marcado como fecha no exacta
 });
 
 export const ConfigEspacio = z.object({

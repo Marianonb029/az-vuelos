@@ -93,6 +93,7 @@ export const PrecioBoleto = z.object({
   aerolinea: IataAerolinea.nullable(),
   numeroVuelo: z.string().nullable(),
   fechaIda: FechaIso.nullable(),
+  fechaExacta: z.boolean(), // false: no había precio para la fecha pedida y se tomó uno de un día cercano (ver fechaIda)
   transbordos: z.number().int().min(0).nullable(),
   precioUsd: z.number().min(0).nullable(), // null: sin precio cacheado para ese boleto
   enlace: z.string().nullable(),
@@ -108,14 +109,19 @@ export const PrecioRuta = z.object({
 export type PrecioRuta = z.infer<typeof PrecioRuta>;
 
 // Precio de una combinación con lo cacheado: por boleto, el mínimo entre sus vendedoras, con esos transbordos o
-// menos, saliendo en la ventana de fechas. `plegar` lleva la aerolínea del cache a la marca del grafo (JJ → LA).
-export const preciarRuta = (boletos: readonly BoletoAPreciar[], precios: readonly PrecioCacheado[], plegar: (iata: string) => string): PrecioRuta => {
+// menos, saliendo en la ventana de fechas; si en la ventana no hay nada, el mínimo hasta `diasCerca` días alrededor
+// (marcado como fecha no exacta: es una referencia, no el precio del día pedido). `plegar` lleva la aerolínea del
+// cache a la marca del grafo (JJ → LA).
+export const preciarRuta = (boletos: readonly BoletoAPreciar[], precios: readonly PrecioCacheado[], plegar: (iata: string) => string, diasCerca = 0): PrecioRuta => {
   const resultado: PrecioBoleto[] = boletos.map((b) => {
-    const candidatos = precios.filter((p) => p.origen === b.origen && p.destino === b.destino && b.aerolineas.includes(plegar(p.aerolinea)) && p.transbordos <= b.transbordos && p.fechaIda >= b.desde && p.fechaIda <= b.hasta);
-    const mejor = candidatos.sort((x, y) => x.precioUsd - y.precioUsd)[0];
+    const aplica = (p: PrecioCacheado) => p.origen === b.origen && p.destino === b.destino && b.aerolineas.includes(plegar(p.aerolinea)) && p.transbordos <= b.transbordos;
+    const enVentana = precios.filter((p) => aplica(p) && p.fechaIda >= b.desde && p.fechaIda <= b.hasta);
+    const cercanos = enVentana.length > 0 || diasCerca === 0 ? [] : precios.filter((p) => aplica(p) && p.fechaIda >= sumarDias(b.desde, -diasCerca) && p.fechaIda <= sumarDias(b.hasta, diasCerca));
+    const exacta = enVentana.length > 0;
+    const mejor = (exacta ? enVentana : cercanos).sort((x, y) => x.precioUsd - y.precioUsd)[0];
     return mejor
-      ? { tramo: b.tramo, aerolinea: plegar(mejor.aerolinea), numeroVuelo: mejor.numeroVuelo, fechaIda: mejor.fechaIda, transbordos: mejor.transbordos, precioUsd: mejor.precioUsd, enlace: mejor.enlace }
-      : { tramo: b.tramo, aerolinea: null, numeroVuelo: null, fechaIda: null, transbordos: null, precioUsd: null, enlace: null };
+      ? { tramo: b.tramo, aerolinea: plegar(mejor.aerolinea), numeroVuelo: mejor.numeroVuelo, fechaIda: mejor.fechaIda, fechaExacta: exacta, transbordos: mejor.transbordos, precioUsd: mejor.precioUsd, enlace: mejor.enlace }
+      : { tramo: b.tramo, aerolinea: null, numeroVuelo: null, fechaIda: null, fechaExacta: false, transbordos: null, precioUsd: null, enlace: null };
   });
   const conPrecio = resultado.filter((b) => b.precioUsd !== null);
   const usados = precios.filter((p) => resultado.some((b) => b.numeroVuelo === p.numeroVuelo && b.fechaIda === p.fechaIda && b.precioUsd === p.precioUsd));

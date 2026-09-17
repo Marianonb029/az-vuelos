@@ -231,7 +231,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
             const base = "traslado" in b ? { tramo: `${b.origen}→${b.destino}`, origen: b.origen, destino: b.destino, aerolineas: b.aerolineas, transbordos: 0 } : b;
             return { ...base, ...ventanaBoleto(fechaIda, i, config.precios.margenDiasSegundoBoleto) };
           });
-          return { ...r, precio: preciarRuta(boletos, dataset.precios, plegar) };
+          return { ...r, precio: preciarRuta(boletos, dataset.precios, plegar, config.precios.diasCerca) };
         })
       : lista;
     const resumenPrecios = dataset

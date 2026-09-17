@@ -183,10 +183,14 @@ export const priorizarConDetalle = (entrada: EntradaFase7, cfg: ConfigFase7): Re
   operaciones.push({ paso: "no alcanzables", cantidad: noAlcanzables, detalle: `alternativo a más de ${cfg.fase7.trasladoAereoDesdeKm} km sin vuelo de pasajeros desde/hacia el pedido, o aeropuerto sin coordenadas` });
   operaciones.push({ paso: "repetidas", cantidad: repetidas, detalle: "mismo origen, escala, destino y boleto previo (la Fase 2 y el separado pueden proponer la misma)" });
   const base = new Map(medidas.map((m) => [claveDe(m), calcularIndice(m, entrada, cfg)]));
+  // Entre representaciones del mismo viaje gana la anclada en los aeropuertos pedidos (menos km de traslado): así
+  // "ASU→GRU + TAP GRU→LIS→MAD" no se convierte, según la fecha, en "GRU→LIS→MAD con vuelo aparte" y se va al
+  // grupo de GRU, fuera del tope. A igual anclaje, la de menor índice.
   const mejorPorViaje = new Map<string, MedidaRuta>();
+  const traslado = (m: MedidaRuta) => m.trasladoOrigenKm + m.trasladoDestinoKm;
   for (const m of medidas) {
     const previa = mejorPorViaje.get(claveViaje(m));
-    if (!previa || (base.get(claveDe(m))?.indice ?? 0) < (base.get(claveDe(previa))?.indice ?? 0)) mejorPorViaje.set(claveViaje(m), m);
+    if (!previa || traslado(m) < traslado(previa) || (traslado(m) === traslado(previa) && (base.get(claveDe(m))?.indice ?? 0) < (base.get(claveDe(previa))?.indice ?? 0))) mejorPorViaje.set(claveViaje(m), m);
   }
   operaciones.push({ paso: "plegadas por mismo viaje", cantidad: medidas.length - mejorPorViaje.size, detalle: "misma secuencia de aeropuertos y misma cantidad de compras (p. ej. GRU→MAD con vuelo aparte ASU→GRU = ASU→GRU→MAD en dos boletos): queda la de menor índice" });
   medidas = [...mejorPorViaje.values()];
