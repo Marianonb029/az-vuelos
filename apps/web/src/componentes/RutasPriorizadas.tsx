@@ -163,6 +163,13 @@ export const RutasPriorizadas = ({ aeropuertos, hoy, onResultado }: Props) => {
           titulo={`Rutas con mayor chance de tarifa baja: ${resultado.origen} → ${resultado.destino}, ida ${fechaCorta(resultado.fechaIda)}${resultado.fechaVuelta ? `, vuelta ${fechaCorta(resultado.fechaVuelta)}` : ""}${resultado.equipaje === "valija" ? ", con valija" : ""}${resultado.orden === "cercania" ? " · por cercanía y competencia" : ""}`}
           objetivo={`${resultado.orden === "cercania" ? "Orden por cercanía: primero el origen pedido con el destino pedido, después los destinos alternativos por distancia, después el siguiente origen más cercano; entre iguales, más aerolíneas en el tramo más cerrado (el que fija el precio), después en toda la ruta, y menos tramos. " : "Orden por chance de tarifa baja: km volados, tasas, competencia por tramo y corredor, perfil de la aerolínea, presión de la fecha, escalas, anticipación y estadía, todo junto. "}No se muestra ningún precio ni número resumen: cada columna cuenta cómo está esa variable en esa ruta, y con eso se decide dónde buscar. Con 'Ver' está la cuenta completa y podés anotar el precio que viste para medir si el orden acierta.`}
         >
+          {resultado.precios && (
+            <p className={`text-xs ${resultado.precios.vencido ? "text-red-700" : "text-slate-600"}`} data-testid="nota-precios">
+              Precios cacheados de Travelpayouts del {resultado.precios.actualizadoEn.slice(0, 10)}
+              {resultado.precios.vencido ? " (vencidos: corré pnpm precios)" : ""}: {resultado.precios.conPrecioCompleto} combinaciones con precio completo y {resultado.precios.conPrecioParcial} parcial.
+              {resultado.precios.desvio ? ` Desvío medido entre corridas: la mitad de las tarifas cambió menos de ${resultado.precios.desvio.medianaPct} % y 9 de 10 menos de ${resultado.precios.desvio.p90Pct} %; asumí ese margen hasta la próxima corrida.` : " Sin corrida anterior: todavía no hay margen de desvío medido."}
+            </p>
+          )}
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
               {a}
@@ -193,6 +200,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy, onResultado }: Props) => {
                   <th className="py-1 pr-3">Tarifa de la aerolínea</th>
                   <th className="py-1 pr-3">Fecha</th>
                   <th className="py-1 pr-3">Anticipación y estadía</th>
+                  <th className="py-1 pr-3">Precio cacheado (Travelpayouts)</th>
                   <th className="py-1" />
                 </tr>
               </thead>
@@ -201,7 +209,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy, onResultado }: Props) => {
                   <Fragment key={`${r.posicion}`}>
                     {porCercania && filas[i - 1]?.r.origen !== r.origen && (
                       <tr className="bg-slate-100">
-                        <td colSpan={9} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                        <td colSpan={10} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
                           Desde {r.origen}
                           {r.trasladoOrigenKm === 0 ? " (el aeropuerto pedido)" : ` — a ${r.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}${r.tramos.some((t) => t.traslado && t.destino === r.origen) ? ` (vuelo aparte con ${r.tramos.find((t) => t.traslado && t.destino === r.origen)?.aerolineas.map((a) => nombres.get(a) ?? a).join(", ")})` : ", por tierra"}`} · {filas.filter((f) => f.r.origen === r.origen).length} rutas: primero a {resultado.destino}, después a sus alternativos por distancia
                         </td>
@@ -209,7 +217,7 @@ export const RutasPriorizadas = ({ aeropuertos, hoy, onResultado }: Props) => {
                     )}
                     {porCercania && (filas[i - 1]?.r.origen !== r.origen || filas[i - 1]?.r.destino !== r.destino) && (
                       <tr className="bg-slate-50">
-                        <td colSpan={9} className="px-4 py-1 text-xs text-slate-700">
+                        <td colSpan={10} className="px-4 py-1 text-xs text-slate-700">
                           {r.trasladoDestinoKm === 0 ? (
                             <span className="font-semibold">→ {r.destino}, el destino pedido</span>
                           ) : (

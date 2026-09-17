@@ -10,7 +10,7 @@ const aeropuertos: Aeropuerto[] = [
 ];
 
 const presion = { fecha: "2027-02-16", aeropuerto: "ASU", presion: 12, etiquetas: ["salida entre semana"], banda: "verde" as const, fundamento: "salida entre semana -8 = -8 (−50…100: 12)", senales: [{ nombre: "salida entre semana", puntos: -8, fuente: "calendario" }], revisado: ["feriados PY (Nager.Date 2027, 12 en el año): ninguno el 02-16"] };
-const comun = { destino: "MAD", escalas: 1, bajoCosto: true, conector: false, restriccion: null, presionIda: presion, presionVuelta: null, anticipacionDias: 154, estadiaDias: null, desglose: { kmEquivalentes: 6100 }, posicionMin: 1, posicionMax: 3 };
+const comun = { destino: "MAD", escalas: 1, bajoCosto: true, conector: false, restriccion: null, precio: null, presionIda: presion, presionVuelta: null, anticipacionDias: 154, estadiaDias: null, desglose: { kmEquivalentes: 6100 }, posicionMin: 1, posicionMax: 3 };
 const ruta = (extra: Partial<RutaPriorizada> & Pick<RutaPriorizada, "posicion" | "origen" | "via" | "boletos" | "indice" | "familia" | "empate">): RutaPriorizada => ({
   ...comun,
   aerolineas: ["TP"],
@@ -45,6 +45,7 @@ const resultado: ResultadoRutas = {
   equipaje: "mano",
   orden: "indice",
   operaciones: [{ paso: "en la lista", cantidad: 3, detalle: "ordenadas por índice de costo" }],
+  precios: null,
   calculadoEn: "2026-09-15T12:00:00.000Z",
   avisos: [],
   nombres: [{ iata: "UX", nombre: "Air Europa" }, { iata: "TP", nombre: "TAP" }, { iata: "G3", nombre: "GOL" }],

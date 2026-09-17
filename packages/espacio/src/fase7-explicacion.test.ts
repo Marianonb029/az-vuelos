@@ -39,6 +39,7 @@ const base: RutaPriorizada = {
   posicionMin: 1,
   posicionMax: 1,
   enlaces: [],
+  precio: null,
 };
 const nombre = (iata: string) => ({ UX: "Air Europa", G3: "GOL", IB: "Iberia", LA: "LATAM" })[iata] ?? iata;
 const ctx = { origen: "ASU", destino: "MAD", equipaje: "mano" as const, nombre };

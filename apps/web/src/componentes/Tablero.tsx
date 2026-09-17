@@ -85,7 +85,17 @@ export const Tablero = ({ resultado }: { resultado: ResultadoRutas | null }) => 
           <Cifra etiqueta="competencia" valor={`${rutas.filter((r) => r.competenciaEfectiva < 1.5).length} · ${rutas.filter((r) => r.competenciaEfectiva >= 1.5 && r.competenciaEfectiva < 2.5).length} · ${rutas.filter((r) => r.competenciaEfectiva >= 2.5).length}`} detalle="casi sin competencia · moderada · buena pelea" />
         </div>
       </Bloque>
-      <Bloque orden={3} titulo="Cómo se armó la lista: qué entró, qué se descartó y por qué" objetivo="Cada recorte con su cantidad y su criterio, para ver que no se pierdan rutas por una regla mal puesta. Los criterios viven en config/espacio.json.">
+      {resultado.precios && (
+        <Bloque orden={3} titulo="Precios cacheados (Travelpayouts)" objetivo="Lo que otros usuarios de Aviasales encontraron en los últimos días para los boletos de estas combinaciones. No es cotización viva: el desvío medido entre corridas es el margen a asumir.">
+          <div className="grid gap-2 sm:grid-cols-4" data-testid="tablero-precios">
+            <Cifra etiqueta="con precio completo" valor={resultado.precios.conPrecioCompleto} detalle={`${resultado.precios.conPrecioParcial} con precio parcial · ${rutas.length - resultado.precios.conPrecioCompleto - resultado.precios.conPrecioParcial} sin precio`} />
+            <Cifra etiqueta="más barata con precio completo" valor={(() => { const c = rutas.filter((r) => r.precio?.completo && r.precio.totalUsd !== null).sort((a, b) => (a.precio?.totalUsd ?? 0) - (b.precio?.totalUsd ?? 0))[0]; return c ? `USD ${c.precio?.totalUsd?.toLocaleString("es")}` : "—"; })()} detalle={(() => { const c = rutas.filter((r) => r.precio?.completo).sort((a, b) => (a.precio?.totalUsd ?? 0) - (b.precio?.totalUsd ?? 0))[0]; return c ? secuencia(c) : "ninguna con todos los boletos"; })()} />
+            <Cifra etiqueta="dataset del" valor={resultado.precios.actualizadoEn.slice(0, 10)} detalle={`${resultado.precios.tarifas.toLocaleString("es")} tarifas${resultado.precios.vencido ? " · vencido" : ""}`} />
+            <Cifra etiqueta="desvío entre corridas" valor={resultado.precios.desvio ? `${resultado.precios.desvio.medianaPct} % / ${resultado.precios.desvio.p90Pct} %` : "—"} detalle={resultado.precios.desvio ? `mediana / p90 sobre ${resultado.precios.desvio.comparados} tarifas` : "sin corrida anterior"} />
+          </div>
+        </Bloque>
+      )}
+      <Bloque orden={resultado.precios ? 4 : 3} titulo="Cómo se armó la lista: qué entró, qué se descartó y por qué" objetivo="Cada recorte con su cantidad y su criterio, para ver que no se pierdan rutas por una regla mal puesta. Los criterios viven en config/espacio.json.">
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="operaciones">
             <thead>

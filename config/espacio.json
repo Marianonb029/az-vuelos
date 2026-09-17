@@ -1101,6 +1101,13 @@
     ],
     "maxCombinaciones": 300
   },
+  "precios": {
+    "mesesAdelante": 6,
+    "cadenciaDias": 7,
+    "maxPares": 120,
+    "margenDiasSegundoBoleto": 1,
+    "nota": "Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios ORIGEN DESTINO; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio) como margen a asumir hasta la próxima."
+  },
   "fase7": {
     "kmEquivalentes": {
       "fijoPorBoleto": 350,

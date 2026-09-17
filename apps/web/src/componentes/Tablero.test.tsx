@@ -10,7 +10,7 @@ const base: RutaPriorizada = {
   distanciaKm: 9500, distanciaDirectaKm: 9190, trasladoOrigenKm: 0, trasladoDestinoKm: 0, trasladoAereo: false, tramosTotales: 2, desvioPct: 3,
   tramos: [tramo("ASU", "GRU", ["G3", "LA"]), tramo("GRU", "MAD", ["IB", "LA", "UX"])],
   competenciaMinima: 2, competenciaTotal: 4, competenciaEfectiva: 2, bajoCosto: true, conector: false, restriccion: null, presionIda: presion, presionVuelta: null,
-  anticipacionDias: 126, estadiaDias: null, indice: 4500, desglose: {}, fundamento: "", familia: "GRU→MAD (2 boletos)", empate: 1, posicionMin: 1, posicionMax: 1, enlaces: [],
+  anticipacionDias: 126, estadiaDias: null, indice: 4500, desglose: {}, fundamento: "", familia: "GRU→MAD (2 boletos)", empate: 1, posicionMin: 1, posicionMax: 1, enlaces: [], precio: null,
 };
 const resultado: ResultadoRutas = {
   origen: "ASU", destino: "MAD", fechaIda: "2027-01-19", fechaVuelta: null, equipaje: "valija", orden: "cercania", calculadoEn: "2026-09-16T10:00:00.000Z",
@@ -22,6 +22,7 @@ const resultado: ResultadoRutas = {
   nombres: [{ iata: "LA", nombre: "LATAM" }, { iata: "G3", nombre: "GOL" }, { iata: "TP", nombre: "TAP" }, { iata: "IB", nombre: "Iberia" }, { iata: "UX", nombre: "Air Europa" }],
   aerolineasBajoCosto: ["G3"], avisos: [],
   operaciones: [{ paso: "rutas recibidas", cantidad: 3000, detalle: "" }, { paso: "en la lista", cantidad: 3, detalle: "ordenadas por cercanía" }],
+  precios: null,
 };
 
 describe("Tablero", () => {

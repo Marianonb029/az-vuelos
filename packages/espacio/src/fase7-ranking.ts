@@ -261,6 +261,7 @@ export const priorizarConDetalle = (entrada: EntradaFase7, cfg: ConfigFase7): Re
       posicionMin: salida.length + 1,
       posicionMax: salida.length + 1,
       enlaces: [],
+      precio: null,
     });
   }
   operaciones.push({ paso: "en la lista", cantidad: salida.length, detalle: `ordenadas por ${entrada.orden === "cercania" ? "cercanía al pedido, aerolíneas y tramos" : "índice de costo"}` });

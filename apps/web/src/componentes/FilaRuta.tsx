@@ -123,6 +123,26 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
           <span className="block text-slate-400">Qué se revisó y no sumó: en "Ver".</span>
         </td>
         <td className={celda}>{e.anticipacion}</td>
+        <td className={`${celda} min-w-[14rem]`} data-testid="precio">
+          {resultado.precios === null ? (
+            <span className="text-slate-400">sin dataset de precios (pnpm precios)</span>
+          ) : r.precio === null || r.precio.totalUsd === null ? (
+            <span className="text-slate-500">sin precio cacheado para estos boletos</span>
+          ) : (
+            <>
+              <span className="block font-semibold tabular-nums text-slate-900">
+                USD {r.precio.totalUsd.toLocaleString("es")}
+                {!r.precio.completo && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] uppercase text-amber-800">parcial</span>}
+              </span>
+              {r.precio.boletos.map((b) => (
+                <span key={b.tramo} className="block">
+                  {b.tramo}: {b.precioUsd === null ? <span className="text-slate-500">sin precio</span> : `USD ${b.precioUsd.toLocaleString("es")} · ${nombre(b.aerolinea ?? "")} ${b.numeroVuelo ?? ""} · sale ${b.fechaIda?.slice(5) ?? ""}${b.transbordos ? ` · ${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}` : " · directo"}`}
+                </span>
+              ))}
+              <span className="block text-slate-400">visto en Aviasales el {r.precio.encontradoEn?.slice(0, 10)}; no es cotización viva</span>
+            </>
+          )}
+        </td>
         <td className="py-1.5">
           <button type="button" onClick={() => setAbierta((v) => !v)} className="rounded border border-slate-300 px-2 py-0.5 text-xs text-slate-700 hover:bg-slate-100" aria-expanded={abierta}>
             {abierta ? "Cerrar" : "Ver"}
@@ -131,7 +151,7 @@ export const FilaRuta = ({ r, resultado, nombres, bajoCosto, variantes, onVerFam
       </tr>
       {abierta && (
         <tr className="border-b border-slate-200 bg-slate-50">
-          <td colSpan={9} className="px-2 py-2 text-xs text-slate-700">
+          <td colSpan={10} className="px-2 py-2 text-xs text-slate-700">
             <p className="mb-1">
               <span className="font-medium">La cuenta:</span> {r.fundamento}
             </p>

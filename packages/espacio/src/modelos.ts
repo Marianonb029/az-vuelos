@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { FechaIso, IataAerolinea, IataAeropuerto } from "@az/core";
+import { FechaIso, IataAerolinea, IataAeropuerto, DesvioPrecios, FechaHoraIso, PrecioRuta } from "@az/core";
 
 // ---------------------------------------------------------------------------
 // Datasets (generados por `pnpm catalogos`)
@@ -206,6 +206,7 @@ export const RutaPriorizada = z.object({
   posicionMin: z.number().int().min(1), // robustez: mejor y peor puesto al mover cada factor ±variación
   posicionMax: z.number().int().min(1),
   enlaces: z.array(EnlaceMetabuscador), // búsquedas en metabuscadores para esa ruta (la API las completa)
+  precio: PrecioRuta.nullable(), // precios cacheados de Travelpayouts por boleto (la API los completa; null sin dataset)
 });
 
 // Qué pasó con las rutas entre el espacio de búsqueda y la lista: cada recorte con su cantidad y su motivo,
@@ -226,6 +227,16 @@ export const ResultadoRutas = z.object({
   aerolineasBajoCosto: z.array(IataAerolinea), // perfil bajo costo según config (para marcar cada código en la UI)
   avisos: z.array(z.string()),
   operaciones: z.array(PasoOperacion), // embudo: candidatos → rutas → medidas → recortes → lista
+  precios: z
+    .object({
+      actualizadoEn: FechaHoraIso,
+      tarifas: z.number().int().min(0),
+      conPrecioCompleto: z.number().int().min(0), // combinaciones con todos sus boletos preciados
+      conPrecioParcial: z.number().int().min(0),
+      desvio: DesvioPrecios.nullable(),
+      vencido: z.boolean(),
+    })
+    .nullable(), // null: nunca se corrió `pnpm precios`
 });
 
 export const ResultadoCalendario = z.object({

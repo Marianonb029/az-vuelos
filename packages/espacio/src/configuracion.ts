@@ -66,6 +66,14 @@ export const TemporadaRegional = z.object({
   ventanas: z.array(z.object({ desde: z.string().regex(/^\d{2}-\d{2}$/), hasta: z.string().regex(/^\d{2}-\d{2}$/), presion: z.enum(["pico", "media", "baja", "minima"]), nota: z.string() })),
 });
 
+// Precios cacheados (Travelpayouts): cuánto bajar y cada cuánto; el desvío real se mide entre corridas.
+export const ConfigPrecios = z.object({
+  mesesAdelante: z.number().int().min(1).max(12),
+  cadenciaDias: z.number().int().min(1), // pasado esto, Datos marca los precios como vencidos
+  maxPares: z.number().int().min(1), // pares de boletos por corrida (uno por segundo, un pedido por mes)
+  margenDiasSegundoBoleto: z.number().int().min(0), // el segundo boleto puede salir hasta N días después del primero
+});
+
 export const ConfigEspacio = z.object({
   // Registros del dataset que no entran al grafo (cargueras: no venden pasajes) y códigos que se pliegan al
   // de la aerolínea que vende el boleto (filiales LATAM → LA, JetSMART Argentina → JA).
@@ -118,6 +126,7 @@ export const ConfigEspacio = z.object({
     minDiasRachaVerde: z.number().int().positive(),
   }),
   // Índice de costo estimado por ruta (Fase 7): distancia, competencia, presión de la fecha y escalas.
+  precios: ConfigPrecios,
   fase7: z.object({
     kmEquivalentes: z.object({
       fijoPorBoleto: z.number().min(0), // tasas y costo fijo por boleto emitido, en km equivalentes

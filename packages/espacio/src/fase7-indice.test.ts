@@ -167,7 +167,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(separada?.tramos[0]?.grupos).toContain("Abra"); // GOL es Abra
     const alternativa = rutas.find((r) => r.origen !== "ASU" && r.trasladoOrigenKm > cfg.fase7.trasladoAereoDesdeKm);
     expect(alternativa?.fundamento).toContain("(aéreo)");
-    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano", orden: "indice", operaciones: [], calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
+    expect(() => ResultadoRutas.parse({ origen: "ASU", destino: "MAD", fechaIda: "2027-02-16", fechaVuelta: null, equipaje: "mano", orden: "indice", operaciones: [], precios: null, calculadoEn: new Date().toISOString(), rutas, nombres: [], aerolineasBajoCosto: [], avisos: [] })).not.toThrow();
   });
 
   it("a igual ruta: más presión, menos anticipación, valija en low cost o vía con restricción suben el índice", () => {

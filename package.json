@@ -19,7 +19,8 @@
     "catalogos": "tsx scripts/descargar-catalogos.ts",
     "eventos": "tsx scripts/actualizar-eventos.ts",
     "tendencia": "tsx scripts/tendencias.ts",
-    "corroborar": "tsx scripts/corroborar-wikipedia.ts"
+    "corroborar": "tsx scripts/corroborar-wikipedia.ts",
+    "precios": "tsx scripts/precios-travelpayouts.ts"
   },
   "dependencies": {
     "@az/core": "workspace:*",
