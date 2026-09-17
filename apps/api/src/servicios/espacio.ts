@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { DatasetPrecios, claveGrupo, diasEntre, preciarRuta, ultimos, ventanaBoleto } from "@az/core";
+import { Continente, DatasetPrecios, claveGrupo, diasEntre, preciarRuta, ultimos, ventanaBoleto } from "@az/core";
 import type { BoletoAPreciar, FuenteDato, PrecioCacheado } from "@az/core";
 import {
   AeropuertoGeo,
@@ -11,6 +11,7 @@ import {
   NombreAerolinea,
   RutaCompacta,
   analizarGaps,
+  armarRutasPosibles,
   calcularCalendario,
   expandirAeropuertos,
   generarCombinaciones,
@@ -20,13 +21,14 @@ import {
   puntuarDia,
   ventanasVerdes,
 } from "@az/espacio";
-import type { CandidatoAeropuerto, CorridaEspacio, Feriado, OrdenRutas, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, Ventana } from "@az/espacio";
+import type { CandidatoAeropuerto, CorridaEspacio, Feriado, OrdenRutas, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, ResultadoRutasPosibles, Ventana } from "@az/espacio";
 
 export type ResultadoServicioEspacio = { ok: true; resultado: ResultadoEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioCalendario = { ok: true; resultado: ResultadoCalendario } | { ok: false; motivo: string };
 export type ResultadoServicioCombinaciones = { ok: true; resultado: ResultadoCombinaciones } | { ok: false; motivo: string };
 export type ResultadoServicioCorrida = { ok: true; resultado: CorridaEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioRutas = { ok: true; resultado: ResultadoRutas } | { ok: false; motivo: string };
+export type ResultadoServicioRutasPosibles = { ok: true; resultado: ResultadoRutasPosibles } | { ok: false; motivo: string };
 
 export interface PedidoRutas {
   origen: string;
@@ -52,6 +54,8 @@ export interface ServicioEspacio {
   fuentes: () => FuenteDato[];
   // Fase 7: rutas ordenadas por costo estimado (km, competencia, presión de la fecha, escalas). Sin precios.
   priorizar: (pedido: PedidoRutas, feriados: readonly Feriado[], avisos: readonly string[]) => ResultadoServicioRutas;
+  // Fase 17: todo lo que el grafo permite desde el origen (y alternativos) hacia un aeropuerto o un continente, sin fecha ni precio.
+  rutasPosibles: (origen: string, destino: string) => ResultadoServicioRutasPosibles;
 }
 
 const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"));
@@ -270,8 +274,51 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     };
   };
 
+  const rutasPosibles = (origen: string, destino: string): ResultadoServicioRutasPosibles => {
+    const continente = Continente.safeParse(destino);
+    const o = expandirAeropuertos(origen, "origen", aeropuertos, grafo, config.fase1);
+    if (!o.ok) return o;
+    let destinos: CandidatoAeropuerto[];
+    const avisos: string[] = [];
+    if (continente.success) {
+      // Todo aeropuerto del continente con servicio regular (salvo países excluidos de la bajada), sin radio ni tope.
+      destinos = aeropuertos
+        .filter((a) => a.continente === continente.data && a.servicioRegular && !config.bajada.paisesExcluidos.includes(a.pais))
+        .map((a, i) => ({ aeropuerto: a, rol: "destino" as const, esSolicitado: false, distanciaKm: 0, salidasSemanales: grafo.registrosSalientes(a.iata), posicion: i + 1 }));
+    } else {
+      const d = expandirAeropuertos(destino, "destino", aeropuertos, grafo, config.fase1);
+      if (!d.ok) return d;
+      destinos = d.candidatos;
+    }
+    const generadas = generarRutas(o.candidatos, destinos, grafo, config.fase2, config.hubs);
+    const separadas = generarSplitTickets(o.candidatos, destinos, grafo, config);
+    const dataset = precios();
+    const tarifasPorPar = new Map<string, number>();
+    for (const p of dataset ? ultimos(dataset.precios) : []) tarifasPorPar.set(`${p.origen}|${p.destino}`, (tarifasPorPar.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
+    if (!dataset) avisos.push("Sin dataset de precios: la columna 'en el mercado' queda vacía hasta correr pnpm precios");
+    const rutas = armarRutasPosibles({ origenes: o.candidatos, destinos, rutas: { conservadas: generadas.conservadas, descartadas: generadas.descartadas, separadas }, tarifasPorPar }, grafo, new Map(aeropuertos.map((a) => [a.iata, a])));
+    const mencionadas = new Set(rutas.flatMap((r) => [...r.aerolineas, ...r.aerolineasPrevio, ...r.tramos.flatMap((t) => t.aerolineas)]));
+    const usados = new Set(rutas.flatMap((r) => r.itinerario));
+    return {
+      ok: true,
+      resultado: {
+        origen,
+        destino,
+        destinoEsContinente: continente.success,
+        calculadoEn: new Date().toISOString(),
+        origenes: o.candidatos.map((c) => ({ iata: c.aeropuerto.iata, nombre: c.aeropuerto.nombre, ciudad: c.aeropuerto.ciudad, trasladoKm: c.distanciaKm })),
+        destinos: destinos.length,
+        rutas,
+        nombres: [...mencionadas].sort().map((iata) => ({ iata, nombre: nombres.get(iata) ?? iata })),
+        aeropuertos: [...usados].sort().map((iata) => ({ iata, nombre: aeropuerto(iata)?.nombre ?? iata, ciudad: aeropuerto(iata)?.ciudad ?? "" })),
+        avisos,
+      },
+    };
+  };
+
   return {
     explorar,
+    rutasPosibles,
     candidatosOrigen: (origen) => {
       const o = expandirAeropuertos(origen, "origen", aeropuertos, grafo, config.fase1);
       return o.ok ? { ok: true, candidatos: o.candidatos } : o;

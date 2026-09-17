@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import ExcelJS from "exceljs";
-import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas } from "@az/espacio";
+import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, ResultadoRutasPosibles } from "@az/espacio";
 import { crearApp } from "../app";
 import { config } from "../config";
 import { crearServicioEspacio } from "../servicios/espacio";
@@ -146,4 +146,33 @@ describe("GET /datos", () => {
     expect(datos.map((d) => d.variable)).toContain("Eventos masivos");
     expect(datos.every((d) => ["exacta", "vigente", "aproximada", "supuesto"].includes(d.exactitud))).toBe(true);
   });
+});
+
+describe("GET /rutas-posibles (Fase 17)", () => {
+  it("arma todas las rutas del grafo hacia un aeropuerto, ordenadas por origen y destino, con quién vende y opera", async () => {
+    const res = await app.inject({ method: "GET", url: "/rutas-posibles?origen=ASU&destino=MAD" });
+    expect(res.statusCode).toBe(200);
+    const r = ResultadoRutasPosibles.parse(res.json());
+    expect(r.destinoEsContinente).toBe(false);
+    expect(r.origenes[0]?.iata).toBe("ASU");
+    expect(r.rutas.length).toBeGreaterThan(1000);
+    expect(r.rutas[0]).toMatchObject({ origen: "ASU", destino: "MAD", boletos: 1, escalas: 0, aerolineas: ["UX"], conservada: true });
+    const separada = r.rutas.find((x) => x.origen === "ASU" && x.destino === "MAD" && x.hub === "GRU" && x.aerolineas.includes("TP"));
+    expect(separada?.itinerario).toEqual(["ASU", "GRU", "LIS", "MAD"]);
+    expect(separada?.aerolineasPrevio).toEqual(expect.arrayContaining(["G3", "LA"]));
+    // El orden: primero el aeropuerto pedido y, dentro, el destino pedido.
+    const primerOtroOrigen = r.rutas.findIndex((x) => x.origen !== "ASU");
+    expect(r.rutas.slice(0, primerOtroOrigen).every((x) => x.origen === "ASU")).toBe(true);
+  });
+
+  it("acepta un continente entero como destino y valida", async () => {
+    const res = await app.inject({ method: "GET", url: "/rutas-posibles?origen=ASU&destino=EU" });
+    expect(res.statusCode).toBe(200);
+    const r = ResultadoRutasPosibles.parse(res.json());
+    expect(r.destinoEsContinente).toBe(true);
+    expect(r.destinos).toBeGreaterThan(300);
+    expect(new Set(r.rutas.map((x) => x.destino)).size).toBeGreaterThan(50);
+    expect((await app.inject({ method: "GET", url: "/rutas-posibles?origen=ASU&destino=ASU" })).statusCode).toBe(400);
+    expect((await app.inject({ method: "GET", url: "/rutas-posibles?origen=ASU&destino=ZZZ" })).statusCode).toBe(404);
+  }, 20_000);
 });

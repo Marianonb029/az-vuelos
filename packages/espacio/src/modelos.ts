@@ -148,6 +148,45 @@ export const ResultadoEspacio = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Fase 17 — rutas posibles: todo lo que el grafo permite desde un origen (y sus alternativos) hacia un aeropuerto
+// o un continente entero, sin fecha ni precio; para buscar alternativas a mano cuando el mercado no alcanza.
+// ---------------------------------------------------------------------------
+
+export const RutaPosible = z.object({
+  origen: IataAeropuerto,
+  trasladoOrigenKm: z.number().min(0), // 0: el aeropuerto pedido
+  destino: IataAeropuerto,
+  itinerario: z.array(IataAeropuerto).min(2), // aeropuertos por los que pasa, boletos incluidos
+  boletos: z.number().int().min(1).max(2),
+  escalas: z.number().int().min(0),
+  hub: IataAeropuerto.nullable(), // boletos separados: dónde se cambia de boleto
+  aerolineasPrevio: z.array(IataAerolinea), // las que venden el primer boleto (origen → hub); vacío con boleto único
+  aerolineas: z.array(IataAerolinea).min(1), // las que venden el boleto principal
+  tramos: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, km: z.number().min(0), aerolineas: z.array(IataAerolinea) })), // quién opera cada tramo
+  km: z.number().min(0),
+  nivel: Nivel,
+  etiquetaNivel: z.string(),
+  vuelosSemanales: z.number().int().min(0),
+  conservada: z.boolean(), // false: nivel bajo (menos de 7 vuelos semanales proxy); el modelo la descarta, acá se muestra
+  tarifasMercado: z.array(z.number().int().min(0)), // por boleto: cuántas tarifas vigentes hay en el dataset de precios para ese par
+});
+export type RutaPosible = z.infer<typeof RutaPosible>;
+
+export const ResultadoRutasPosibles = z.object({
+  origen: IataAeropuerto,
+  destino: z.union([IataAeropuerto, Continente]),
+  destinoEsContinente: z.boolean(),
+  calculadoEn: z.iso.datetime(),
+  origenes: z.array(z.object({ iata: IataAeropuerto, nombre: z.string(), ciudad: z.string(), trasladoKm: z.number().min(0) })),
+  destinos: z.number().int().min(0), // aeropuertos de llegada considerados
+  rutas: z.array(RutaPosible), // ya ordenadas: origen (pedido primero, después por cercanía), destino, boletos, escalas, más aerolíneas
+  nombres: z.array(NombreAerolinea),
+  aeropuertos: z.array(z.object({ iata: IataAeropuerto, nombre: z.string(), ciudad: z.string() })),
+  avisos: z.array(z.string()),
+});
+export type ResultadoRutasPosibles = z.infer<typeof ResultadoRutasPosibles>;
+
+// ---------------------------------------------------------------------------
 // Fase 7 — rutas priorizadas por costo estimado (sin leer precios)
 // ---------------------------------------------------------------------------
 

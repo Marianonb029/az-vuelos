@@ -591,6 +591,16 @@ Pedidos del dueño tras la primera corrida por continentes: (1) sí a excluir Ru
 - **400 de la API**: `prices_for_dates` devuelve 400 para aeropuertos que no conoce (STD y otros 27 aeródromos chicos en la primera pasada por Norteamérica). Cortaba la corrida; ahora se cuenta como "sin tarifas", se anota en descubrimientos para no repetirlo hasta el redescubrimiento y sigue.
 - Estado tras la tercera corrida: Sudamérica → Europa **completo** (273 de 273 aeropuertos de salida, 1.502 pares, 14.783 tarifas); Norteamérica → Europa 66 de 842; 44.163 tarifas y 4.011 pares en total. Norteamérica → Europa necesita unas 3–4 noches; después la tarea sigue con Europa → América, Europa → Asia y América → Asia sin intervención.
 
+## Fase 17 (17/09/2026) — pestaña Combinaciones: todas las rutas del grafo, sin fecha ni precio
+
+Pedido del dueño: una pestaña antes de Rutas con todas las rutas aéreas posibles desde los aeropuertos de origen, como antes de conectar la API, sin depender de ella ni del precio: información para buscar alternativas a mano cuando lo que el mercado muestra no alcanza, con los mismos grupos de continentes.
+
+- **`GET /rutas-posibles?origen&destino`** (destino aeropuerto o continente): Fase 1 para los orígenes (pedido + alternativos con km), Fase 2 (rutas de un boleto, directas y con una escala) y boletos separados por hub, **sin filtro de nivel**: las de baja frecuencia (nivel 3–4, que el modelo descarta) también van, en gris. Con destino continente, la llegada es todo aeropuerto del continente con servicio regular (salvo países excluidos de la bajada), sin radio ni tope. ASU → MAD: 11.809 rutas en 1,8 s; ASU → Europa: 13.783 rutas (466 destinos) en 2,2 s.
+- Cada fila (`RutaPosible`, `fase17-rutas-posibles.ts`): itinerario completo, quién **vende** cada boleto (buscar ahí), quién **opera** cada tramo (según VRS), km por tramo y total, escalas, frecuencia proxy, y **"en el mercado"**: cuántas tarifas vigentes tiene cada par de boleto en el dataset de precios (puente con Rutas: si dice "no", es una alternativa que la API no cubre; si dice "sí", conviene mirarla en Rutas).
+- **Orden**: aeropuerto de salida (el pedido primero, después por cercanía), destino (el pedido primero), un boleto antes que dos, menos escalas, más aerolíneas que venden, más frecuencia. Sin índice: acá no se estima nada.
+- **UI** (`Combinaciones.tsx`, primera pestaña): agrupado por aeropuerto de salida y, dentro, por destino plegado con conteos (rutas, de un boleto, de dos, con tarifas en el mercado); se abre un destino para ver sus rutas. Filtro por aeropuerto, ciudad o aerolínea. Con 12–14 mil filas, abrirlo todo no tendría sentido; el plegado y el filtro son la forma de usarlo.
+- Lo que no hace, declarado: no cruza fechas ni horarios (VRS no los trae); no calcula precio ni índice; tres boletos no se arman (igual que en el mercado).
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

@@ -2,6 +2,7 @@ import Fastify from "fastify";
 import { rutasDatos } from "./rutas/datos";
 import { rutasEspacio } from "./rutas/espacio";
 import { rutasMercado } from "./rutas/mercado";
+import { rutasPosibles } from "./rutas/rutas-posibles";
 import { rutasPriorizadas } from "./rutas/rutas-priorizadas";
 import { listaJson } from "./repos/archivo-json";
 import { Tendencia } from "@az/core";
@@ -23,6 +24,7 @@ export const crearApp = (op: OpcionesApp) => {
   const tendencias = listaJson(op.rutaTendencias, Tendencia);
   app.get("/salud", async () => ({ ok: true }));
   rutasMercado(app, op.mercado);
+  rutasPosibles(app, op.espacio);
   rutasPriorizadas(app, {
     espacio: op.espacio,
     feriados: op.feriados,

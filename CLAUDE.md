@@ -6,8 +6,8 @@ Muestra **lo que el mercado tiene** para llegar de un origen a un destino: las t
 
 pnpm workspaces · TypeScript estricto · Zod 4 (los tipos se derivan del esquema)
 
-- `apps/web` — React 18 + Vite + Tailwind v4. Tres pestañas: Rutas (el mercado; plegado, el modelo sin precios), Tablero (métricas de la última búsqueda, sin registro) y Datos (glosario y ficha de cada dato).
-- `apps/api` — Node 24 + Fastify 5. Cálculo sobre datasets, sin base de datos ni registros de uso: `GET /mercado` (Fase 15), `GET /rutas` (modelo), `GET /espacio*`, `GET /datos`. Lee de `data/local/` lo que dejan los scripts (tendencias, corroboración, precios cacheados). Refresco automático diario de fuentes vencidas.
+- `apps/web` — React 18 + Vite + Tailwind v4. Cuatro pestañas: Combinaciones (todas las rutas del grafo, sin fecha ni precio, Fase 17), Rutas (el mercado; plegado, el modelo sin precios), Tablero (métricas de la última búsqueda, sin registro) y Datos (glosario y ficha de cada dato).
+- `apps/api` — Node 24 + Fastify 5. Cálculo sobre datasets, sin base de datos ni registros de uso: `GET /mercado` (Fase 15), `GET /rutas-posibles` (Fase 17), `GET /rutas` (modelo), `GET /espacio*`, `GET /datos`. Lee de `data/local/` lo que dejan los scripts (tendencias, corroboración, precios cacheados). Refresco automático diario de fuentes vencidas.
 - `packages/core` — primitivos Zod, catálogos IATA, fechas, esquema de fuentes, enlaces a metabuscadores (sólo URLs), precios cacheados (`precios.ts`: esquema, lectura del enlace, corridas, desvío) y el mercado (`mercado.ts`: combinaciones de uno o dos boletos, orden 1–6, antigüedad y cadencia). Sin I/O.
 - `packages/espacio` — motor (port de `docs/SPEC_ESPACIO.md`): aeropuertos alternativos, grafo de rutas vigentes, gaps, calendario con señales de demanda, combinaciones y Fase 7 (índice por ruta). Sin I/O.
 - `config/espacio.json` — todos los números del modelo y del mercado (radios, niveles, pesos, factores, `precios` con cadencia por anticipación, historial y tasa de desvío supuesta, `mercado` con esperas entre boletos y ventana).

@@ -21,3 +21,5 @@ export type { EntradaCalendario, Feriado } from "./fase5-calendario";
 export { generarCombinaciones } from "./fase6-combinaciones";
 export type { EntradaFase6 } from "./fase6-combinaciones";
 export { generarSplitTickets } from "./fase2-split";
+export { armarRutasPosibles } from "./fase17-rutas-posibles";
+export type { EntradaRutasPosibles } from "./fase17-rutas-posibles";
