@@ -56,6 +56,8 @@ interface ItemV3 {
   link?: string;
 }
 let pedidos = 0;
+let desconocidos = 0;
+// Un 400 es "la API no conoce ese aeropuerto" (STD, aeródromos chicos): se anota como sin tarifas y se sigue.
 const pedir = async (o: string, d: string | null, intento = 1): Promise<ItemV3[]> => {
   await esperar(1_000);
   const url = `${API}?origin=${o}${d ? `&destination=${d}` : ""}&one_way=true&unique=false&sorting=price&direct=false&currency=usd&limit=1000&page=1&token=${token}`;
@@ -64,8 +66,12 @@ const pedir = async (o: string, d: string | null, intento = 1): Promise<ItemV3[]
     await esperar(10_000 * intento);
     return pedir(o, d, intento + 1);
   }
-  if (!res.ok) throw new Error(`${res.status} ${o}→${d ?? "*"}`);
   pedidos++;
+  if (res.status === 400) {
+    desconocidos++;
+    return [];
+  }
+  if (!res.ok) throw new Error(`${res.status} ${o}→${d ?? "*"}`);
   const json = (await res.json()) as { success?: boolean; data?: ItemV3[]; error?: string };
   if (json.success === false) throw new Error(`${o}→${d ?? "*"}: ${json.error ?? "error de la API"}`);
   return json.data ?? [];
@@ -178,5 +184,6 @@ if (modoPar) {
 }
 
 if (sinEnlace > 0) console.log(`${sinEnlace} tarifas descartadas: el enlace no trae itinerario u hora (formato distinto al esperado)`);
+if (desconocidos > 0) console.log(`${desconocidos} pedidos con 400: aeropuertos que la API no conoce; quedan anotados sin tarifas y no se vuelven a pedir hasta el redescubrimiento`);
 const dataset = guardar();
 console.log(`precios.json: ${dataset.precios.length} tarifas guardadas (${nuevos.length} de esta corrida en ${paresBajados.length} pares, ${pedidos} pedidos, ${dataset.corridas.length} corridas) en ${dataset.pares.length} pares y ${dataset.descubrimientos.length} orígenes descubiertos${dataset.desvio ? ` · desvío contra la corrida anterior: mediana ${dataset.desvio.medianaPct} %, p90 ${dataset.desvio.p90Pct} % sobre ${dataset.desvio.comparados} tarifas` : ""}`);
