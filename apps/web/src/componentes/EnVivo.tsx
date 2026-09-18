@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
 import { estadoActualizacion, iniciarActualizacion, sonda } from "../lib/api";
+import { Progreso } from "./Progreso";
 
 interface Props {
   origen: string;
@@ -33,6 +34,8 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
   const [fase, setFase] = useState<Fase>("quieto");
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [dias, setDias] = useState<{ fecha: string; estado: EstadoDia }[]>([]);
+  const [enCache, setEnCache] = useState<number | null>(null); // días de la ventana con tarifas en el cache (última sonda)
+  const [terminado, setTerminado] = useState(false);
   const vivo = useRef(true);
   const detener = useRef(false);
   useEffect(() => {
@@ -45,6 +48,8 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     setFase("quieto");
     setMensaje(null);
     setDias([]);
+    setEnCache(null);
+    setTerminado(false);
   }, [origen, destino, fechaIda, flexDias]);
 
   const esperar = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
@@ -93,14 +98,19 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
         onActualizado();
       }
       previo = ahora;
+      setEnCache(ahora.dias);
       if (ahora.dias >= fechas.length) {
         setMensaje(`✓ Los ${fechas.length} días buscados están en el sistema (${tarifas} tarifas nuevas, traído ${traidas} ${traidas === 1 ? "vez" : "veces"}).`);
+        setTerminado(true);
         return;
       }
       setMensaje(`Vigilando el cache: pasada ${i} de ${SONDA_PASADAS} (cada minuto). ${ahora.dias} de ${fechas.length} días con tarifas${ahora.minUsd !== null ? `, desde USD ${ahora.minUsd}` : ""}; traído ${traidas} ${traidas === 1 ? "vez" : "veces"} (${tarifas} tarifas nuevas).`);
       await esperar(SONDA_CADA_MS);
     }
-    if (vivo.current) setMensaje(`Vigilancia terminada: ${previo?.dias ?? 0} de ${fechas.length} días con tarifas (algunos días pueden no tener vuelos); ${tarifas} tarifas nuevas traídas. 'Actualizar este par ahora' baja además los pares del modelo.`);
+    if (vivo.current) {
+      setMensaje(`Vigilancia terminada: ${previo?.dias ?? 0} de ${fechas.length} días con tarifas (algunos días pueden no tener vuelos); ${tarifas} tarifas nuevas traídas. 'Actualizar este par ahora' baja además los pares del modelo.`);
+      setTerminado(true);
+    }
   };
 
   const buscarEnVivo = async () => {
@@ -108,6 +118,8 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     detener.current = false;
     const lista = fechas.map((fecha) => ({ fecha, estado: "pendiente" as EstadoDia }));
     setDias(lista);
+    setEnCache(null);
+    setTerminado(false);
     setFase("buscando");
     const primera = lista[0];
     if (!primera) return;
@@ -170,7 +182,17 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
           </button>
         )}
       </div>
-      {mensaje && (
+      {dias.length > 0 && (
+        <Progreso
+          titulo={fase === "buscando" ? "Búsquedas en vivo" : "Días con tarifas en el sistema"}
+          completas={fase === "buscando" ? dias.filter((d) => d.estado === "hecha").length : (enCache ?? dias.filter((d) => d.estado === "hecha").length)}
+          total={dias.length}
+          fase={fase === "buscando" ? "buscando en Aviasales" : fase === "vigilando" ? "vigilando el cache y trayendo" : fase === "actualizando" ? "trayendo al sistema" : terminado ? "listo" : "detenido"}
+          {...(mensaje ? { detalle: mensaje } : {})}
+          terminado={terminado}
+        />
+      )}
+      {mensaje && dias.length === 0 && (
         <p role="status" className="text-xs text-slate-700" data-testid="en-vivo-estado">
           {mensaje}
         </p>

@@ -59,7 +59,8 @@ describe("Búsqueda múltiple (Fase 19)", () => {
     expect(open).toHaveBeenCalledWith("https://www.aviasales.com/search/ASU2001LIS1?marker=123456", "az-vivo");
     const estados = () => [...screen.getByTestId("bm-busquedas").querySelectorAll("li")].map((li) => li.getAttribute("data-estado"));
     expect(estados()).toEqual(["buscando", "pendiente"]);
-    expect(screen.getByTestId("bm-estado").textContent).toContain("Búsqueda 1 de 2: ASU → LIS el 20/01/2027");
+    expect(screen.getAllByTestId("progreso")[0]?.textContent).toContain("Búsquedas en vivo: 0 de 2 completas · 2 restantes");
+    expect(screen.getAllByTestId("progreso")[0]?.textContent).toContain("Búsqueda 1 de 2: ASU → LIS el 20/01/2027");
     // A los 45 s pasa a la segunda: la misma ventana se navega, la primera queda ✓.
     await act(async () => {
       await vi.advanceTimersByTimeAsync(45_000);
@@ -76,7 +77,8 @@ describe("Búsqueda múltiple (Fase 19)", () => {
     const rutas = () => [...screen.getByTestId("bm-rutas").querySelectorAll("li")].map((li) => `${li.getAttribute("data-estado")}:${li.textContent}`);
     expect(rutas()[0]).toContain("esperando:○ ASU → LIS: 0 de 1 días con tarifas en el cache · aún no traído");
     expect(rutas()[1]).toContain("completo:✓ IGU → LIS: 1 de 1 días con tarifas en el cache · traído 1 vez, 4 tarifas nuevas");
-    expect(screen.getByTestId("bm-estado").textContent).toContain("Vigilando el cache de Aviasales: pasada 1 de 20 (cada minuto). 1 de 2 rutas completas");
+    expect(screen.getAllByTestId("progreso").map((p) => p.textContent).join(" | ")).toContain("Rutas completas en el sistema: 1 de 2 completas · 1 restantes");
+    expect(screen.getAllByTestId("progreso").map((p) => p.textContent).join(" | ")).toContain("Vigilando el cache de Aviasales: pasada 1 de 20 (cada minuto). 1 de 2 rutas completas");
     expect(onTraido).toHaveBeenCalledWith("IGU", "LIS", "2027-01-20", "0"); // se carga en Rutas y se busca solo
     // Un minuto después publica ASU→LIS: se trae y termina, porque todas las rutas están completas.
     publicado.add("ASU");
@@ -85,7 +87,8 @@ describe("Búsqueda múltiple (Fase 19)", () => {
     });
     expect(cuerpos).toEqual([{ pares: [{ origen: "IGU", destino: "LIS" }] }, { pares: [{ origen: "ASU", destino: "LIS" }] }]);
     expect(rutas()[0]).toContain("completo:✓ ASU → LIS: 1 de 1 días");
-    expect(screen.getByTestId("bm-estado").textContent).toContain("✓ Todas las rutas están en el sistema con tarifas en todos los días buscados (8 tarifas nuevas)");
+    expect(screen.getAllByTestId("progreso").map((p) => p.textContent).join(" | ")).toContain("✓ Rutas completas en el sistema: 2 de 2 completas · 0 restantes");
+    expect(screen.getAllByTestId("progreso").map((p) => p.textContent).join(" | ")).toContain("✓ Todas las rutas están en el sistema con tarifas en todos los días buscados (8 tarifas nuevas)");
     expect(onTraido).toHaveBeenCalledTimes(2);
     expect(onActualizado).not.toHaveBeenCalled();
     // Un clic en un par lo lleva al formulario de Rutas.

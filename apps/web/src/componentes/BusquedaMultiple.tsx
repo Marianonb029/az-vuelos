@@ -6,6 +6,7 @@ import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
 import { urlAviasales } from "./EnVivo";
+import { Progreso } from "./Progreso";
 import { Toggle } from "./Toggle";
 
 interface Props {
@@ -227,16 +228,19 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
         )}
       </div>
       {total > tope && <p className="text-xs text-red-700">Son {total} búsquedas; el tope es {tope}. Achicá la ventana o la lista.</p>}
-      {mensaje && (
+      {busquedas.length > 0 && (
+        <Progreso titulo="Búsquedas en vivo" completas={hechas} total={busquedas.length} fase={fase === "buscando" ? "buscando en Aviasales" : fase === "vigilando" ? "vigilando el cache" : fase === "listo" ? "listo" : "detenido"} {...(fase === "buscando" && mensaje ? { detalle: mensaje } : {})} terminado={hechas === busquedas.length} />
+      )}
+      {estadoPares.length > 0 && fase !== "buscando" && (
+        <Progreso titulo="Rutas completas en el sistema" completas={estadoPares.filter((p) => p.completo).length} total={estadoPares.length} fase={fase === "vigilando" ? "vigilando el cache y trayendo" : fase === "listo" ? "listo" : "detenido"} {...(mensaje ? { detalle: mensaje } : {})} terminado={fase === "listo"} />
+      )}
+      {mensaje && busquedas.length === 0 && (
         <p role="status" className="text-xs text-slate-700" data-testid="bm-estado">
           {mensaje}
         </p>
       )}
       {busquedas.length > 0 && (
         <div data-testid="bm-lista">
-          <p className="text-xs text-slate-500">
-            {hechas} de {busquedas.length} búsquedas hechas
-          </p>
           {estadoPares.length > 0 && (
             <ul className="mb-1 grid gap-0.5 text-xs" data-testid="bm-rutas">
               {estadoPares.map((p) => (
