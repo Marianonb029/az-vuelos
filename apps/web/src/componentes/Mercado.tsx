@@ -62,10 +62,30 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
       activo = false;
     };
   }, [origen, destino, version]);
-  useEffect(() => setFechaIda(""), [origen, destino]);
+  const cambiarOrigen = (a: Aeropuerto | null) => {
+    setOrigen(a);
+    setFechaIda("");
+  };
+  const cambiarDestino = (a: Aeropuerto | null) => {
+    setDestino(a);
+    setFechaIda("");
+  };
+  // El dataset cambió (búsqueda en vivo traída, actualización): se rehacen el calendario y, si hay par y fecha, la tabla.
   const actualizado = () => {
     setVersion((v) => v + 1);
-    if (resultado) void buscarMercado(flex);
+    if (origen && destino && fechaIda !== "") void buscarMercado(flex, origen, destino, fechaIda);
+  };
+  // Desde la búsqueda múltiple: un par traído se carga en el formulario y se busca solo.
+  const traido = (o: string, d: string, fecha: string, flexLista: (typeof FLEX)[number]["valor"]) => {
+    const ao = aeropuertos.find((a) => a.iata === o);
+    const ad = aeropuertos.find((a) => a.iata === d);
+    if (!ao || !ad) return;
+    setOrigen(ao);
+    setDestino(ad);
+    setFechaIda(fecha);
+    setFlex(flexLista);
+    setVersion((v) => v + 1);
+    void buscarMercado(flexLista, ao, ad, fecha);
   };
 
   // Qué aeropuertos tienen tarifas bajadas: con el campo vacío se sugieren esos (no el catálogo entero) y al
@@ -105,12 +125,12 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
     ida: intentado && fechaIda === "" ? "Elegí la fecha de ida" : undefined,
   };
 
-  const buscarMercado = async (flexElegida: string) => {
-    if (!origen || !destino || fechaIda === "") return;
+  const buscarMercado = async (flexElegida: string, o: Aeropuerto | null = origen, d: Aeropuerto | null = destino, fecha: string = fechaIda) => {
+    if (!o || !d || fecha === "") return;
     setCargando(true);
     setError(null);
     try {
-      const r = await obtenerMercado(origen.iata, destino.iata, fechaIda, Number(flexElegida));
+      const r = await obtenerMercado(o.iata, d.iata, fecha, Number(flexElegida));
       setResultado(r);
       onResultado(r);
     } catch (err: unknown) {
@@ -155,10 +175,10 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="m-origen" etiqueta="Origen" error={errores.origen}>
-            <Combobox id="m-origen" placeholder="Con tarifas bajadas, o código / ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opcionesOrigen} onCambio={setOrigen} invalido={errores.origen !== undefined} />
+            <Combobox id="m-origen" placeholder="Con tarifas bajadas, o código / ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opcionesOrigen} onCambio={cambiarOrigen} invalido={errores.origen !== undefined} />
           </Campo>
           <Campo id="m-destino" etiqueta="Destino" error={errores.destino}>
-            <Combobox id="m-destino" placeholder="Un continente, o aeropuerto con tarifas, o código / ciudad" valor={destino} etiquetaValor={etiqueta} buscar={opcionesDestino} onCambio={setDestino} invalido={errores.destino !== undefined} />
+            <Combobox id="m-destino" placeholder="Un continente, o aeropuerto con tarifas, o código / ciudad" valor={destino} etiquetaValor={etiqueta} buscar={opcionesDestino} onCambio={cambiarDestino} invalido={errores.destino !== undefined} />
           </Campo>
         </div>
         <div className="flex flex-wrap items-end gap-6">
@@ -173,7 +193,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           </button>
         </div>
         {origen && destino && !esContinente(destino) && (
-          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
+          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} segundosPorBusqueda={cobertura?.segundosPorBusquedaEnVivo ?? 45} hoy={hoy} onActualizado={actualizado} />
         )}
       </form>
       <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle">
@@ -183,7 +203,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
             aeropuertos={aeropuertos}
             cobertura={cobertura}
             hoy={hoy}
-            onActualizado={actualizado}
+            onTraido={traido}
             onElegirPar={(o, d) => {
               setOrigen(o);
               setDestino(d);

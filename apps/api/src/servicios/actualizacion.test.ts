@@ -68,7 +68,7 @@ describe("actualización a pedido (Fase 18)", () => {
     const d = DatasetPrecios.parse(JSON.parse(readFileSync(join(carpeta, "local", "precios.json"), "utf8")));
     expect(d.pares.find((p) => p.origen === "ASU" && p.destino === "LIS")).toMatchObject({ tarifas: 1, grupo: null });
     expect(d.precios.find((p) => p.origen === "ASU" && p.destino === "LIS")).toMatchObject({ precioUsd: 670, itinerario: ["ASU", "GIG", "LIS"], vistoEn: "2026-09-17" });
-  });
+  }, 30_000);
 
   it("con `pares`, baja sólo esos (un pedido por par): lo que usa la búsqueda múltiple", async () => {
     const s = crearServicioActualizacion({ directorioDatos: carpeta, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente });

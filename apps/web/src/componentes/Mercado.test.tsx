@@ -87,11 +87,8 @@ describe("Mercado", () => {
     expect(screen.getByTestId("nota-dataset").textContent).toMatch(/1 corridas, 1\.?590 tarifas vigentes, 900 para estos aeropuertos/);
     // Enlaces en vivo con el marker de afiliado y el botón de búsqueda en vivo para el par y la fecha.
     expect((screen.getAllByRole("link", { name: "abrir en Aviasales" })[0] as HTMLAnchorElement).href).toBe("https://www.aviasales.com/search/ASU1901MAD1?t=x&marker=123456");
-    expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales (19/01/2027) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
-    // Con ±7 días, un enlace en vivo por cada día de la ventana (15), con el marker.
-    const enlacesVivo = screen.getByTestId("en-vivo-dias").querySelectorAll("a");
-    expect(enlacesVivo).toHaveLength(15);
-    expect(enlacesVivo[0]?.getAttribute("href")).toBe("https://www.aviasales.com/search/ASU1201MAD1?marker=123456");
+    // Con ±7 días el botón busca los 15 días él solo (a 45 s cada uno).
+    expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales los 15 días (12/01/2027 a 26/01/2027, ~12 min) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
