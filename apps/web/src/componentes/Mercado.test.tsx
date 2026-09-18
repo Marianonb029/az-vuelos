@@ -54,10 +54,14 @@ describe("Mercado", () => {
     expect(screen.getAllByRole("option").map((o) => o.textContent)[2]).toBe("Europa — todos los aeropuertos con tarifascontinente");
     elegir("Destino", "MAD", /MAD/);
     // El calendario pide los días con tarifas del par y habilita sólo esos, con el mínimo de cada uno.
-    await waitFor(() => expect(screen.getByTestId("calendario-nota").textContent).toContain("2 días con tarifas en este mes · 2 en total, entre 19/01/2027 y 20/01/2027"));
+    await waitFor(() => expect(screen.getByTestId("calendario-nota").textContent).toContain("2 días con tarifas en este mes (verde, con el mínimo visto en USD) · 2 en total, entre 19/01/2027 y 20/01/2027"));
     expect(fetchMock).toHaveBeenCalledWith("/api/mercado/fechas?origen=ASU&destino=MAD", undefined);
-    expect((screen.getByRole("button", { name: "18/01/2027" }) as HTMLButtonElement).disabled).toBe(true);
+    // Un día sin tarifas se puede elegir igual (para buscar en vivo); uno con tarifas muestra el mínimo.
+    const sinTarifas = screen.getByRole("button", { name: "18/01/2027" }) as HTMLButtonElement;
+    expect(sinTarifas.disabled).toBe(false);
+    expect(sinTarifas.dataset["conTarifas"]).toBe("no");
     expect(screen.getByRole("button", { name: "19/01/2027" }).textContent).toBe("19480");
+    expect((screen.getByRole("button", { name: /Buscar en vivo en Aviasales y traer al sistema/ }) as HTMLButtonElement).disabled).toBe(true); // sin fecha elegida
     fireEvent.click(screen.getByRole("button", { name: "19/01/2027" }));
     fireEvent.click(screen.getByRole("radio", { name: "± 7 días" }));
     fireEvent.click(screen.getByRole("button", { name: "Buscar en el mercado" }));
@@ -83,7 +87,7 @@ describe("Mercado", () => {
     expect(screen.getByTestId("nota-dataset").textContent).toMatch(/1 corridas, 1\.?590 tarifas vigentes, 900 para estos aeropuertos/);
     // Enlaces en vivo con el marker de afiliado y el botón de búsqueda en vivo para el par y la fecha.
     expect((screen.getAllByRole("link", { name: "abrir en Aviasales" })[0] as HTMLAnchorElement).href).toBe("https://www.aviasales.com/search/ASU1901MAD1?t=x&marker=123456");
-    expect(screen.getByRole("button", { name: "Buscar en vivo en Aviasales y traer al sistema" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales (19/01/2027) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
   });
 });

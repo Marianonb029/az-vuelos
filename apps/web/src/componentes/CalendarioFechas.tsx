@@ -14,8 +14,9 @@ const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "
 const DIAS = ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
 const iso = (a: number, m: number, d: number) => `${a}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-// Calendario del formulario: sólo se pueden elegir los días en los que hay combinaciones para ese origen y
-// destino (lo que dice GET /mercado/fechas); cada día habilitado muestra el mínimo visto. Sin origen y destino, nada.
+// Calendario del formulario: los días con combinaciones para ese origen y destino (GET /mercado/fechas) van en
+// verde con el mínimo visto; los demás días futuros también se pueden elegir, para buscar en vivo en Aviasales y
+// traer el par al sistema. Sin origen y destino, nada.
 export const CalendarioFechas = ({ fechas, valor, onCambio, hoy, cargando }: Props) => {
   const porFecha = new Map((fechas ?? []).map((f) => [f.fecha, f]));
   const primera = valor || fechas?.[0]?.fecha || hoy;
@@ -55,7 +56,7 @@ export const CalendarioFechas = ({ fechas, valor, onCambio, hoy, cargando }: Pro
           if (d === null) return <span key={`v${i}`} />;
           const f = iso(mes.a, mes.m, d);
           const dato = porFecha.get(f);
-          const habilitado = dato !== undefined && f >= hoy;
+          const habilitado = fechas !== null && f >= hoy;
           return (
             <button
               key={f}
@@ -63,9 +64,10 @@ export const CalendarioFechas = ({ fechas, valor, onCambio, hoy, cargando }: Pro
               disabled={!habilitado}
               aria-label={fechaCorta(f)}
               aria-pressed={valor === f}
-              title={dato ? `${dato.combinaciones} combinaciones desde USD ${dato.minUsd.toLocaleString("es")}` : "sin tarifas ese día"}
+              data-con-tarifas={dato ? "si" : "no"}
+              title={dato ? `${dato.combinaciones} combinaciones desde USD ${dato.minUsd.toLocaleString("es")}` : habilitado ? "sin tarifas ese día en el dataset: elegilo para buscar en vivo" : "pasado"}
               onClick={() => onCambio(f)}
-              className={`flex h-10 w-11 flex-col items-center justify-center rounded text-xs ${valor === f ? "bg-sky-600 text-white" : habilitado ? "bg-emerald-50 text-slate-900 hover:bg-emerald-100" : "text-slate-300"}`}
+              className={`flex h-10 w-11 flex-col items-center justify-center rounded text-xs ${valor === f ? "bg-sky-600 text-white" : !habilitado ? "text-slate-300" : dato ? "bg-emerald-50 text-slate-900 hover:bg-emerald-100" : "text-slate-700 hover:bg-slate-100"}`}
             >
               <span className="font-medium">{d}</span>
               {dato && <span className={`text-[9px] tabular-nums ${valor === f ? "text-sky-100" : "text-emerald-800"}`}>{dato.minUsd.toLocaleString("es")}</span>}
@@ -74,7 +76,7 @@ export const CalendarioFechas = ({ fechas, valor, onCambio, hoy, cargando }: Pro
         })}
       </div>
       <p className="mt-1 text-xs text-slate-500" data-testid="calendario-nota">
-        {fechas === null ? (cargando ? "Buscando los días con tarifas…" : "Elegí origen y destino: se habilitan sólo los días con tarifas en el dataset") : fechas.length === 0 ? "Sin tarifas para este par en el dataset" : `${enElMes.length} días con tarifas en este mes · ${fechas.length} en total, entre ${fechaCorta(fechas[0]?.fecha ?? hoy)} y ${fechaCorta(fechas[fechas.length - 1]?.fecha ?? hoy)} · el número es el mínimo visto ese día (USD)`}
+        {fechas === null ? (cargando ? "Buscando los días con tarifas…" : "Elegí origen y destino: los días con tarifas en el dataset van en verde") : fechas.length === 0 ? "Sin tarifas para este par en el dataset: elegí igual una fecha y buscá en vivo en Aviasales para traerlas" : `${enElMes.length} días con tarifas en este mes (verde, con el mínimo visto en USD) · ${fechas.length} en total, entre ${fechaCorta(fechas[0]?.fecha ?? hoy)} y ${fechaCorta(fechas[fechas.length - 1]?.fecha ?? hoy)} · los demás días se pueden elegir para buscar en vivo`}
       </p>
     </div>
   );

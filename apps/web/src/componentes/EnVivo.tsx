@@ -94,8 +94,8 @@ export const EnVivo = ({ origen, destino, fechaIda, marker, disponible, onActual
   return (
     <div className="grid gap-1" data-testid="en-vivo">
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void buscarEnVivo()} disabled={fase !== "quieto"} className="rounded-md border border-sky-600 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
-          Buscar en vivo en Aviasales y traer al sistema
+        <button type="button" onClick={() => void buscarEnVivo()} disabled={fase !== "quieto" || fechaIda === ""} title={fechaIda === "" ? "Elegí una fecha en el calendario (cualquier día futuro)" : `Abre aviasales.com con ${origen} → ${destino} el ${fechaCorta(fechaIda)}`} className="rounded-md border border-sky-600 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
+          Buscar en vivo en Aviasales{fechaIda ? ` (${fechaCorta(fechaIda)})` : ""} y traer al sistema
         </button>
         <button type="button" onClick={() => void actualizar()} disabled={fase !== "quieto" || !disponible} title={disponible ? "Baja ahora los pares del modelo para este par desde la Data API (1–2 min)" : "El servidor no tiene TRAVELPAYOUTS_TOKEN"} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
           Actualizar este par ahora

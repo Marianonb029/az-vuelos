@@ -161,7 +161,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           </Campo>
         </div>
         <div className="flex flex-wrap items-end gap-6">
-          <Campo id="m-ida" etiqueta="Fecha de ida (sólo los días con tarifas)" error={errores.ida}>
+          <Campo id="m-ida" etiqueta="Fecha de ida (en verde, los días con tarifas)" error={errores.ida}>
             <CalendarioFechas fechas={fechas?.fechas ?? null} valor={fechaIda} onCambio={setFechaIda} hoy={hoy} cargando={cargandoFechas} />
           </Campo>
           <Campo id="m-flex" etiqueta="Salida">
@@ -172,7 +172,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           </button>
         </div>
         {origen && destino && !esContinente(destino) && (
-          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda || fechas?.fechas[0]?.fecha || hoy} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
+          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
         )}
       </form>
       {error && (
