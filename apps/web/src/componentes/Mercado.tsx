@@ -5,6 +5,7 @@ import type { Continente } from "@az/core";
 import type { Aeropuerto, CoberturaMercado, FechasMercado, ResultadoMercado } from "@az/core";
 import { obtenerCobertura, obtenerFechas, obtenerMercado } from "../lib/api";
 import { Bloque } from "./Bloque";
+import { BusquedaMultiple } from "./BusquedaMultiple";
 import { CalendarioFechas } from "./CalendarioFechas";
 import { EnVivo } from "./EnVivo";
 import { Campo } from "./Campo";
@@ -175,6 +176,21 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
         )}
       </form>
+      <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle">
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">Búsqueda múltiple: varias rutas, una fecha y una ventana; la app busca en vivo cada una y trae todo al sistema</summary>
+        <div className="mt-3">
+          <BusquedaMultiple
+            aeropuertos={aeropuertos}
+            cobertura={cobertura}
+            hoy={hoy}
+            onActualizado={actualizado}
+            onElegirPar={(o, d) => {
+              setOrigen(o);
+              setDestino(d);
+            }}
+          />
+        </div>
+      </details>
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {error}

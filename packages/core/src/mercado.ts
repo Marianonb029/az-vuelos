@@ -78,6 +78,8 @@ export const CoberturaMercado = z.object({
   actualizadoEn: z.iso.datetime().nullable(), // null: sin dataset
   marker: z.string().nullable(), // marker de afiliado de Travelpayouts (TRAVELPAYOUTS_MARKER), para los enlaces en vivo; público
   actualizacionDisponible: z.boolean(), // el servidor tiene el token: "Actualizar este par" funciona
+  segundosPorBusquedaEnVivo: z.number().int().min(1), // búsqueda múltiple (config mercado)
+  maxBusquedasEnVivo: z.number().int().min(1),
   grupos: z.array(z.object({ prioridad: z.number().int(), grupo: z.string(), origen: z.array(Continente), destino: z.array(Continente), pares: z.number().int(), tarifas: z.number().int(), origenesDescubiertos: z.number().int(), origenesPendientes: z.number().int() })),
   aeropuertos: z.array(z.object({ iata: IataAeropuerto, comoOrigen: z.number().int().min(0), comoDestino: z.number().int().min(0) })), // tarifas vigentes que salen / llegan
   pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0) })),

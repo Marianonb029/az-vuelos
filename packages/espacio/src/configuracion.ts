@@ -93,6 +93,8 @@ export const ConfigMercado = z.object({
   conexionMaxHoras: z.number().positive(),
   flexDiasDefecto: z.number().int().min(0), // ventana de salida ± días alrededor de la fecha pedida
   maxPorOrigen: z.number().int().min(1),
+  segundosPorBusquedaEnVivo: z.number().int().min(10), // búsqueda múltiple: cuánto se deja cada búsqueda en la ventana de Aviasales antes de pasar a la siguiente
+  maxBusquedasEnVivo: z.number().int().min(1), // tope de búsquedas por lista (pares × días)
   nota: z.string(),
 });
 

@@ -70,6 +70,22 @@ describe("actualización a pedido (Fase 18)", () => {
     expect(d.precios.find((p) => p.origen === "ASU" && p.destino === "LIS")).toMatchObject({ precioUsd: 670, itinerario: ["ASU", "GIG", "LIS"], vistoEn: "2026-09-17" });
   });
 
+  it("con `pares`, baja sólo esos (un pedido por par): lo que usa la búsqueda múltiple", async () => {
+    const s = crearServicioActualizacion({ directorioDatos: carpeta, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente });
+    pedidos.length = 0;
+    expect(s.iniciar("ASU", "LIS", [["ASU", "LIS"], ["IGU", "LIS"], ["ASU", "MAD"]]).ok).toBe(true);
+    await new Promise<void>((res) => {
+      const t = setInterval(() => {
+        if (!s.estado().enCurso) {
+          clearInterval(t);
+          res();
+        }
+      }, 20);
+    });
+    expect(s.estado()).toMatchObject({ total: 3, pedidos: 3, tarifasNuevas: 3, error: null });
+    expect(pedidos).toEqual(["ASU|LIS|", "IGU|LIS|", "ASU|MAD|"]);
+  });
+
   it("sin token, dice que no está disponible", () => {
     const s = crearServicioActualizacion({ directorioDatos: carpeta, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: null });
     expect(s.disponible).toBe(false);

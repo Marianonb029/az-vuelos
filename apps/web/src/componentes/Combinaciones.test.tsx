@@ -27,7 +27,7 @@ const resultado: ResultadoRutasPosibles = {
   aeropuertos: [{ iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción" }, { iata: "GRU", nombre: "Guarulhos", ciudad: "São Paulo" }, { iata: "LIS", nombre: "Humberto Delgado", ciudad: "Lisboa" }, { iata: "MAD", nombre: "Barajas", ciudad: "Madrid" }],
   avisos: [],
 };
-const cobertura = { actualizadoEn: null, marker: null, actualizacionDisponible: false, grupos: [], aeropuertos: [], pares: [] };
+const cobertura = { actualizadoEn: null, marker: null, actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, grupos: [], aeropuertos: [], pares: [] };
 
 const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
   fireEvent.change(screen.getByRole("combobox", { name: etiqueta }), { target: { value: texto } });

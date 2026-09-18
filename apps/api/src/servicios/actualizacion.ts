@@ -36,7 +36,9 @@ export interface Sonda {
 
 export interface ServicioActualizacion {
   disponible: boolean; // hay token en el entorno del servidor
-  iniciar: (origen: string, destino: string) => { ok: true; estado: EstadoActualizacion } | { ok: false; motivo: string };
+  // Sin `pares`: los ~90 pares del modelo para el par. Con `pares`: sólo esos (un pedido por par, sin mes): es lo
+  // que usa la búsqueda múltiple para traer exactamente lo que se buscó en vivo.
+  iniciar: (origen: string, destino: string, pares?: readonly [string, string][]) => { ok: true; estado: EstadoActualizacion } | { ok: false; motivo: string };
   estado: () => EstadoActualizacion;
   sonda: (origen: string, destino: string, fechaIda: string, flexDias: number) => Promise<Sonda>;
 }
@@ -47,10 +49,10 @@ export const crearServicioActualizacion = (op: { directorioDatos: string; rutaCo
   const candado = resolve(op.directorioDatos, "local", "precios.lock");
   let estado: EstadoActualizacion = { enCurso: false, origen: null, destino: null, pedidos: 0, total: 0, tarifasNuevas: 0, iniciadoEn: null, terminadoEn: null, error: null };
 
-  const correr = async (cliente: ClienteDataApi, origen: string, destino: string) => {
+  const correr = async (cliente: ClienteDataApi, origen: string, destino: string, soloPares: readonly [string, string][] | undefined) => {
     try {
       const b = crearBajada({ cliente, archivo, config });
-      const pares = paresDelModelo(op.espacio(), origen, destino, b.hoyMs);
+      const pares = soloPares ?? paresDelModelo(op.espacio(), origen, destino, b.hoyMs);
       estado = { ...estado, total: pares.length };
       for (const [o, d] of pares) {
         await b.bajarPar(o, d, null);
@@ -68,13 +70,13 @@ export const crearServicioActualizacion = (op: { directorioDatos: string; rutaCo
   return {
     disponible: op.cliente !== null,
     estado: () => estado,
-    iniciar: (origen, destino) => {
+    iniciar: (origen, destino, pares) => {
       const cliente = op.cliente;
       if (!cliente) return { ok: false, motivo: "El servidor no tiene TRAVELPAYOUTS_TOKEN: la actualización a pedido necesita el token en el entorno de la API" };
       if (estado.enCurso) return { ok: false, motivo: `Ya hay una actualización en curso (${estado.origen}→${estado.destino}, ${estado.pedidos}/${estado.total})` };
       if (!tomarCandado(candado)) return { ok: false, motivo: "Hay una bajada en curso fuera de la app (la corrida nocturna): esperá a que termine" };
       estado = { enCurso: true, origen, destino, pedidos: 0, total: 0, tarifasNuevas: 0, iniciadoEn: new Date().toISOString(), terminadoEn: null, error: null };
-      void correr(cliente, origen, destino);
+      void correr(cliente, origen, destino, pares);
       return { ok: true, estado };
     },
     // Ventana fechaIda ± flexDias: un pedido por mes que toque la ventana (la API devuelve el mínimo de cada día del mes).

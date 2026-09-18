@@ -6,6 +6,7 @@ import type { ServicioActualizacion } from "../servicios/actualizacion";
 import type { ServicioMercado } from "../servicios/mercado";
 
 const ConsultaPar = z.object({ origen: IataAeropuerto, destino: z.union([IataAeropuerto, Continente]) }).refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" });
+const CuerpoPares = z.object({ pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto })).min(1).max(500).optional() });
 const ConsultaSonda = z.object({ origen: IataAeropuerto, destino: IataAeropuerto, fechaIda: FechaIso, flexDias: z.coerce.number().int().min(0).max(45).default(0) }).refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" });
 const Consulta = z
   .object({ origen: IataAeropuerto, destino: z.union([IataAeropuerto, Continente]), fechaIda: FechaIso, flexDias: z.coerce.number().int().min(0).max(45).optional() })
@@ -19,7 +20,9 @@ export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercad
   app.post("/mercado/actualizar", async (req, reply) => {
     const consulta = ConsultaPar.safeParse(req.query);
     if (!consulta.success) return reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
-    const r = actualizacion().iniciar(consulta.data.origen, consulta.data.destino);
+    const cuerpo = CuerpoPares.safeParse(req.body ?? {});
+    if (!cuerpo.success) return reply.code(400).send({ error: cuerpo.error.issues.map((i) => i.message).join("; ") });
+    const r = actualizacion().iniciar(consulta.data.origen, consulta.data.destino, cuerpo.data.pares?.map((p) => [p.origen, p.destino]));
     return r.ok ? r.estado : reply.code(409).send({ error: r.motivo });
   });
   app.get("/mercado/actualizar/estado", async () => actualizacion().estado());

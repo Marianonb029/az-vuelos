@@ -24,7 +24,9 @@ export const obtenerFechas = (origen: string, destino: string) => pedir(FechasMe
 const EstadoActualizacion = z.object({ enCurso: z.boolean(), origen: z.string().nullable(), destino: z.string().nullable(), pedidos: z.number(), total: z.number(), tarifasNuevas: z.number(), iniciadoEn: z.string().nullable(), terminadoEn: z.string().nullable(), error: z.string().nullable() });
 export type EstadoActualizacion = z.infer<typeof EstadoActualizacion>;
 const Sonda = z.object({ origen: z.string(), destino: z.string(), fechaIda: z.string(), desde: z.string(), hasta: z.string(), tarifas: z.number(), dias: z.number(), ultimoVisto: z.string().nullable(), minUsd: z.number().nullable() });
-export const iniciarActualizacion = (origen: string, destino: string) => pedir(EstadoActualizacion, `/mercado/actualizar?origen=${origen}&destino=${destino}`, { method: "POST" });
+// Sin `pares`: los pares del modelo para el par; con `pares`: sólo esos (búsqueda múltiple).
+export const iniciarActualizacion = (origen: string, destino: string, pares?: { origen: string; destino: string }[]) =>
+  pedir(EstadoActualizacion, `/mercado/actualizar?origen=${origen}&destino=${destino}`, pares ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pares }) } : { method: "POST" });
 export const estadoActualizacion = () => pedir(EstadoActualizacion, "/mercado/actualizar/estado");
 export const sonda = (origen: string, destino: string, fechaIda: string, flexDias: number) => pedir(Sonda, `/mercado/sonda?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}&flexDias=${flexDias}`);
 

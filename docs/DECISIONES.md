@@ -635,6 +635,15 @@ Pregunta del dueño: por qué aviasales.com muestra ASU → LIS el 19/01/2027 (U
 - Los enlaces "abrir en Aviasales" de cada boleto llevan el marker.
 - **Regla 3 ajustada**: la app sigue sin leer sitios de terceros; sí puede llamar a una **API oficial con el token del servidor, a pedido de la persona** (actualizar un par, sondar un par y día). La bajada masiva sigue siendo del script.
 
+## Fase 19 (18/09/2026) — búsqueda múltiple: una lista de rutas, la app busca en vivo cada una y trae todo con un pedido por par
+
+Pedido del dueño: hacer varias búsquedas de rutas y actualizar el cache una sola vez, sin nada manual de su parte ("suena a que yo tengo que hacerlo"), y ver cuándo se está buscando y cuándo quedó ✓.
+
+- **Búsqueda múltiple** (`BusquedaMultiple.tsx`, plegado en Rutas): lista de pares (agregar/quitar), una fecha y una ventana (sólo ese día / ±3 / ±7 / ±15). Un botón: la app abre **una sola ventana** de Aviasales (`window.open` con nombre fijo: el primer paso es el gesto de la persona, los siguientes sólo navegan esa misma ventana, así el bloqueador de ventanas no interviene) y la lleva por cada búsqueda par × día a `mercado.segundosPorBusquedaEnVivo` **45 s** (lo que tarda una búsqueda en vivo en completarse y quedar en el cache; ritmo humano), hasta `maxBusquedasEnVivo` 200 por lista. **No se lee nada** de esa ventana: sigue siendo Aviasales buscando en el navegador de la persona con su marker. Cada búsqueda se ve con su estado (○ pendiente, ◔ buscando, ✓ buscada, — sin hacer), un mensaje dice cuál va y cuánto falta, hay "Detener", y si la persona cierra la ventana las restantes quedan "sin hacer" y lo ya buscado se trae igual.
+- **Traer sólo lo buscado**: `POST /mercado/actualizar` acepta `{ pares }` y entonces baja **un pedido por par** (sin mes, todos los días) en vez de los ~90 pares del modelo. 10 rutas × 15 días = 150 búsquedas en Aviasales y **10 pedidos** a la Data API. Al terminar las búsquedas espera 1 minuto (publicación en el cache), trae, y **repasa a los 3 minutos** por si Aviasales publicó tarde; muestra "✓ traídas al sistema: N tarifas en M pares". Un clic en un par de la lista lo lleva al formulario de Rutas para ver su tabla y calendario.
+- Sobre "ahorrar token": la Data API no tiene cupo ni cobro; lo que se ahorra son pedidos y tiempo (2 min por par con el modelo contra 1 segundo por par acá).
+- **Candado con PID** (`bajada.ts`): si la API muere a mitad de una actualización (pasó al reiniciarla), el candado quedaba 3 h; ahora guarda el PID y se pisa si ese proceso ya no existe.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

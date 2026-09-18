@@ -140,7 +140,8 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
 
   const cobertura = (): CoberturaMercado => {
     const { dataset } = leerDataset();
-    if (!dataset) return { actualizadoEn: null, ...enVivo, grupos: [], aeropuertos: [], pares: [] };
+    const configVivo = { segundosPorBusquedaEnVivo: config.mercado.segundosPorBusquedaEnVivo, maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo };
+    if (!dataset) return { actualizadoEn: null, ...enVivo, ...configVivo, grupos: [], aeropuertos: [], pares: [] };
     const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
     const sumar = (iata: string, rol: "comoOrigen" | "comoDestino") => {
       const c = conteo.get(iata) ?? { comoOrigen: 0, comoDestino: 0 };
@@ -162,6 +163,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     return {
       actualizadoEn: dataset.actualizadoEn,
       ...enVivo,
+      ...configVivo,
       grupos,
       aeropuertos: [...conteo].map(([iata, c]) => ({ iata, ...c })).sort((a, b) => b.comoOrigen + b.comoDestino - (a.comoOrigen + a.comoDestino) || a.iata.localeCompare(b.iata)),
       pares: [...pares].map(([k, tarifas]) => ({ origen: k.slice(0, 3), destino: k.slice(4), tarifas })).sort((a, b) => b.tarifas - a.tarifas),
