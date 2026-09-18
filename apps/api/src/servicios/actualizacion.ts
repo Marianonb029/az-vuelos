@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { sumarDias } from "@az/core";
 import { ConfigEspacio } from "@az/espacio";
 import { crearBajada, paresDelModelo, soltarCandado, tomarCandado } from "./bajada";
 import type { ClienteDataApi } from "./bajada";
@@ -25,7 +26,10 @@ export interface Sonda {
   origen: string;
   destino: string;
   fechaIda: string;
-  tarifas: number; // en el cache para ese par y día
+  desde: string; // ventana vigilada (fechaIda ± flexDias)
+  hasta: string;
+  tarifas: number; // en el cache para ese par dentro de la ventana
+  dias: number; // días distintos de la ventana con alguna tarifa
   ultimoVisto: string | null; // la más reciente (search_date del enlace, AAAA-MM-DD)
   minUsd: number | null;
 }
@@ -34,7 +38,7 @@ export interface ServicioActualizacion {
   disponible: boolean; // hay token en el entorno del servidor
   iniciar: (origen: string, destino: string) => { ok: true; estado: EstadoActualizacion } | { ok: false; motivo: string };
   estado: () => EstadoActualizacion;
-  sonda: (origen: string, destino: string, fechaIda: string) => Promise<Sonda>;
+  sonda: (origen: string, destino: string, fechaIda: string, flexDias: number) => Promise<Sonda>;
 }
 
 export const crearServicioActualizacion = (op: { directorioDatos: string; rutaConfig: string; espacio: () => ServicioEspacio; cliente: ClienteDataApi | null }): ServicioActualizacion => {
@@ -73,17 +77,21 @@ export const crearServicioActualizacion = (op: { directorioDatos: string; rutaCo
       void correr(cliente, origen, destino);
       return { ok: true, estado };
     },
-    sonda: async (origen, destino, fechaIda) => {
+    // Ventana fechaIda ± flexDias: un pedido por mes que toque la ventana (la API devuelve el mínimo de cada día del mes).
+    sonda: async (origen, destino, fechaIda, flexDias) => {
       const cliente = op.cliente;
       if (!cliente) throw new Error("El servidor no tiene TRAVELPAYOUTS_TOKEN");
-      const items = (await cliente(origen, destino, fechaIda)) ?? [];
-      const delPar = items.filter((it) => it.origin_airport === origen && it.destination_airport === destino && it.departure_at?.slice(0, 10) === fechaIda);
+      const desde = sumarDias(fechaIda, -flexDias);
+      const hasta = sumarDias(fechaIda, flexDias);
+      const meses = [...new Set([desde.slice(0, 7), hasta.slice(0, 7)])];
+      const items = (await Promise.all(meses.map((mes) => cliente(origen, destino, mes)))).flatMap((x) => x ?? []);
+      const enVentana = items.filter((it) => it.origin_airport === origen && it.destination_airport === destino && (it.departure_at?.slice(0, 10) ?? "") >= desde && (it.departure_at?.slice(0, 10) ?? "") <= hasta);
       const vistoEn = (enlace: string) => {
         const m = /search_date=(\d{2})(\d{2})(\d{4})/.exec(enlace);
         return m ? `${m[3]}-${m[2]}-${m[1]}` : "";
       };
-      const vistos = delPar.map((it) => vistoEn(it.link ?? "")).filter((v) => v !== "").sort();
-      return { origen, destino, fechaIda, tarifas: delPar.length, ultimoVisto: vistos.at(-1) ?? null, minUsd: delPar.length ? Math.min(...delPar.map((it) => it.price ?? Number.POSITIVE_INFINITY)) : null };
+      const vistos = enVentana.map((it) => vistoEn(it.link ?? "")).filter((v) => v !== "").sort();
+      return { origen, destino, fechaIda, desde, hasta, tarifas: enVentana.length, dias: new Set(enVentana.map((it) => it.departure_at?.slice(0, 10))).size, ultimoVisto: vistos.at(-1) ?? null, minUsd: enVentana.length ? Math.min(...enVentana.map((it) => it.price ?? Number.POSITIVE_INFINITY)) : null };
     },
   };
 };

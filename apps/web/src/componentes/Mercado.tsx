@@ -164,7 +164,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           <Campo id="m-ida" etiqueta="Fecha de ida (en verde, los días con tarifas)" error={errores.ida}>
             <CalendarioFechas fechas={fechas?.fechas ?? null} valor={fechaIda} onCambio={setFechaIda} hoy={hoy} cargando={cargandoFechas} />
           </Campo>
-          <Campo id="m-flex" etiqueta="Salida">
+          <Campo id="m-flex" etiqueta="Salida (ventana para la tabla y para los enlaces en vivo)">
             <Toggle id="m-flex" valor={flex} opciones={FLEX} onCambio={cambiarFlex} />
           </Campo>
           <button type="submit" disabled={cargando} className="rounded-md bg-sky-600 px-5 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50">
@@ -172,7 +172,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
           </button>
         </div>
         {origen && destino && !esContinente(destino) && (
-          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
+          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
         )}
       </form>
       {error && (

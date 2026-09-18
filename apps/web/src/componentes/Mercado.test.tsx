@@ -88,6 +88,10 @@ describe("Mercado", () => {
     // Enlaces en vivo con el marker de afiliado y el botón de búsqueda en vivo para el par y la fecha.
     expect((screen.getAllByRole("link", { name: "abrir en Aviasales" })[0] as HTMLAnchorElement).href).toBe("https://www.aviasales.com/search/ASU1901MAD1?t=x&marker=123456");
     expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales (19/01/2027) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
+    // Con ±7 días, un enlace en vivo por cada día de la ventana (15), con el marker.
+    const enlacesVivo = screen.getByTestId("en-vivo-dias").querySelectorAll("a");
+    expect(enlacesVivo).toHaveLength(15);
+    expect(enlacesVivo[0]?.getAttribute("href")).toBe("https://www.aviasales.com/search/ASU1201MAD1?marker=123456");
     expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
   });
 });

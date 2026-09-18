@@ -36,8 +36,13 @@ describe("actualización a pedido (Fase 18)", () => {
   it("la sonda cuenta tarifas del par y día, y cuándo se vio la más reciente", async () => {
     const s = crearServicioActualizacion({ directorioDatos: carpeta, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente });
     expect(s.disponible).toBe(true);
-    expect(await s.sonda("ASU", "LIS", "2027-01-19")).toEqual({ origen: "ASU", destino: "LIS", fechaIda: "2027-01-19", tarifas: 1, ultimoVisto: "2026-09-17", minUsd: 670 });
-    expect(pedidos.at(-1)).toBe("ASU|LIS|2027-01-19");
+    expect(await s.sonda("ASU", "LIS", "2027-01-19", 0)).toEqual({ origen: "ASU", destino: "LIS", fechaIda: "2027-01-19", desde: "2027-01-19", hasta: "2027-01-19", tarifas: 1, dias: 1, ultimoVisto: "2026-09-17", minUsd: 670 });
+    expect(pedidos.at(-1)).toBe("ASU|LIS|2027-01"); // un pedido por mes de la ventana
+    // Una ventana que cruza dos meses: dos pedidos; lo que cae fuera de la ventana no cuenta.
+    pedidos.length = 0;
+    const cruce = await s.sonda("ASU", "LIS", "2027-01-30", 3);
+    expect(pedidos).toEqual(["ASU|LIS|2027-01", "ASU|LIS|2027-02"]);
+    expect(cruce).toMatchObject({ desde: "2027-01-27", hasta: "2027-02-02", tarifas: 0, dias: 0, minUsd: null });
   });
 
   it("baja los pares del modelo para el par, guarda el dataset y deja el estado terminado; no corre dos a la vez", async () => {

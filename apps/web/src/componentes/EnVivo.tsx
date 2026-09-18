@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
-import { fechaCorta } from "@az/core";
+import { fechaCorta, sumarDias } from "@az/core";
 import { estadoActualizacion, iniciarActualizacion, sonda } from "../lib/api";
 
 interface Props {
   origen: string;
   destino: string; // aeropuerto (con continente no hay búsqueda en vivo)
   fechaIda: string;
+  flexDias: number; // la ventana "Salida": un enlace en vivo por cada día, y la vigilancia mira toda la ventana
   marker: string | null;
   disponible: boolean; // el servidor tiene el token
   onActualizado: () => void; // el dataset cambió: rehacer calendario y mercado
@@ -23,7 +24,8 @@ type Fase = "quieto" | "vigilando" | "actualizando";
 // Fase 18: búsqueda en vivo en aviasales.com (la hace la persona en su navegador; la app no lee la pantalla) y
 // vigilancia: cada minuto una sonda de un pedido a la Data API pregunta si Aviasales ya publicó esa búsqueda en el
 // cache; cuando aparece, se baja el par y la tabla se rehace. "Actualizar este par" hace lo segundo a mano.
-export const EnVivo = ({ origen, destino, fechaIda, marker, disponible, onActualizado }: Props) => {
+export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible, onActualizado }: Props) => {
+  const dias = fechaIda === "" ? [] : Array.from({ length: flexDias * 2 + 1 }, (_, i) => sumarDias(fechaIda, i - flexDias)).filter((f) => f >= new Date().toISOString().slice(0, 10));
   const [fase, setFase] = useState<Fase>("quieto");
   const [mensaje, setMensaje] = useState<string | null>(null);
   const vivo = useRef(true);
@@ -71,19 +73,20 @@ export const EnVivo = ({ origen, destino, fechaIda, marker, disponible, onActual
     }
     setFase("vigilando");
     try {
-      const base = await sonda(origen, destino, fechaIda);
+      const base = await sonda(origen, destino, fechaIda, flexDias);
+      const ventana = flexDias === 0 ? `el ${fechaCorta(fechaIda)}` : `entre ${fechaCorta(base.desde)} y ${fechaCorta(base.hasta)} (${dias.length} días: abrí los demás desde los enlaces)`;
       for (let i = 1; i <= SONDA_INTENTOS && vivo.current; i++) {
-        setMensaje(`Se abrió la búsqueda en vivo en Aviasales (${fechaCorta(fechaIda)}). Esperando que Aviasales la publique en su cache… ${i} min (ahora hay ${base.tarifas} tarifas para ese día${base.minUsd !== null ? `, desde USD ${base.minUsd}` : ""}${base.ultimoVisto ? `, la última vista el ${fechaCorta(base.ultimoVisto)}` : ""}).`);
+        setMensaje(`Se abrió la búsqueda en vivo en Aviasales (${fechaCorta(fechaIda)}). Vigilando ${ventana}: ${i} min. Ahora hay ${base.tarifas} tarifas en ${base.dias} días${base.minUsd !== null ? `, desde USD ${base.minUsd}` : ""}${base.ultimoVisto ? `, la última vista el ${fechaCorta(base.ultimoVisto)}` : ""}.`);
         await esperar(SONDA_CADA_MS);
         if (!vivo.current) return;
-        const ahora = await sonda(origen, destino, fechaIda);
-        if (ahora.tarifas > base.tarifas || (ahora.ultimoVisto ?? "") > (base.ultimoVisto ?? "") || ahora.minUsd !== base.minUsd) {
-          setMensaje(`Aviasales publicó tu búsqueda (${ahora.tarifas} tarifas ese día, desde USD ${ahora.minUsd ?? "?"}). Trayéndola al sistema…`);
+        const ahora = await sonda(origen, destino, fechaIda, flexDias);
+        if (ahora.tarifas > base.tarifas || ahora.dias > base.dias || (ahora.ultimoVisto ?? "") > (base.ultimoVisto ?? "") || ahora.minUsd !== base.minUsd) {
+          setMensaje(`Aviasales publicó tu búsqueda (${ahora.tarifas} tarifas en ${ahora.dias} días, desde USD ${ahora.minUsd ?? "?"}). Trayéndola al sistema…`);
           await actualizar();
           return;
         }
       }
-      if (vivo.current) setMensaje("Pasaron 15 minutos y Aviasales no publicó nada nuevo para ese día. Podés tocar 'Actualizar este par' más tarde.");
+      if (vivo.current) setMensaje("Pasaron 15 minutos y Aviasales no publicó nada nuevo en esa ventana. Podés tocar 'Actualizar este par' más tarde.");
     } catch (err: unknown) {
       setMensaje(`La vigilancia falló: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -101,6 +104,16 @@ export const EnVivo = ({ origen, destino, fechaIda, marker, disponible, onActual
           Actualizar este par ahora
         </button>
       </div>
+      {dias.length > 1 && (
+        <p className="text-xs text-slate-600" data-testid="en-vivo-dias">
+          Ventana "Salida" ±{flexDias}: un enlace en vivo por día (cada clic abre esa búsqueda; todas entran al cache y una sola actualización las trae):{" "}
+          {dias.map((f) => (
+            <a key={f} href={urlAviasales(origen, destino, f, marker)} target="_blank" rel="noreferrer" className={`mr-1 whitespace-nowrap underline ${f === fechaIda ? "font-semibold text-sky-800" : "text-sky-700"}`}>
+              {fechaCorta(f).slice(0, 5)}
+            </a>
+          ))}
+        </p>
+      )}
       {mensaje && (
         <p role="status" className="text-xs text-slate-600" data-testid="en-vivo-estado">
           {mensaje}
