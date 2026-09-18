@@ -7,6 +7,7 @@ import type { PrecioCacheado } from "@az/core";
 import { crearApp } from "../app";
 import { config } from "../config";
 import { crearServicioEspacio } from "../servicios/espacio";
+import { crearServicioActualizacion } from "../servicios/actualizacion";
 import { crearServicioMercado } from "../servicios/mercado";
 
 const HORA = 3600;
@@ -55,7 +56,8 @@ writeFileSync(
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
 const mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio, () => new Date("2026-09-17T12:00:00Z"), rutaPrecios);
 const feriados = { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) };
-const app = crearApp({ espacio: () => espacio, mercado: () => mercado, feriados, rutaTendencias: join(carpeta, "tendencias.json") });
+const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: null });
+const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpeta, "tendencias.json") });
 
 describe("GET /mercado", () => {
   it("arma las combinaciones del dataset con el orden del dueño y la ficha del dataset", async () => {

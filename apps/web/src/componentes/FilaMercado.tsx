@@ -1,6 +1,8 @@
 import type { BoletoMercado, Combinacion, ResultadoMercado } from "@az/core";
 
 const AVIASALES = "https://www.aviasales.com";
+// El enlace de cada tarifa abre esa búsqueda en Aviasales (en vivo); con marker, la búsqueda queda atribuida.
+const conMarker = (enlace: string, marker: string | null) => (marker ? `${enlace}${enlace.includes("?") ? "&" : "?"}marker=${encodeURIComponent(marker)}` : enlace);
 
 export const horas = (min: number) => `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")} min`;
 // Las horas del enlace son locales expresadas como epoch: se leen como UTC para no correrlas al huso del navegador.
@@ -11,13 +13,13 @@ export const horaLocal = (epoch: number) => {
 
 const equipaje = (mano: boolean | null, bodega: boolean | null) => (mano === null && bodega === null ? "no informado" : `mano ${mano === null ? "?" : mano ? "sí" : "no"} · bodega ${bodega === null ? "?" : bodega ? "sí" : "no"}`);
 
-const Boleto = ({ b, nombre }: { b: BoletoMercado; nombre: (iata: string) => string }) => (
+const Boleto = ({ b, nombre, marker }: { b: BoletoMercado; nombre: (iata: string) => string; marker: string | null }) => (
   <span className="block">
     {b.esperaMin !== null && <span className="block text-slate-500">espera {horas(b.esperaMin)} en {b.origen} (otro boleto: sin protección de conexión)</span>}
     <span className="font-medium text-slate-900">{b.itinerario.join(" → ")}</span> · {nombre(b.aerolinea)} {b.numeroVuelo && `${b.aerolinea} ${b.numeroVuelo}`} · USD {b.precioUsd.toLocaleString("es")} · {b.transbordos === 0 ? "directo" : `${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}`} · {horas(b.duracionMin)} · sale {horaLocal(b.salidaEpoch)}, llega {horaLocal(b.llegadaEpoch)} (hora local)
     <span className="block text-slate-500">
       {equipaje(b.equipajeMano, b.equipajeBodega)} · vendía {b.agencia || "?"} · visto {b.vistoEn.slice(5)} ·{" "}
-      <a href={`${AVIASALES}${b.enlace}`} target="_blank" rel="noreferrer" className="text-sky-700 underline">
+      <a href={conMarker(`${AVIASALES}${b.enlace}`, marker)} target="_blank" rel="noreferrer" className="text-sky-700 underline">
         abrir en Aviasales
       </a>
     </span>
@@ -29,11 +31,12 @@ interface Props {
   posicion: number;
   resultado: ResultadoMercado;
   nombre: (iata: string) => string;
+  marker: string | null;
 }
 
 // Una fila por combinación, con las seis variables del orden a la vista: precio, equipaje, horas totales, escalas,
 // aerolíneas distintas; y la antigüedad de la tarifa con su desvío estimado.
-export const FilaMercado = ({ c, posicion, resultado, nombre }: Props) => {
+export const FilaMercado = ({ c, posicion, resultado, nombre, marker }: Props) => {
   const celda = "py-1.5 pr-3 align-top text-xs text-slate-700";
   const tasa = resultado.dataset?.tasaDesvioDiariaPct ?? 0;
   return (
@@ -41,7 +44,7 @@ export const FilaMercado = ({ c, posicion, resultado, nombre }: Props) => {
       <td className="py-1.5 pr-2 tabular-nums font-semibold text-slate-900">{posicion}</td>
       <td className="min-w-[28rem] py-1.5 pr-3 text-xs">
         {c.boletos.map((b, i) => (
-          <Boleto key={`${b.aerolinea}-${b.itinerario.join("")}-${i}`} b={b} nombre={nombre} />
+          <Boleto key={`${b.aerolinea}-${b.itinerario.join("")}-${i}`} b={b} nombre={nombre} marker={marker} />
         ))}
         {resultado.destinoEsContinente && <span className="mt-0.5 block font-medium text-slate-800">→ llega a {c.llegaA} ({resultado.aeropuertos.find((a) => a.iata === c.llegaA)?.ciudad ?? ""})</span>}
       </td>

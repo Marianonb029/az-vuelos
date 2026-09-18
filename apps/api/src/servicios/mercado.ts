@@ -29,7 +29,7 @@ const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"
 // Fase 15/16: el mercado. Lo que la API de Travelpayouts tiene (data/local/precios.json, `pnpm precios`) para
 // llegar del origen a un destino —un aeropuerto o un continente entero—, saliendo del aeropuerto pedido o de un
 // alternativo del modelo, en uno o dos boletos, con el orden del dueño. El dataset se lee en cada consulta.
-export const crearServicioMercado = (directorioDatos: string, rutaConfig: string, espacio: () => ServicioEspacio, ahora = () => new Date(), rutaPrecios = resolve(directorioDatos, "local", "precios.json")): ServicioMercado => {
+export const crearServicioMercado = (directorioDatos: string, rutaConfig: string, espacio: () => ServicioEspacio, ahora = () => new Date(), rutaPrecios = resolve(directorioDatos, "local", "precios.json"), enVivo: { marker: string | null; actualizacionDisponible: boolean } = { marker: null, actualizacionDisponible: false }): ServicioMercado => {
   const config = ConfigEspacio.parse(leerJson(rutaConfig));
   const aeropuertos = new Map(z.array(AeropuertoGeo).parse(leerJson(resolve(directorioDatos, "aeropuertos-geo.json"))).map((a) => [a.iata, a]));
   const nombres = new Map(z.array(NombreAerolinea).parse(leerJson(resolve(directorioDatos, "aerolineas-rutas.json"))).map((a) => [a.iata, a.nombre]));
@@ -140,7 +140,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
 
   const cobertura = (): CoberturaMercado => {
     const { dataset } = leerDataset();
-    if (!dataset) return { actualizadoEn: null, grupos: [], aeropuertos: [], pares: [] };
+    if (!dataset) return { actualizadoEn: null, ...enVivo, grupos: [], aeropuertos: [], pares: [] };
     const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
     const sumar = (iata: string, rol: "comoOrigen" | "comoDestino") => {
       const c = conteo.get(iata) ?? { comoOrigen: 0, comoDestino: 0 };
@@ -161,6 +161,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     });
     return {
       actualizadoEn: dataset.actualizadoEn,
+      ...enVivo,
       grupos,
       aeropuertos: [...conteo].map(([iata, c]) => ({ iata, ...c })).sort((a, b) => b.comoOrigen + b.comoDestino - (a.comoOrigen + a.comoDestino) || a.iata.localeCompare(b.iata)),
       pares: [...pares].map(([k, tarifas]) => ({ origen: k.slice(0, 3), destino: k.slice(4), tarifas })).sort((a, b) => b.tarifas - a.tarifas),

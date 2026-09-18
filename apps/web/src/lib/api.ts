@@ -20,6 +20,14 @@ export const obtenerMercado = (origen: string, destino: string, fechaIda: string
 export const obtenerCobertura = () => pedir(CoberturaMercado, "/mercado/cobertura");
 export const obtenerFechas = (origen: string, destino: string) => pedir(FechasMercado, `/mercado/fechas?origen=${origen}&destino=${destino}`);
 
+// Fase 18: actualización a pedido y sonda del cache (búsqueda en vivo → Data API → tabla).
+const EstadoActualizacion = z.object({ enCurso: z.boolean(), origen: z.string().nullable(), destino: z.string().nullable(), pedidos: z.number(), total: z.number(), tarifasNuevas: z.number(), iniciadoEn: z.string().nullable(), terminadoEn: z.string().nullable(), error: z.string().nullable() });
+export type EstadoActualizacion = z.infer<typeof EstadoActualizacion>;
+const Sonda = z.object({ origen: z.string(), destino: z.string(), fechaIda: z.string(), tarifas: z.number(), ultimoVisto: z.string().nullable(), minUsd: z.number().nullable() });
+export const iniciarActualizacion = (origen: string, destino: string) => pedir(EstadoActualizacion, `/mercado/actualizar?origen=${origen}&destino=${destino}`, { method: "POST" });
+export const estadoActualizacion = () => pedir(EstadoActualizacion, "/mercado/actualizar/estado");
+export const sonda = (origen: string, destino: string, fechaIda: string) => pedir(Sonda, `/mercado/sonda?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}`);
+
 // Fase 17: todas las rutas que el grafo permite hacia un aeropuerto o continente, sin fecha ni precio.
 export const obtenerRutasPosibles = (origen: string, destino: string) => pedir(ResultadoRutasPosibles, `/rutas-posibles?origen=${origen}&destino=${destino}`);
 

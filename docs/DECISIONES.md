@@ -617,6 +617,24 @@ Pedido del dueño con una captura de ASU → LIS el 19/01/2027: el calendario ha
 - **Fuera el modelo plegado**: `RutasPriorizadas`, `FilaRuta`, `TableroModelo`, `ResultadosEspacio`, `CalendarioPresion` y las funciones de `api.ts` que los alimentaban se borran de la web (código muerto: Combinaciones cubre lo que aportaban). `GET /rutas` y `GET /espacio*` siguen en la API: los usan `pnpm precios ORIGEN DESTINO` y la exportación.
 - Glosario sin "Termina en X" ni la sección del modelo.
 
+## Fase 18 (17/09/2026) — búsqueda en vivo en Aviasales y "traer al sistema"; qué pasó con las APIs en vivo
+
+Pregunta del dueño: por qué aviasales.com muestra ASU → LIS el 19/01/2027 (USD 670 Gol vía GIG) y la app no. Respuesta: aviasales.com hace una **búsqueda en vivo**; el token gratuito da la **Data API**, un cache de lo que otros buscaron. Comprobado: su búsqueda entró al cache en minutos (USD 670, Gol 7761, 1 transbordo, 19 h, `search_date` de ese día) y `pnpm precios ASU LIS` la trajo.
+
+**Estado de las APIs en vivo (verificado ese día):**
+- **Aviasales Flight Search API**: sólo para proyectos con **50.000 usuarios mensuales**; el resto, Data API. Descartada.
+- **Amadeus Self-Service**: Amadeus **cerró el portal el 17/07/2026** (registro pausado antes, claves desactivadas); por eso el registro manda a Service Hub/PAD (plataforma empresarial) y nunca llega la contraseña. Descartada; se retira de README/DECISIONES como opción.
+- **Kiwi.com Tequila**: auto-registro cerrado desde 2024; nuevos socios sólo por invitación, con producto en vivo. Se manda la solicitud igual (texto en la conversación); sin expectativa.
+- **Duffel**: la única en vivo, oficial y self-service que queda: búsquedas a USD 0,005 cada una sin mínimo (1.000 = USD 5), modo test gratis; inventario GDS/NDC, cobertura menor en Sudamérica. Candidata si el dueño quiere precios en vivo por programa.
+- **Scraping** de aviasales.com o Google Flights (propio o tercerizado como SerpApi): descartado por términos, anti-bot y la regla 3.
+
+**Lo que se construyó con Aviasales sin aprobación:**
+- **"Buscar en vivo en Aviasales y traer al sistema"** (`EnVivo.tsx`, en Rutas con origen, destino aeropuerto y fecha): abre la búsqueda en vivo de Aviasales en una pestaña (`aviasales.com/search/ORIGENddmmDESTINO1`, con `marker` de afiliado si `TRAVELPAYOUTS_MARKER` está en el entorno del servidor); la búsqueda la hace la persona en su navegador y **la app no la lee**. Mientras tanto la app vigila: cada minuto, hasta 15, una **sonda** (`GET /mercado/sonda`, un pedido a la Data API para el par y el día) mira si cambió algo (más tarifas, una vista más nueva, otro mínimo); cuando cambia, dispara la actualización y la tabla y el calendario se rehacen.
+- **"Actualizar este par ahora"** (`POST /mercado/actualizar`, `GET /mercado/actualizar/estado`): baja los pares de boletos del modelo para el par (lo mismo que `pnpm precios ORIGEN DESTINO`, 85 pares ≈ 2 min) desde la Data API con el token del servidor y los agrega al dataset. Estado consultable (pedidos, total, tarifas nuevas, error). Una sola a la vez (409) y **candado** `data/local/precios.lock` compartido con el script, para que la corrida nocturna y la app no escriban el mismo archivo (el script se niega a arrancar si hay candado fresco; uno de más de 3 h se considera abandonado).
+- La lógica de bajada pasa a `apps/api/src/servicios/bajada.ts`, compartida por el script y la API (cliente de la Data API inyectable: los tests usan uno falso, sin red).
+- Los enlaces "abrir en Aviasales" de cada boleto llevan el marker.
+- **Regla 3 ajustada**: la app sigue sin leer sitios de terceros; sí puede llamar a una **API oficial con el token del servidor, a pedido de la persona** (actualizar un par, sondar un par y día). La bajada masiva sigue siendo del script.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
@@ -625,9 +643,9 @@ Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest
 
 La tabla de resultados se verifica con tests de componentes sobre `__fixtures__/`. En el navegador se ve el formulario y el estado vacío; no hay datos de demo.
 
-## Amadeus (Fase 5, después del checklist)
+## Amadeus (Fase 5, después del checklist) — ya no es opción
 
-Amadeus for Developers (Self-Service, `Flight Offers Search`) como **fuente secundaria**. Implica agregar `fuente: "sitio_oficial" | "amadeus_api"` a `Cotizacion`, evidencia JSON, y una sección separada en la UI. No se construye nada de esto antes de la Fase 5.
+Se había reservado Amadeus for Developers (Self-Service, `Flight Offers Search`) como fuente secundaria. Amadeus cerró ese portal el 17/07/2026 (ver Fase 18); la alternativa en vivo que queda es Duffel.
 
 ## Dependencias fuera del punto 3
 

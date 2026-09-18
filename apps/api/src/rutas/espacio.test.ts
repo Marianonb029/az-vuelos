@@ -7,6 +7,7 @@ import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoE
 import { crearApp } from "../app";
 import { config } from "../config";
 import { crearServicioEspacio } from "../servicios/espacio";
+import { crearServicioActualizacion } from "../servicios/actualizacion";
 import { crearServicioMercado } from "../servicios/mercado";
 
 const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
@@ -17,7 +18,8 @@ const feriados = {
   }),
 };
 const mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio);
-const app = crearApp({ espacio: () => espacio, mercado: () => mercado, feriados, rutaTendencias: join(mkdtempSync(join(tmpdir(), "az-tend-")), "tendencias.json") });
+const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: null });
+const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(mkdtempSync(join(tmpdir(), "az-tend-")), "tendencias.json") });
 
 describe("GET /espacio/calendario", () => {
   it("pide feriados de ambos países y devuelve el calendario con ventanas verdes y avisos", async () => {

@@ -8,11 +8,13 @@ import { listaJson } from "./repos/archivo-json";
 import { Tendencia } from "@az/core";
 import type { ServicioEspacio } from "./servicios/espacio";
 import type { ServicioFeriados } from "./servicios/feriados";
+import type { ServicioActualizacion } from "./servicios/actualizacion";
 import type { ServicioMercado } from "./servicios/mercado";
 
 export interface OpcionesApp {
   espacio: () => ServicioEspacio; // función: el refresco automático puede reemplazar el servicio con datasets nuevos
   mercado: () => ServicioMercado;
+  actualizacion: () => ServicioActualizacion;
   feriados: ServicioFeriados;
   rutaTendencias: string;
 }
@@ -23,7 +25,7 @@ export const crearApp = (op: OpcionesApp) => {
   const app = Fastify({ logger: false });
   const tendencias = listaJson(op.rutaTendencias, Tendencia);
   app.get("/salud", async () => ({ ok: true }));
-  rutasMercado(app, op.mercado);
+  rutasMercado(app, op.mercado, op.actualizacion);
   rutasPosibles(app, op.espacio);
   rutasPriorizadas(app, {
     espacio: op.espacio,

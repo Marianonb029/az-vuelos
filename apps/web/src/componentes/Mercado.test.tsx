@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
-const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
+const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", marker: "123456", actualizacionDisponible: true, grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
 const HORA = 3600;
 const boleto = (origen: string, destino: string, aerolinea: string, precioUsd: number, saleH: number, duraH: number, extra: Partial<BoletoMercado> = {}): BoletoMercado => ({
   origen, destino, aerolinea, numeroVuelo: "1848", fechaIda: "2027-01-19", transbordos: 0, duracionMin: duraH * 60, itinerario: [origen, destino], salidaEpoch: saleH * HORA, llegadaEpoch: (saleH + duraH) * HORA,
@@ -81,6 +81,10 @@ describe("Mercado", () => {
     expect(filas[0]).toContain("puede haberse movido ±5 % (1 %/día supuesto)");
     expect(filas[2]).toContain("vista hace 9 días · refrescar");
     expect(screen.getByTestId("nota-dataset").textContent).toMatch(/1 corridas, 1\.?590 tarifas vigentes, 900 para estos aeropuertos/);
+    // Enlaces en vivo con el marker de afiliado y el botón de búsqueda en vivo para el par y la fecha.
+    expect((screen.getAllByRole("link", { name: "abrir en Aviasales" })[0] as HTMLAnchorElement).href).toBe("https://www.aviasales.com/search/ASU1901MAD1?t=x&marker=123456");
+    expect(screen.getByRole("button", { name: "Buscar en vivo en Aviasales y traer al sistema" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
   });
 });
 

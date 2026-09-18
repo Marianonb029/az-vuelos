@@ -6,6 +6,7 @@ import type { Aeropuerto, CoberturaMercado, FechasMercado, ResultadoMercado } fr
 import { obtenerCobertura, obtenerFechas, obtenerMercado } from "../lib/api";
 import { Bloque } from "./Bloque";
 import { CalendarioFechas } from "./CalendarioFechas";
+import { EnVivo } from "./EnVivo";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
@@ -46,9 +47,9 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
   const [cargandoFechas, setCargandoFechas] = useState(false);
 
   // Con origen y destino elegidos se piden los días con combinaciones: el calendario habilita sólo esos.
+  const [version, setVersion] = useState(0); // sube cuando "Actualizar este par" cambió el dataset
   useEffect(() => {
     setFechas(null);
-    setFechaIda("");
     if (!origen || !destino || origen.iata === destino.iata) return;
     let activo = true;
     setCargandoFechas(true);
@@ -59,7 +60,12 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
     return () => {
       activo = false;
     };
-  }, [origen, destino]);
+  }, [origen, destino, version]);
+  useEffect(() => setFechaIda(""), [origen, destino]);
+  const actualizado = () => {
+    setVersion((v) => v + 1);
+    if (resultado) void buscarMercado(flex);
+  };
 
   // Qué aeropuertos tienen tarifas bajadas: con el campo vacío se sugieren esos (no el catálogo entero) y al
   // teclear se marca cuáles tienen datos.
@@ -165,6 +171,9 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
             {cargando ? "Buscando…" : "Buscar en el mercado"}
           </button>
         </div>
+        {origen && destino && !esContinente(destino) && (
+          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda || fechas?.fechas[0]?.fecha || hoy} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} onActualizado={actualizado} />
+        )}
       </form>
       {error && (
         <p role="alert" className="text-sm text-red-700">
@@ -219,7 +228,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
                         </td>
                       </tr>
                     )}
-                    <FilaMercado c={c} posicion={i + 1} resultado={resultado} nombre={nombre} />
+                    <FilaMercado c={c} posicion={i + 1} resultado={resultado} nombre={nombre} marker={cobertura?.marker ?? null} />
                   </Fragment>
                 ))}
               </tbody>
