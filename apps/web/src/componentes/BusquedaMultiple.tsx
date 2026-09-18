@@ -139,7 +139,7 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
     const primera = lista[0];
     if (!primera) return;
     // Una sola ventana: la primera búsqueda la abre (gesto de la persona); las demás sólo la navegan.
-    const ventana = window.open(urlAviasales(primera.origen, primera.destino, primera.fecha, marker), "az-vivo", "noopener");
+    const ventana = window.open(urlAviasales(primera.origen, primera.destino, primera.fecha, marker), "az-vivo");
     if (!ventana) {
       setMensaje("El navegador bloqueó la ventana de Aviasales: permití ventanas emergentes para esta página y volvé a intentar.");
       setFase("quieto");

@@ -56,7 +56,7 @@ describe("Búsqueda múltiple (Fase 19)", () => {
       fireEvent.click(boton);
     });
     // Primera búsqueda: abre la ventana con la URL de Aviasales y el marker; queda "buscando".
-    expect(open).toHaveBeenCalledWith("https://www.aviasales.com/search/ASU2001LIS1?marker=123456", "az-vivo", "noopener");
+    expect(open).toHaveBeenCalledWith("https://www.aviasales.com/search/ASU2001LIS1?marker=123456", "az-vivo");
     const estados = () => [...screen.getByTestId("bm-busquedas").querySelectorAll("li")].map((li) => li.getAttribute("data-estado"));
     expect(estados()).toEqual(["buscando", "pendiente"]);
     expect(screen.getByTestId("bm-estado").textContent).toContain("Búsqueda 1 de 2: ASU → LIS el 20/01/2027");

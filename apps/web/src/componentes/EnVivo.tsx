@@ -111,7 +111,7 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     setFase("buscando");
     const primera = lista[0];
     if (!primera) return;
-    const ventana = window.open(urlAviasales(origen, destino, primera.fecha, marker), "az-vivo", "noopener");
+    const ventana = window.open(urlAviasales(origen, destino, primera.fecha, marker), "az-vivo");
     if (!ventana) {
       setMensaje("El navegador bloqueó la ventana de Aviasales: permití ventanas emergentes para esta página y volvé a intentar.");
       setFase("quieto");
