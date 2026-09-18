@@ -53,13 +53,26 @@ export const crearClienteDataApi = (token: string, esperar = (ms: number) => new
   return (o, d, fecha) => pedir(o, d, fecha);
 };
 
-// Candado sobre el dataset: la corrida nocturna y la actualización a pedido no pueden escribir a la vez.
+// Candado sobre el dataset: la corrida nocturna y la actualización a pedido no pueden escribir a la vez. Guarda
+// el PID y la hora: si ese proceso ya no existe (se mató la API a mitad de una bajada) o pasaron más de 3 h, el
+// candado está abandonado y se pisa.
+const procesoVivo = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
 export const tomarCandado = (archivoCandado: string): boolean => {
   if (existsSync(archivoCandado)) {
-    const desde = Date.parse(readFileSync(archivoCandado, "utf8").trim());
-    if (Number.isFinite(desde) && Date.now() - desde < CANDADO_MAX_MS) return false;
+    const [pidTexto = "", iso = ""] = readFileSync(archivoCandado, "utf8").trim().split(" ");
+    const pid = Number(pidTexto);
+    const desde = Date.parse(iso);
+    const fresco = Number.isFinite(desde) && Date.now() - desde < CANDADO_MAX_MS;
+    if (fresco && (!Number.isFinite(pid) || pid === process.pid || procesoVivo(pid))) return false;
   }
-  writeFileSync(archivoCandado, new Date().toISOString(), "utf8");
+  writeFileSync(archivoCandado, `${process.pid} ${new Date().toISOString()}`, "utf8");
   return true;
 };
 export const soltarCandado = (archivoCandado: string) => {
