@@ -28,6 +28,7 @@ pnpm corroborar ASU GRU MAD         # aerolíneas por aeropuerto: Wikipedia cont
 pnpm precios [pedidos]              # bajada por continentes (bajada.grupos, en orden de prioridad); sigue donde quedó; se acumula sin borrar
 pnpm precios ASU MAD                # los pares de boletos del modelo para un par
 scripts\precios-nocturno.cmd        # lo que corre la tarea programada de Windows (03:00, diaria): pnpm precios sin pnpm (node + tsx); log en data/local
+scripts\az-vuelos.cmd               # levanta api + web permanentes (sin pnpm) y abre el navegador; tarea de Windows "AZ Vuelos - servidores" al iniciar sesión y acceso directo "AZ Vuelos" en el escritorio
 pnpm tendencia ASU MAD 2027-02-25   # etiqueta de precios de Google Flights para el par
 ```
 
