@@ -27,7 +27,7 @@ const resultado: ResultadoRutasPosibles = {
   aeropuertos: [{ iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción" }, { iata: "GRU", nombre: "Guarulhos", ciudad: "São Paulo" }, { iata: "LIS", nombre: "Humberto Delgado", ciudad: "Lisboa" }, { iata: "MAD", nombre: "Barajas", ciudad: "Madrid" }],
   avisos: [],
 };
-const cobertura = { actualizadoEn: null, marker: null, actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, grupos: [], aeropuertos: [], pares: [] };
+const cobertura = { actualizadoEn: null, marker: null, actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [], pares: [] };
 
 const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
   fireEvent.change(screen.getByRole("combobox", { name: etiqueta }), { target: { value: texto } });
@@ -44,22 +44,31 @@ describe("Combinaciones (Fase 17)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));
     await waitFor(() => expect(screen.getByTestId("resumen-posibles")).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledWith("/api/rutas-posibles?origen=ASU&destino=EU", undefined);
-    expect(screen.getByTestId("resumen-posibles").textContent).toContain("4 rutas · 2 aeropuertos de salida · 466 destinos considerados · 2 de un boleto y 2 de dos · 2 con tarifas en el mercado");
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("4 rutas · 2 aeropuertos de salida · 466 destinos considerados · 2 de un boleto y 2 de dos · 2 con tarifas en el mercado y 2 para buscar a mano · 2 con low cost");
     const origenes = screen.getAllByTestId("origen-posible").map((e) => e.textContent ?? "");
     expect(origenes[0]).toContain("Desde ASU (Asunción) — el aeropuerto pedido · 3 rutas a 2 destinos");
     expect(origenes[1]).toContain("Desde GRU (São Paulo) — a 1100 km de ASU · 1 rutas a 1 destinos");
     // Los destinos están plegados: al abrir MAD se ven sus rutas con vendedoras, operadoras y mercado.
     expect(screen.queryAllByTestId("fila-posible")).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: /→ MAD \(Madrid\) · 2 rutas: 1 de un boleto, 1 de dos · 1 con tarifas en el mercado/ }));
+    fireEvent.click(screen.getByRole("button", { name: /→ MAD \(Madrid\) · 2 rutas: 1 de un boleto, 1 de dos · 1 en el mercado, 1 a mano · 1 con low cost/ }));
     const filas = screen.getAllByTestId("fila-posible").map((f) => f.textContent ?? "");
     expect(filas).toHaveLength(2);
     expect(filas[0]).toContain("ASU → MAD");
     expect(filas[0]).toContain("Air Europa");
     expect(filas[0]).toContain("sí: 11 tarifas");
     expect(filas[1]).toContain("ASU → GRU → LIS → MAD2 boletos en GRU");
-    expect(filas[1]).toContain("ASU→GRU: GOL, LATAM");
+    expect(filas[1]).toContain("ASU→GRU: GOLlow cost, LATAM"); // GOL lleva el distintivo low cost (cobertura.aerolineasBajoCosto)
     expect(filas[1]).toContain("GRU→MAD: TAP");
-    expect(filas[1]).toContain("parcial: 29 + 0");
+    expect(filas[1]).toContain("parcial (29 + 0): buscar a mano");
+    expect(screen.getAllByTestId("fila-posible").map((f) => `${f.getAttribute("data-mercado")}/${f.getAttribute("data-low-cost")}`)).toEqual(["si/no", "no/si"]);
+    // "Sólo para buscar a mano" = Combinaciones menos Rutas: quedan las que el mercado no tiene; "sin low cost" saca las de GOL.
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sólo rutas para buscar a mano \(sin tarifas en el mercado: 2\)/ }));
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("2 rutas (sólo para buscar a mano)");
+    expect(screen.getAllByTestId("fila-posible")).toHaveLength(1);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost \(necesito bodega; con low cost: 2\)/ }));
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("0 rutas (sólo para buscar a mano) (sin low cost)");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sólo rutas para buscar a mano/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost/ }));
     // El filtro reduce a lo que contiene el texto (aeropuerto, ciudad o aerolínea).
     fireEvent.change(screen.getByLabelText("Filtrar (aeropuerto, ciudad o aerolínea)"), { target: { value: "Lisboa" } });
     expect(screen.getByTestId("resumen-posibles").textContent).toContain('1 rutas (filtro "Lisboa")');

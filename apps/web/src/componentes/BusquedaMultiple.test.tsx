@@ -8,7 +8,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "IGU", nombre: "Cataratas", ciudad: "Foz do Iguaçu", pais: "Brasil" },
   { iata: "LIS", nombre: "Humberto Delgado", ciudad: "Lisboa", pais: "Portugal" },
 ];
-const cobertura: CoberturaMercado = { actualizadoEn: "2026-09-18T00:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, grupos: [], aeropuertos: [], pares: [] };
+const cobertura: CoberturaMercado = { actualizadoEn: "2026-09-18T00:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [], pares: [] };
 
 const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
   fireEvent.change(screen.getByRole("combobox", { name: etiqueta }), { target: { value: texto } });

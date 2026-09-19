@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { diasEntre } from "./fechas";
 import { PrecioCacheado } from "./precios";
-import { Continente, FechaIso, IataAeropuerto } from "./schema";
+import { Continente, FechaIso, IataAerolinea, IataAeropuerto } from "./schema";
 
 // El mercado: lo que la API de Travelpayouts tiene para llegar de un origen a un destino, ordenado con el
 // criterio del dueño (Fase 15). Cada fila es una combinación de uno o dos boletos cacheados (el segundo sale del
@@ -80,6 +80,7 @@ export const CoberturaMercado = z.object({
   actualizacionDisponible: z.boolean(), // el servidor tiene el token: "Actualizar este par" funciona
   segundosPorBusquedaEnVivo: z.number().int().min(1), // búsqueda múltiple (config mercado)
   maxBusquedasEnVivo: z.number().int().min(1),
+  aerolineasBajoCosto: z.array(IataAerolinea), // perfil bajo costo (config fase6): la tarifa barata suele ser sólo con mano; Rutas y Combinaciones las marcan
   grupos: z.array(z.object({ prioridad: z.number().int(), grupo: z.string(), origen: z.array(Continente), destino: z.array(Continente), pares: z.number().int(), tarifas: z.number().int(), origenesDescubiertos: z.number().int(), origenesPendientes: z.number().int() })),
   aeropuertos: z.array(z.object({ iata: IataAeropuerto, comoOrigen: z.number().int().min(0), comoDestino: z.number().int().min(0) })), // tarifas vigentes que salen / llegan
   pares: z.array(z.object({ origen: IataAeropuerto, destino: IataAeropuerto, tarifas: z.number().int().min(0) })),

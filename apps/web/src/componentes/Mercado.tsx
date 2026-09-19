@@ -264,7 +264,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
                         </td>
                       </tr>
                     )}
-                    <FilaMercado c={c} posicion={i + 1} resultado={resultado} nombre={nombre} marker={cobertura?.marker ?? null} />
+                    <FilaMercado c={c} posicion={i + 1} resultado={resultado} nombre={nombre} marker={cobertura?.marker ?? null} bajoCosto={cobertura?.aerolineasBajoCosto ?? []} />
                   </Fragment>
                 ))}
               </tbody>

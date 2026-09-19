@@ -140,7 +140,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
 
   const cobertura = (): CoberturaMercado => {
     const { dataset } = leerDataset();
-    const configVivo = { segundosPorBusquedaEnVivo: config.mercado.segundosPorBusquedaEnVivo, maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo };
+    const configVivo = { segundosPorBusquedaEnVivo: config.mercado.segundosPorBusquedaEnVivo, maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto };
     if (!dataset) return { actualizadoEn: null, ...enVivo, ...configVivo, grupos: [], aeropuertos: [], pares: [] };
     const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
     const sumar = (iata: string, rol: "comoOrigen" | "comoDestino") => {

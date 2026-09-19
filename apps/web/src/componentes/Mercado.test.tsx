@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
-const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
+const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, aerolineasBajoCosto: ["G3"], grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
 const HORA = 3600;
 const boleto = (origen: string, destino: string, aerolinea: string, precioUsd: number, saleH: number, duraH: number, extra: Partial<BoletoMercado> = {}): BoletoMercado => ({
   origen, destino, aerolinea, numeroVuelo: "1848", fechaIda: "2027-01-19", transbordos: 0, duracionMin: duraH * 60, itinerario: [origen, destino], salidaEpoch: saleH * HORA, llegadaEpoch: (saleH + duraH) * HORA,
@@ -78,7 +78,7 @@ describe("Mercado", () => {
     expect(filas[0]).toContain("USD 630");
     expect(filas[0]).toContain("18 h 00 min");
     expect(filas[0]).toContain("2 escalas1 cambio de boleto");
-    expect(filas[0]).toContain("2GOL, TAP");
+    expect(filas[0]).toContain("2GOLlow cost, TAP"); // GOL con distintivo low cost (cobertura.aerolineasBajoCosto)
     expect(filas[0]).toContain("mano ? · bodega no");
     expect(filas[0]).toContain("sale 01/01 08:00, llega 01/01 10:00 (hora local)");
     expect(filas[0]).toContain("vista hace 5 días");
