@@ -1,8 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { Continente, DatasetPrecios, claveGrupo, diasEntre, preciarRuta, ultimos, ventanaBoleto } from "@az/core";
-import type { BoletoAPreciar, FuenteDato, PrecioCacheado } from "@az/core";
+import { Continente, claveGrupo, diasEntre, preciarRuta, ventanaBoleto } from "@az/core";
+import type { BoletoAPreciar, DatasetPrecios, FuenteDato, PrecioCacheado } from "@az/core";
 import {
   AeropuertoGeo,
   ConfigEspacio,
@@ -23,6 +23,7 @@ import {
   ventanasVerdes,
 } from "@az/espacio";
 import type { CandidatoAeropuerto, CorridaEspacio, Feriado, OrdenRutas, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, ResultadoRutasPosibles, Ventana } from "@az/espacio";
+import { lectorPrecios } from "./precios-cache";
 
 export type ResultadoServicioEspacio = { ok: true; resultado: ResultadoEspacio } | { ok: false; motivo: string };
 export type ResultadoServicioCalendario = { ok: true; resultado: ResultadoCalendario } | { ok: false; motivo: string };
@@ -71,13 +72,17 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const rutaEventos = resolve(directorioDatos, "eventos.json");
   const eventosDataset = existsSync(rutaEventos) ? DatasetEventos.parse(leerJson(rutaEventos)) : null;
   const config: ConfigEspacio = { ...configBase, fase5: { ...configBase.fase5, eventos: [...configBase.fase5.eventos, ...(eventosDataset?.eventos ?? [])] } };
-  // Precios cacheados de Travelpayouts (`pnpm precios`): se leen en cada priorización para reflejar la última
-  // corrida. Un archivo con formato anterior cuenta como "sin dataset" y Datos lo dice.
+  // Precios cacheados de Travelpayouts (`pnpm precios`): lector compartido que relee el archivo sólo cuando cambia
+  // (pesa decenas de MB). Un archivo con formato anterior cuenta como "sin dataset" y Datos lo dice.
   const rutaPrecios = resolve(directorioDatos, "local", "precios.json");
+  const leerPrecios = lectorPrecios(rutaPrecios);
   const precios = (): DatasetPrecios | null => {
-    if (!existsSync(rutaPrecios)) return null;
-    const parseado = DatasetPrecios.safeParse(leerJson(rutaPrecios));
-    return parseado.success ? parseado.data : null;
+    const l = leerPrecios();
+    return l.estado === "ok" ? l.dataset : null;
+  };
+  const vigentesPrecios = (): readonly PrecioCacheado[] => {
+    const l = leerPrecios();
+    return l.estado === "ok" ? l.vigentes : [];
   };
   const plegar = (iata: string) => configBase.grafo.equivalencias[iata] ?? iata;
   const dias = (iso: string) => Math.floor((ahora().getTime() - Date.parse(iso)) / 86_400_000);
@@ -96,7 +101,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
   const filaPrecios = (): { variable: string; fuente: string; actualizadoEn: string | null; detalle: string } => {
     const d = precios();
     if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: `Sin dataset legible${existsSync(rutaPrecios) ? " (formato anterior)" : ""}: \`pnpm precios\` baja por continentes (${configBase.bajada.grupos.map((g) => g.nota).join("; ")}) los precios encontrados por usuarios de Aviasales; \`pnpm precios ORIGEN DESTINO\`, los pares de boletos del modelo para un par (token gratuito en TRAVELPAYOUTS_TOKEN)` };
-    const vigentes = ultimos(d.precios);
+    const vigentes = vigentesPrecios();
     const desvio = d.desvio ? `desvío medido contra la corrida anterior: mediana ${d.desvio.medianaPct} %, p90 ${d.desvio.p90Pct} % sobre ${d.desvio.comparados} tarifas (${d.desvio.subieron} subieron, ${d.desvio.bajaron} bajaron)` : `sin corrida anterior para medir el desvío: se asume ${configBase.precios.desvioDiarioSupuestoPct} % por día desde que se vio cada tarifa`;
     const porGrupo = configBase.bajada.grupos.map((g) => `${g.nota}: ${d.pares.filter((p) => p.grupo === claveGrupo(g)).length} pares`).join("; ");
     return { variable: "Precios cacheados (Travelpayouts)", fuente: d.fuente, actualizadoEn: d.actualizadoEn, detalle: `${vigentes.length} tarifas vigentes (${d.precios.length - vigentes.length} de corridas anteriores conservadas ${configBase.precios.diasHistorial} días; ${d.corridas.length} corridas) en ${d.pares.length} pares, ${d.descubrimientos.length} aeropuertos de salida recorridos. Bajada por continentes, en orden de prioridad (${porGrupo}; ${d.pares.filter((p) => p.grupo === null).length} pedidos a mano); cada corrida sigue donde quedó la anterior, hasta ${configBase.bajada.maxPedidosPorCorrida} pedidos, y un par se vuelve a pedir pasados ${configBase.precios.cadenciaDias} días. ${desvio}. Cada fila de Rutas dice hace cuántos días se vio su tarifa y cuánto puede haberse movido. No son cotizaciones vivas` };
@@ -233,7 +238,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     // Precio por boleto con lo cacheado: el boleto único, los dos del separado (el segundo puede salir hasta
     // `margenDiasSegundoBoleto` después) y el vuelo aparte hacia/desde el alternativo.
     const dataset = precios();
-    const vigentes = dataset ? ultimos(dataset.precios) : [];
+    const vigentes = vigentesPrecios();
     // Indexadas por par: con decenas de miles de tarifas, cada boleto mira sólo las de su par.
     const porPar = new Map<string, PrecioCacheado[]>();
     for (const p of vigentes) {
@@ -297,7 +302,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     const separadas = generarSplitTickets(o.candidatos, destinos, grafo, config);
     const dataset = precios();
     const tarifasPorPar = new Map<string, number>();
-    for (const p of dataset ? ultimos(dataset.precios) : []) tarifasPorPar.set(`${p.origen}|${p.destino}`, (tarifasPorPar.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
+    for (const p of vigentesPrecios()) tarifasPorPar.set(`${p.origen}|${p.destino}`, (tarifasPorPar.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
     if (!dataset) avisos.push("Sin dataset de precios: la columna 'en el mercado' queda vacía hasta correr pnpm precios");
     const rutas = armarRutasPosibles({ origenes: o.candidatos, destinos, rutas: { conservadas: generadas.conservadas, descartadas: generadas.descartadas, separadas }, tarifasPorPar, trasladoTierraMaxKm: config.fase7.trasladoAereoDesdeKm }, grafo, new Map(aeropuertos.map((a) => [a.iata, a])));
     const mencionadas = new Set(rutas.flatMap((r) => [...r.aerolineas, ...r.aerolineasPrevio, ...r.tramos.flatMap((t) => t.aerolineas), ...(r.tramoFinal?.aerolineas ?? [])]));

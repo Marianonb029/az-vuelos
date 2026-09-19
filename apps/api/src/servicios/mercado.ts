@@ -1,10 +1,11 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { Continente, DatasetPrecios, armarCombinaciones, claveGrupo, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
-import type { AeropuertoCandidato, CoberturaMercado, FechasMercado, PrecioCacheado, ResultadoMercado } from "@az/core";
+import { Continente, armarCombinaciones, claveGrupo, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria } from "@az/core";
+import type { AeropuertoCandidato, CoberturaMercado, DatasetPrecios, FechasMercado, PrecioCacheado, ResultadoMercado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, NombreAerolinea } from "@az/espacio";
 import type { ServicioEspacio } from "./espacio";
+import { lectorPrecios } from "./precios-cache";
 
 export interface PedidoMercado {
   origen: string;
@@ -28,15 +29,17 @@ const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"
 
 // Fase 15/16: el mercado. Lo que la API de Travelpayouts tiene (data/local/precios.json, `pnpm precios`) para
 // llegar del origen a un destino —un aeropuerto o un continente entero—, saliendo del aeropuerto pedido o de un
-// alternativo del modelo, en uno o dos boletos, con el orden del dueño. El dataset se lee en cada consulta.
+// alternativo del modelo, en uno o dos boletos, con el orden del dueño. El dataset se relee cuando el archivo cambia.
 export const crearServicioMercado = (directorioDatos: string, rutaConfig: string, espacio: () => ServicioEspacio, ahora = () => new Date(), rutaPrecios = resolve(directorioDatos, "local", "precios.json"), enVivo: { marker: string | null; actualizacionDisponible: boolean } = { marker: null, actualizacionDisponible: false }): ServicioMercado => {
   const config = ConfigEspacio.parse(leerJson(rutaConfig));
   const aeropuertos = new Map(z.array(AeropuertoGeo).parse(leerJson(resolve(directorioDatos, "aeropuertos-geo.json"))).map((a) => [a.iata, a]));
   const nombres = new Map(z.array(NombreAerolinea).parse(leerJson(resolve(directorioDatos, "aerolineas-rutas.json"))).map((a) => [a.iata, a.nombre]));
-  const leerDataset = (): { dataset: DatasetPrecios | null; aviso: string | null } => {
-    if (!existsSync(rutaPrecios)) return { dataset: null, aviso: "Sin dataset de precios: `pnpm precios` baja las tarifas cacheadas de Travelpayouts por continentes; `pnpm precios ORIGEN DESTINO`, las de un par" };
-    const parseado = DatasetPrecios.safeParse(leerJson(rutaPrecios));
-    return parseado.success ? { dataset: parseado.data, aviso: null } : { dataset: null, aviso: "data/local/precios.json tiene un formato anterior: `pnpm precios` lo migra o lo aparta y lo rehace" };
+  const leerPrecios = lectorPrecios(rutaPrecios);
+  // Dataset y sus tarifas vigentes (la última corrida de cada tarifa), cacheados hasta que el archivo cambie.
+  const leerDataset = (): { dataset: DatasetPrecios | null; vigentes: readonly PrecioCacheado[]; aviso: string | null } => {
+    const l = leerPrecios();
+    if (l.estado === "ok") return { dataset: l.dataset, vigentes: l.vigentes, aviso: null };
+    return { dataset: null, vigentes: [], aviso: l.estado === "sin-archivo" ? "Sin dataset de precios: `pnpm precios` baja las tarifas cacheadas de Travelpayouts por continentes; `pnpm precios ORIGEN DESTINO`, las de un par" : "data/local/precios.json tiene un formato anterior: `pnpm precios` lo migra o lo aparta y lo rehace" };
   };
 
   // Candidatos: los orígenes son el pedido y sus alternativos del modelo (con km de traslado). La llegada es
@@ -59,8 +62,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
   // Días con al menos una combinación en todo el horizonte, con el mínimo de cada uno: el calendario del
   // formulario habilita sólo esos.
   const fechas = (origen: string, destino: string): ResultadoServicioFechas => {
-    const { dataset } = leerDataset();
-    const vigentes = dataset ? ultimos(dataset.precios) : [];
+    const { vigentes } = leerDataset();
     const c = candidatos(origen, destino, vigentes);
     if (!c.ok) return c;
     const hoy = ahora().toISOString().slice(0, 10);
@@ -78,9 +80,8 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     const hoy = ahora().toISOString().slice(0, 10);
     const desde = sumarDias(fechaIda, -flexDias) < hoy ? hoy : sumarDias(fechaIda, -flexDias);
     const hasta = sumarDias(fechaIda, flexDias);
-    const { dataset, aviso } = leerDataset();
+    const { dataset, vigentes, aviso } = leerDataset();
     const avisos = aviso ? [aviso] : [];
-    const vigentes = dataset ? ultimos(dataset.precios) : [];
     const c = candidatos(origen, destino, vigentes);
     if (!c.ok) return c;
     const { origenes, destinos } = c;
@@ -139,7 +140,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
   };
 
   const cobertura = (): CoberturaMercado => {
-    const { dataset } = leerDataset();
+    const { dataset, vigentes } = leerDataset();
     const configVivo = { segundosPorBusquedaEnVivo: config.mercado.segundosPorBusquedaEnVivo, maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto };
     if (!dataset) return { actualizadoEn: null, ...enVivo, ...configVivo, grupos: [], aeropuertos: [], pares: [] };
     const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
@@ -149,7 +150,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
       conteo.set(iata, c);
     };
     const pares = new Map<string, number>();
-    for (const p of ultimos(dataset.precios)) {
+    for (const p of vigentes) {
       sumar(p.origen, "comoOrigen");
       sumar(p.destino, "comoDestino");
       pares.set(`${p.origen}|${p.destino}`, (pares.get(`${p.origen}|${p.destino}`) ?? 0) + 1);
