@@ -89,22 +89,29 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     let traidas = 0;
     let tarifas = 0;
     for (let i = 1; i <= SONDA_PASADAS && vivo.current && !detener.current; i++) {
-      const ahora = await sonda(origen, destino, fechaIda, flexDias);
-      const cambio = previo === null || ahora.tarifas !== previo.tarifas || ahora.dias !== previo.dias || (ahora.ultimoVisto ?? "") > (previo.ultimoVisto ?? "") || ahora.minUsd !== previo.minUsd;
-      if (cambio) {
-        setMensaje(`Aviasales publicó ${origen} → ${destino} (${ahora.dias} de ${fechas.length} días con tarifas en el cache): trayéndolo…`);
-        tarifas += await esperarActualizacion(await iniciarActualizacion(origen, destino, [{ origen, destino }]));
-        traidas++;
-        onActualizado();
+      // Si el API no responde (servidor caído, red), la pasada se pierde pero la vigilancia sigue: lo buscado en
+      // Aviasales ya está en su cache y se trae en cuanto el API vuelva.
+      try {
+        const ahora = await sonda(origen, destino, fechaIda, flexDias);
+        const cambio = previo === null || ahora.tarifas !== previo.tarifas || ahora.dias !== previo.dias || (ahora.ultimoVisto ?? "") > (previo.ultimoVisto ?? "") || ahora.minUsd !== previo.minUsd;
+        if (cambio) {
+          setMensaje(`Aviasales publicó ${origen} → ${destino} (${ahora.dias} de ${fechas.length} días con tarifas en el cache): trayéndolo…`);
+          tarifas += await esperarActualizacion(await iniciarActualizacion(origen, destino, [{ origen, destino }]));
+          traidas++;
+          onActualizado();
+        }
+        previo = ahora;
+        setEnCache(ahora.dias);
+        if (ahora.dias >= fechas.length) {
+          setMensaje(`✓ Los ${fechas.length} días buscados están en el sistema (${tarifas} tarifas nuevas, traído ${traidas} ${traidas === 1 ? "vez" : "veces"}).`);
+          setTerminado(true);
+          return;
+        }
+        setMensaje(`Vigilando el cache: pasada ${i} de ${SONDA_PASADAS} (cada minuto). ${ahora.dias} de ${fechas.length} días con tarifas${ahora.minUsd !== null ? `, desde USD ${ahora.minUsd}` : ""}; traído ${traidas} ${traidas === 1 ? "vez" : "veces"} (${tarifas} tarifas nuevas).`);
+      } catch (err: unknown) {
+        if (!vivo.current) return;
+        setMensaje(`El API no respondió en la pasada ${i} de ${SONDA_PASADAS} (${err instanceof Error ? err.message : String(err)}): si el servidor está apagado, levantalo con pnpm dev; se reintenta en un minuto y lo buscado se trae igual.`);
       }
-      previo = ahora;
-      setEnCache(ahora.dias);
-      if (ahora.dias >= fechas.length) {
-        setMensaje(`✓ Los ${fechas.length} días buscados están en el sistema (${tarifas} tarifas nuevas, traído ${traidas} ${traidas === 1 ? "vez" : "veces"}).`);
-        setTerminado(true);
-        return;
-      }
-      setMensaje(`Vigilando el cache: pasada ${i} de ${SONDA_PASADAS} (cada minuto). ${ahora.dias} de ${fechas.length} días con tarifas${ahora.minUsd !== null ? `, desde USD ${ahora.minUsd}` : ""}; traído ${traidas} ${traidas === 1 ? "vez" : "veces"} (${tarifas} tarifas nuevas).`);
       await esperar(SONDA_CADA_MS);
     }
     if (vivo.current) {

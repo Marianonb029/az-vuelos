@@ -98,6 +98,7 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
     let pares = lista;
     for (let pasada = 1; pasada <= SONDA_PASADAS; pasada++) {
       if (detener.current) break;
+      let sinRespuesta: string | null = null; // último error del API en esta pasada (servidor caído, red): se reintenta en la próxima
       for (const p of pares) {
         if (p.completo) continue;
         try {
@@ -115,7 +116,7 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
           actualizarPar(p.origen, p.destino, { ultimo: ahora, traidas, tarifas, completo });
           pares = pares.map((x) => (x === p ? { ...x, ultimo: ahora, traidas, tarifas, completo } : x));
         } catch (err: unknown) {
-          setMensaje(`Falló la vigilancia de ${p.origen} → ${p.destino}: ${err instanceof Error ? err.message : String(err)}`);
+          sinRespuesta = err instanceof Error ? err.message : String(err);
         }
       }
       const listas = pares.filter((x) => x.completo).length;
@@ -124,7 +125,7 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
         setFase("listo");
         return;
       }
-      setMensaje(`Vigilando el cache de Aviasales: pasada ${pasada} de ${SONDA_PASADAS} (cada minuto). ${listas} de ${pares.length} rutas completas; ${pares.filter((x) => x.traidas > 0).length} ya traídas al menos una vez.`);
+      setMensaje(`Vigilando el cache de Aviasales: pasada ${pasada} de ${SONDA_PASADAS} (cada minuto). ${listas} de ${pares.length} rutas completas; ${pares.filter((x) => x.traidas > 0).length} ya traídas al menos una vez.${sinRespuesta ? ` El API no respondió (${sinRespuesta}): si el servidor está apagado, levantalo con pnpm dev; se reintenta en un minuto.` : ""}`);
       await esperar(SONDA_CADA_MS);
     }
     setMensaje(`Vigilancia terminada: ${pares.filter((x) => x.completo).length} de ${pares.length} rutas con todos sus días; el resto quedó con lo que Aviasales publicó (algunos días pueden no tener vuelos). ${pares.reduce((s, x) => s + x.tarifas, 0)} tarifas nuevas en total.`);
