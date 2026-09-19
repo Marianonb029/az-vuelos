@@ -43,6 +43,7 @@ export const armarRutasPosibles = (e: EntradaRutasPosibles, grafo: Grafo, aeropu
       trasladoOrigenKm: traslado.get(r.origen) ?? 0,
       destino: r.destino,
       trasladoDestinoKm: trasladoDestino.get(r.destino) ?? 0,
+      distanciaKm: km(r.origen, r.destino),
       itinerario: tramoFinal ? [...itinerario, tramoFinal.destino] : itinerario,
       boletos: (r.tramoPrevio ? 2 : 1) + (tramoFinal && !tramoFinal.porTierra ? 1 : 0),
       escalas: itinerario.length - 2 + (tramoFinal ? 1 : 0),
@@ -60,13 +61,15 @@ export const armarRutasPosibles = (e: EntradaRutasPosibles, grafo: Grafo, aeropu
     };
   };
   const lista = [...e.rutas.conservadas.map((r) => convertir(r, true)), ...e.rutas.separadas.map((r) => convertir(r, true)), ...e.rutas.descartadas.map((r) => convertir(r, false))].filter((r): r is RutaPosible => r !== null);
-  // Orden: aeropuerto de salida (el pedido primero, después por cercanía), destino (el pedido primero, después por
-  // cercanía al pedido), boletos, escalas, más aerolíneas vendedoras, más frecuencia.
+  // Orden: aeropuerto de salida (el pedido primero, después por cercanía), destino (con destino aeropuerto: el
+  // pedido primero, después por cercanía al pedido; con continente: por distancia desde esa salida), boletos,
+  // escalas, más aerolíneas vendedoras, más frecuencia.
+  const destinoKm = (r: RutaPosible) => (pedido === null ? r.distanciaKm : r.trasladoDestinoKm);
   return lista.sort(
     (x, y) =>
       x.trasladoOrigenKm - y.trasladoOrigenKm ||
       x.origen.localeCompare(y.origen) ||
-      x.trasladoDestinoKm - y.trasladoDestinoKm ||
+      destinoKm(x) - destinoKm(y) ||
       x.destino.localeCompare(y.destino) ||
       x.boletos - y.boletos ||
       x.escalas - y.escalas ||

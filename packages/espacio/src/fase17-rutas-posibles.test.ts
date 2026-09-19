@@ -42,6 +42,24 @@ describe("Fase 17: rutas posibles", () => {
     expect(separada?.km).toBe(separada?.tramos.reduce((s, t) => s + t.km, 0));
   });
 
+  it("con destino continente (sin pedido) ordena los destinos de cada salida por distancia desde esa salida", () => {
+    // Los destinos del continente traen su distancia desde el origen pedido (ASU): dentro de cada salida se ordena por
+    // la distancia desde esa salida (ASU→LIS 8716 km antes que ASU→MAD 9184; GRU→LIS 7937 antes que GRU→MAD 8376).
+    const lista = armarRutasPosibles(
+      {
+        origenes: [cand("ASU", "origen", true, 0), cand("GRU", "origen", false, 1100)],
+        destinos: [cand("MAD", "destino", false, 9100), cand("LIS", "destino", false, 8900)],
+        rutas: { conservadas: [ruta("GRU", "MAD", ["IB"], null, 2, 7), ruta("GRU", "LIS", ["TP"], null, 2, 7), ruta("ASU", "MAD", ["UX"], null, 2, 7), ruta("ASU", "LIS", ["TP"], "GRU", 2, 7)], descartadas: [], separadas: [] },
+        tarifasPorPar: new Map<string, number>(),
+        trasladoTierraMaxKm: 400,
+      },
+      grafo,
+      new Map(aeropuertos.map((a) => [a.iata, a])),
+    );
+    expect(lista.map((r) => `${r.origen}→${r.destino} ${r.distanciaKm} km`)).toEqual(["ASU→LIS 8716 km", "ASU→MAD 9184 km", "GRU→LIS 7937 km", "GRU→MAD 8376 km"]);
+    expect(lista.every((r) => r.tramoFinal === null)).toBe(true);
+  });
+
   it("a un alternativo sin vuelo al pedido: por tierra si está cerca, y si no la ruta no sirve", () => {
     const entrada = (destinos: CandidatoAeropuerto[]) => ({ origenes: [cand("ASU", "origen", true, 0)], destinos, rutas: { conservadas: [ruta("ASU", "GRU", ["G3"], null, 1, 21)], descartadas: [], separadas: [] }, tarifasPorPar: new Map<string, number>(), trasladoTierraMaxKm: 400 });
     const geoMap = new Map(aeropuertos.map((a) => [a.iata, a]));

@@ -9,7 +9,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
 const ruta = (extra: Partial<RutaPosible> & Pick<RutaPosible, "origen" | "destino" | "itinerario" | "aerolineas">): RutaPosible => ({
-  trasladoOrigenKm: 0, trasladoDestinoKm: 0, boletos: 1, escalas: extra.itinerario.length - 2, hub: null, tramoFinal: null, aerolineasPrevio: [], km: 9500, nivel: 2, etiquetaNivel: "Alta", vuelosSemanales: 7, conservada: true, tarifasMercado: [0],
+  trasladoOrigenKm: 0, trasladoDestinoKm: 0, distanciaKm: 9000, boletos: 1, escalas: extra.itinerario.length - 2, hub: null, tramoFinal: null, aerolineasPrevio: [], km: 9500, nivel: 2, etiquetaNivel: "Alta", vuelosSemanales: 7, conservada: true, tarifasMercado: [0],
   tramos: extra.itinerario.slice(1).map((d, i) => ({ origen: extra.itinerario[i] ?? "", destino: d, km: 4000, aerolineas: extra.aerolineas })),
   ...extra,
 });
@@ -50,13 +50,13 @@ describe("Combinaciones (Fase 17)", () => {
     expect(origenes[1]).toContain("Desde GRU (São Paulo) — a 1100 km de ASU · 1 rutas a 1 destinos");
     // Los destinos están plegados: al abrir MAD se ven sus rutas con vendedoras, operadoras y mercado.
     expect(screen.queryAllByTestId("fila-posible")).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: /→ MAD \(Madrid\) · 2 rutas: 1 de un boleto, 1 de dos · 1 en el mercado, 1 a mano · 1 con low cost/ }));
+    fireEvent.click(screen.getByRole("button", { name: /→ MAD \(Madrid\) · a 9000 km de ASU · 2 rutas: 1 de un boleto, 1 de dos · 1 en el mercado, 1 a mano · 1 con low cost/ }));
     const filas = screen.getAllByTestId("fila-posible").map((f) => f.textContent ?? "");
     expect(filas).toHaveLength(2);
     expect(filas[0]).toContain("ASU → MAD");
     expect(filas[0]).toContain("Air Europa");
     expect(filas[0]).toContain("sí: 11 tarifas");
-    expect(filas[1]).toContain("ASU → GRU → LIS → MAD2 boletos en GRU");
+    expect(filas[1]).toContain("ASU → GRU → LIS → MAD2 boletos en GRUASU→GRU"); // sin etiqueta low cost en la ruta: va en cada aerolínea
     expect(filas[1]).toContain("ASU→GRU: GOLlow cost, LATAM"); // GOL lleva el distintivo low cost (cobertura.aerolineasBajoCosto)
     expect(filas[1]).toContain("GRU→MAD: TAP");
     expect(filas[1]).toContain("parcial (29 + 0): buscar a mano");

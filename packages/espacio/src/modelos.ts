@@ -157,6 +157,7 @@ export const RutaPosible = z.object({
   trasladoOrigenKm: z.number().min(0), // 0: el aeropuerto pedido
   destino: IataAeropuerto, // donde termina la ruta del grafo (el pedido o un alternativo)
   trasladoDestinoKm: z.number().min(0), // km del alternativo al destino pedido (0: es el pedido; con destino continente, km desde el origen pedido)
+  distanciaKm: z.number().min(0), // ortodrómica del aeropuerto de salida de la ruta a su destino: con destino continente ordena los destinos de cada salida
   itinerario: z.array(IataAeropuerto).min(2), // aeropuertos por los que pasa, boletos y tramo final incluidos
   boletos: z.number().int().min(1).max(3), // el tramo final en vuelo aparte cuenta como boleto
   escalas: z.number().int().min(0),

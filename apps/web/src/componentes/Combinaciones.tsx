@@ -4,7 +4,7 @@ import { NOMBRE_CONTINENTE, buscarAeropuertos, etiquetaAeropuerto } from "@az/co
 import type { Aeropuerto, CoberturaMercado, Continente } from "@az/core";
 import type { ResultadoRutasPosibles, RutaPosible } from "@az/espacio";
 import { obtenerCobertura, obtenerRutasPosibles } from "../lib/api";
-import { Aerolineas, LowCost, tieneLowCost } from "./Aerolinea";
+import { Aerolineas, tieneLowCost } from "./Aerolinea";
 import { Bloque } from "./Bloque";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
@@ -37,7 +37,6 @@ const Fila = ({ r, nombre, bajoCosto }: { r: RutaPosible; nombre: (iata: string)
         {r.hub && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 boletos en {r.hub}</span>}
         {r.tramoFinal && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] uppercase text-amber-800">{r.tramoFinal.porTierra ? `+ tierra a ${r.tramoFinal.destino}` : `+ vuelo aparte a ${r.tramoFinal.destino}`}</span>}
         {!r.conservada && <span className="ml-1 rounded bg-slate-100 px-1 text-[10px] uppercase">baja frecuencia</span>}
-        {tieneLowCost(aerolineasDe(r), bajoCosto) && <LowCost />}
       </td>
       <td className={celda}>
         {r.hub && (
@@ -191,7 +190,7 @@ export const Combinaciones = ({ aeropuertos }: Props) => {
         <Bloque
           orden={1}
           titulo={`Combinaciones: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}`}
-          objetivo="Por aeropuerto de salida (el pedido primero, después por cercanía) y, dentro, por destino: el pedido primero y después los alternativos por cercanía al pedido, siempre con el tramo final al pedido (vuelo aparte con sus aerolíneas, o por tierra hasta 400 km). En cada destino: un boleto antes que dos, menos escalas, más aerolíneas que venden, más frecuencia. Abrí un destino para ver sus rutas. Las de baja frecuencia (menos de 7 vuelos semanales proxy) van en gris."
+          objetivo="Por aeropuerto de salida (el pedido primero, después por cercanía) y, dentro, por destino: con destino aeropuerto, el pedido primero y después los alternativos por cercanía al pedido, siempre con el tramo final al pedido (vuelo aparte con sus aerolíneas, o por tierra hasta 400 km); con destino continente, por distancia en km desde esa salida. En cada destino: un boleto antes que dos, menos escalas, más aerolíneas que venden, más frecuencia. Abrí un destino para ver sus rutas. Las de baja frecuencia (menos de 7 vuelos semanales proxy) van en gris."
         >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
@@ -213,7 +212,7 @@ export const Combinaciones = ({ aeropuertos }: Props) => {
                   const deDestino = deOrigen.filter((r) => r.destino === d);
                   const k = clave(o, d);
                   const primera = deDestino[0];
-                  const llegada = !primera || resultado.destinoEsContinente ? "" : primera.tramoFinal === null ? " · el destino pedido" : ` · a ${primera.trasladoDestinoKm.toLocaleString("es")} km de ${resultado.destino}: ${primera.tramoFinal.porTierra ? "por tierra (tren o bus)" : `vuelo aparte con ${primera.tramoFinal.aerolineas.map(nombre).join(", ")}`}`;
+                  const llegada = !primera ? "" : resultado.destinoEsContinente ? ` · a ${primera.distanciaKm.toLocaleString("es")} km de ${o}` : primera.tramoFinal === null ? " · el destino pedido" : ` · a ${primera.trasladoDestinoKm.toLocaleString("es")} km de ${resultado.destino}: ${primera.tramoFinal.porTierra ? "por tierra (tren o bus)" : `vuelo aparte con ${primera.tramoFinal.aerolineas.map(nombre).join(", ")}`}`;
                   return (
                     <div key={k}>
                       <button type="button" onClick={() => alternar(k)} aria-expanded={abiertos.has(k)} className="w-full rounded px-4 py-1 text-left text-xs text-slate-800 hover:bg-slate-50">
