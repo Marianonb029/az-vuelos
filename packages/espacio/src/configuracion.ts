@@ -95,6 +95,8 @@ export const ConfigMercado = z.object({
   maxPorOrigen: z.number().int().min(1),
   segundosPorBusquedaEnVivo: z.number().int().min(10), // búsqueda múltiple: cuánto se deja cada búsqueda en la ventana de Aviasales antes de pasar a la siguiente
   maxBusquedasEnVivo: z.number().int().min(1), // tope de búsquedas por lista (pares × días)
+  diasHorizonte: z.number().int().positive(), // hasta cuántos días adelante se mira el cache (calendario y panorama)
+  maxBaratasPanorama: z.number().int().min(1), // combinaciones destacadas del panorama (una por día, destino y salida)
   nota: z.string(),
 });
 

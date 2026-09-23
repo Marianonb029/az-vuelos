@@ -42,7 +42,7 @@ describe("Mercado", () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : url.includes("/fechas") ? fechas : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
     const onResultado = vi.fn();
-    render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} />);
+    render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} pedido={null} onPedidoAplicado={() => undefined} />);
     await waitFor(() => expect(screen.getByTestId("cobertura").textContent).toContain("Tarifas bajadas el 2026-09-17: 1 pares, salidas desde ASU; llegadas a MAD"));
     // Con el campo vacío sólo se sugieren los aeropuertos con tarifas bajadas para ese rol.
     fireEvent.focus(screen.getByRole("combobox", { name: "Origen" }));

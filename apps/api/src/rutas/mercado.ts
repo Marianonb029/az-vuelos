@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { Continente, FechaIso, IataAeropuerto } from "@az/core";
-import type { CoberturaMercado, FechasMercado, ResultadoMercado } from "@az/core";
+import type { CoberturaMercado, FechasMercado, Panorama, ResultadoMercado } from "@az/core";
 import type { ServicioActualizacion } from "../servicios/actualizacion";
 import type { ServicioMercado } from "../servicios/mercado";
 
@@ -42,6 +42,20 @@ export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercad
       return undefined;
     }
     const r = mercado().fechas(consulta.data.origen, consulta.data.destino);
+    if (!r.ok) {
+      await reply.code(404).send({ error: r.motivo });
+      return undefined;
+    }
+    return r.resultado;
+  });
+  // Fase 21: el panorama del par en todo el horizonte, sin fecha: cuándo, desde dónde y a qué ciudad es más barato.
+  app.get("/mercado/panorama", async (req, reply): Promise<Panorama | undefined> => {
+    const consulta = ConsultaPar.safeParse(req.query);
+    if (!consulta.success) {
+      await reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
+      return undefined;
+    }
+    const r = mercado().panorama(consulta.data.origen, consulta.data.destino);
     if (!r.ok) {
       await reply.code(404).send({ error: r.motivo });
       return undefined;

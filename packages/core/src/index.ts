@@ -6,3 +6,4 @@ export * from "./enlaces-metabuscadores";
 export * from "./tendencias";
 export * from "./precios";
 export * from "./mercado";
+export * from "./panorama";

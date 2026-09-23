@@ -14,10 +14,20 @@ import type { Opcion } from "./Combobox";
 import { FilaMercado } from "./FilaMercado";
 import { Toggle } from "./Toggle";
 
+// Un par y un día elegidos en otra pestaña (Buscar): se cargan en el formulario y se busca solo.
+export interface PedidoInicial {
+  origen: string;
+  destino: string; // aeropuerto o continente
+  fechaIda: string;
+  flex: "0" | "3" | "7" | "15";
+}
+
 interface Props {
   aeropuertos: readonly Aeropuerto[];
   hoy: string;
   onResultado: (r: ResultadoMercado | null) => void; // el Tablero resume la última búsqueda
+  pedido: PedidoInicial | null;
+  onPedidoAplicado: () => void;
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -34,7 +44,7 @@ const FLEX: { valor: "0" | "3" | "7" | "15"; etiqueta: string }[] = [
 
 // Pestaña Rutas (Fase 15): el mercado. Lo que la API de Travelpayouts tiene para llegar al destino, en uno o dos
 // boletos, ordenado: aeropuerto de salida (el pedido primero), precio, sin bodega antes, horas, escalas, aerolíneas.
-export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
+export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicado }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [fechaIda, setFechaIda] = useState("");
@@ -87,6 +97,20 @@ export const Mercado = ({ aeropuertos, hoy, onResultado }: Props) => {
     setVersion((v) => v + 1);
     void buscarMercado(flexLista, ao, ad, fecha);
   };
+
+  // Desde Buscar: el par y el día elegidos se cargan acá y la tabla se arma sola.
+  useEffect(() => {
+    if (!pedido) return;
+    const ao = aeropuertos.find((a) => a.iata === pedido.origen);
+    const ad = pedido.destino.length === 2 ? CONTINENTES.find((c) => c.iata === pedido.destino) : aeropuertos.find((a) => a.iata === pedido.destino);
+    onPedidoAplicado();
+    if (!ao || !ad) return;
+    setOrigen(ao);
+    setDestino(ad);
+    setFechaIda(pedido.fechaIda);
+    setFlex(pedido.flex);
+    void buscarMercado(pedido.flex, ao, ad, pedido.fechaIda);
+  }, [pedido]);
 
   // Qué aeropuertos tienen tarifas bajadas: con el campo vacío se sugieren esos (no el catálogo entero) y al
   // teclear se marca cuáles tienen datos.

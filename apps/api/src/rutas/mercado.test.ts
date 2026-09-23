@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { ResultadoMercado } from "@az/core";
+import { Panorama, ResultadoMercado } from "@az/core";
 import type { PrecioCacheado } from "@az/core";
 import { crearApp } from "../app";
 import { config } from "../config";
@@ -103,6 +103,27 @@ describe("GET /mercado", () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ origen: "ASU", destino: "MAD", fechas: [{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480 }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300 }] });
     expect((await app.inject({ method: "GET", url: "/mercado/fechas?origen=ASU&destino=EU" })).json()).toMatchObject({ fechas: [{ fecha: "2027-01-19" }, { fecha: "2027-01-20" }] });
+  });
+
+  it("arma el panorama del horizonte sin fecha: mínimos por día, mes, destino, salida y aerolínea (Fase 21)", async () => {
+    const res = await app.inject({ method: "GET", url: "/mercado/panorama?origen=ASU&destino=EU" });
+    expect(res.statusCode).toBe(200);
+    const p = Panorama.parse(res.json());
+    expect(p).toMatchObject({ destinoEsContinente: true, desde: "2026-09-17", hasta: "2027-01-20", combinaciones: 4, diasConTarifas: 2, minUsd: 300, medianaUsd: 480 });
+    expect(p.porDia).toEqual([{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480 }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300 }]);
+    expect(p.porMes).toEqual([{ mes: "2027-01", dias: 2, combinaciones: 4, minUsd: 300, medianaUsd: 480, mejorDia: "2027-01-20" }]);
+    // Un solo destino con tarifas (MAD); el mínimo de todo el horizonte sale de IGU, un origen alternativo.
+    expect(p.porDestino).toEqual([{ iata: "MAD", minUsd: 300, mejorDia: "2027-01-20", dias: 2, combinaciones: 4, minDirectoUsd: 300, duracionDelMinMin: 13 * 60, escalasDelMin: 0 }]);
+    expect(p.porOrigen.map((o) => `${o.iata} ${o.minUsd}`)).toEqual(["IGU 300", "GRU 480", "ASU 630"]);
+    expect(p.porOrigen[2]).toMatchObject({ trasladoKm: 0, dias: 1, combinaciones: 2 }); // el aeropuerto pedido
+    expect(p.porAerolinea.map((a) => `${a.iata} ${a.minUsd} ${a.bajoCosto}`)).toEqual(["IB 300 false", "TP 480 false", "G3 630 true", "UA 779 false"]);
+    // Destacadas: la más barata de cada par salida → llegada, no el mismo vuelo repetido.
+    expect(p.baratas.map((c) => `${c.origen}→${c.llegaA} ${c.totalUsd}`)).toEqual(["IGU→MAD 300", "GRU→MAD 480", "ASU→MAD 630"]);
+    expect(p.aeropuertos.find((a) => a.iata === "IGU")?.ciudad).toBe("Foz do Iguaçu");
+    expect(p.avisos).toEqual([]);
+    // Con destino aeropuerto, un solo destino y sin los otros continentes.
+    const uno = Panorama.parse((await app.inject({ method: "GET", url: "/mercado/panorama?origen=ASU&destino=MAD" })).json());
+    expect(uno).toMatchObject({ destinoEsContinente: false, combinaciones: 4 });
   });
 
   it("valida la consulta", async () => {

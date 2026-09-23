@@ -654,6 +654,16 @@ Pedido del dueño: marcar las aerolíneas low cost en Rutas y Combinaciones, y t
 - **Combinaciones − Rutas**: dos filtros en Combinaciones, "Sólo rutas para buscar a mano" (las que no tienen tarifas en todos sus boletos; la columna lo dice: "no: buscar a mano" / "parcial: buscar a mano") y "Sin aerolíneas low cost (necesito bodega)". El resumen y cada cabecera de destino cuentan en el mercado / a mano / con low cost. Sin cambios en el API salvo la lista en cobertura.
 - **20.1 (19/09/2026)**: la etiqueta "low cost" va sólo en cada aerolínea, no en la ruta (redundante). Con destino **continente**, los destinos de cada aeropuerto de salida se ordenan por **distancia desde esa salida** (`RutaPosible.distanciaKm`, ortodrómica salida→destino; la cabecera dice "a N km de GRU"): antes se ordenaban por la distancia desde el origen pedido, que dentro de GRU o EZE no decía nada. Con destino aeropuerto sigue 17.1 (el pedido primero, después por cercanía al pedido).
 
+## Fase 21 (23/09/2026) — pestaña Buscar: el panorama del par sin fecha
+
+Pedido del dueño: una interfaz para el usuario que necesita la información, y tableros para encontrar la ruta más barata a un destino. El problema de las pestañas anteriores es que **obligan a elegir una fecha antes de ver nada**: quien quiere "lo más barato para ir a Europa" no tiene una fecha, la está buscando.
+
+- **`GET /mercado/panorama?origen&destino`** (`packages/core/src/panorama.ts`, `armarPanorama`): arma las combinaciones de **todo el horizonte** (`mercado.diasHorizonte` 400 días) sin recortar por origen y las agrega. Son las mismas tarifas cacheadas que muestra Rutas: acá sólo se toman mínimos y medianas, no se estima ni se proyecta nada. Devuelve `porDia`, `porMes`, `porDestino`, `porOrigen`, `porAerolinea`, `baratas` y los cuantiles `p25`/`mediana` de los mínimos diarios. Cuesta ~300 ms para un continente entero gracias al lector cacheado de `precios.json`.
+- **Pestaña Buscar** (primera): dos campos y un botón, sin fecha. Arriba, cuatro cifras de decisión (lo más barato del horizonte con su día y ciudad; el precio típico de un día y cuánto está por debajo el mejor; el mejor mes; el mejor aeropuerto de salida). Abajo: **mapa de calor** de un año (una celda por día, coloreada por cuantiles **de ese mismo par**, gris = sin cache), barras por mes (mínimo contra típico), ranking de **ciudades** del continente, ranking de **aeropuertos de salida** con el traslado dicho aparte, y las **12 más baratas** (la más barata de cada par salida → llegada: una por par, no el mismo vuelo en días distintos).
+- **Todo lleva a Rutas**: un clic en cualquier día, mes, ciudad o salida abre la pestaña Rutas con ese par y ese día ya cargados (`PedidoInicial`), con ventana "ese día".
+- Gris ≠ caro: el mapa dice "sin tarifas en el cache", que es falta de búsquedas de otros usuarios, no falta de vuelos. Se aclara en el bloque y en la leyenda.
+- Números nuevos en `config/espacio.json`: `mercado.diasHorizonte` (400, ya estaba implícito en el calendario) y `mercado.maxBaratasPanorama` (12).
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

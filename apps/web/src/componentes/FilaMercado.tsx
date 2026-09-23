@@ -4,6 +4,7 @@ import { Aerolineas } from "./Aerolinea";
 const AVIASALES = "https://www.aviasales.com";
 // El enlace de cada tarifa abre esa búsqueda en Aviasales (en vivo); con marker, la búsqueda queda atribuida.
 const conMarker = (enlace: string, marker: string | null) => (marker ? `${enlace}${enlace.includes("?") ? "&" : "?"}marker=${encodeURIComponent(marker)}` : enlace);
+export const urlTarifa = (enlace: string, marker: string | null) => conMarker(`${AVIASALES}${enlace}`, marker);
 
 export const horas = (min: number) => `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")} min`;
 // Las horas del enlace son locales expresadas como epoch: se leen como UTC para no correrlas al huso del navegador.
