@@ -28,6 +28,7 @@ interface Props {
   onResultado: (r: ResultadoMercado | null) => void; // el Tablero resume la última búsqueda
   pedido: PedidoInicial | null;
   onPedidoAplicado: () => void;
+  onVerResumen: () => void; // lleva a Resumen de ruta con esta búsqueda
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -44,7 +45,7 @@ const FLEX: { valor: "0" | "3" | "7" | "15"; etiqueta: string }[] = [
 
 // Pestaña Rutas (Fase 15): el mercado. Lo que la API de Travelpayouts tiene para llegar al destino, en uno o dos
 // boletos, ordenado: aeropuerto de salida (el pedido primero), precio, sin bodega antes, horas, escalas, aerolíneas.
-export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicado }: Props) => {
+export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicado, onVerResumen }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [fechaIda, setFechaIda] = useState("");
@@ -184,19 +185,10 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
   return (
     <div className="grid gap-6">
       <form onSubmit={(e) => void buscar(e)} noValidate className="grid gap-5">
-        <p className="text-xs text-slate-600" data-testid="cobertura">
-          {cobertura === null
-            ? "Leyendo qué pares tienen tarifas bajadas…"
-            : cobertura.actualizadoEn === null
-              ? "No hay tarifas bajadas todavía: corré pnpm precios ORIGEN DESTINO (token de Travelpayouts) y volvé."
-              : `Tarifas bajadas el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} pares, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
-          {cobertura && cobertura.grupos.length > 0 && (
-            <span className="block" data-testid="cobertura-grupos">
-              Bajada por continentes (pnpm precios, en este orden):{" "}
-              {cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
-            </span>
-          )}
-        </p>
+        <div className="grid gap-1">
+          <p className="text-sm font-semibold text-slate-800">1 · ¿De dónde a dónde?</p>
+          <p className="text-xs text-slate-500">Con el campo vacío se sugieren los aeropuertos que ya tienen tarifas bajadas. El destino puede ser un continente entero.</p>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="m-origen" etiqueta="Origen" error={errores.origen}>
             <Combobox id="m-origen" placeholder="Con tarifas bajadas, o código / ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opcionesOrigen} onCambio={cambiarOrigen} invalido={errores.origen !== undefined} />
@@ -204,6 +196,10 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
           <Campo id="m-destino" etiqueta="Destino" error={errores.destino}>
             <Combobox id="m-destino" placeholder="Un continente, o aeropuerto con tarifas, o código / ciudad" valor={destino} etiquetaValor={etiqueta} buscar={opcionesDestino} onCambio={cambiarDestino} invalido={errores.destino !== undefined} />
           </Campo>
+        </div>
+        <div className="grid gap-1">
+          <p className="text-sm font-semibold text-slate-800">2 · ¿Qué día salís?</p>
+          <p className="text-xs text-slate-500">En verde, los días que ya tienen tarifas, con el mínimo visto. Cualquier otro día futuro se puede elegir igual: para ésos, "Buscar en vivo" trae las tarifas al sistema.</p>
         </div>
         <div className="flex flex-wrap items-end gap-6">
           <Campo id="m-ida" etiqueta="Fecha de ida (en verde, los días con tarifas)" error={errores.ida}>
@@ -235,6 +231,24 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
           />
         </div>
       </details>
+      <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="cobertura-detalle">
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">Qué tiene el sistema bajado hasta ahora (cobertura del cache)</summary>
+        <div className="mt-2">
+          <p className="text-xs text-slate-600" data-testid="cobertura">
+          {cobertura === null
+            ? "Leyendo qué pares tienen tarifas bajadas…"
+            : cobertura.actualizadoEn === null
+              ? "No hay tarifas bajadas todavía: corré pnpm precios ORIGEN DESTINO (token de Travelpayouts) y volvé."
+              : `Tarifas bajadas el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} pares, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
+          {cobertura && cobertura.grupos.length > 0 && (
+            <span className="block" data-testid="cobertura-grupos">
+              Bajada por continentes (pnpm precios, en este orden):{" "}
+              {cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
+            </span>
+          )}
+          </p>
+        </div>
+      </details>
       {error && (
         <p role="alert" className="text-sm text-red-700">
           {error}
@@ -253,6 +267,20 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
                 ? `Desvío medido entre corridas: la mitad de las tarifas cambió menos de ${resultado.dataset.desvio.medianaPct} % y 9 de 10 menos de ${resultado.dataset.desvio.p90Pct} %.`
                 : `Sin dos corridas en días distintos todavía: se estima ${resultado.dataset.tasaDesvioDiariaPct} % por día desde que se vio cada tarifa (supuesto de config).`}
             </p>
+          )}
+          {filas.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2" data-testid="mercado-titular">
+              <p className="text-sm text-emerald-900">
+                <span className="font-semibold">Lo más barato: USD {Math.min(...filas.map((c) => c.totalUsd)).toLocaleString("es")}</span>
+                {(() => {
+                  const b = [...filas].sort((x, y) => x.totalUsd - y.totalUsd)[0];
+                  return b ? ` · ${b.boletos.map((x) => x.itinerario.join(" → ")).join(" + ")} · ${fechaCorta(b.fechaIda)} · ${b.escalas === 0 ? "directo" : `${b.escalas} escala${b.escalas === 1 ? "" : "s"}`}${b.trasladoOrigenKm > 0 ? ` · sale de ${b.origen}, a ${b.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}` : ""}` : "";
+                })()}
+              </p>
+              <button type="button" onClick={onVerResumen} className="rounded-md border border-emerald-600 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100">
+                Ver conclusiones y si conviene comprar →
+              </button>
+            </div>
           )}
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">

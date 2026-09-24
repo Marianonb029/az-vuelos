@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { NOMBRE_CONTINENTE, buscarAeropuertos, etiquetaAeropuerto } from "@az/core";
 import type { Aeropuerto, CoberturaMercado, Continente, Panorama as PanoramaDatos } from "@az/core";
 import { obtenerCobertura, obtenerPanorama } from "../lib/api";
+import { Anticipacion } from "./Anticipacion";
 import { Bloque } from "./Bloque";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
@@ -155,7 +156,10 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
           <Bloque orden={p.destinoEsContinente ? 3 : 2} titulo="Desde qué aeropuerto sale más barato" objetivo="El que pediste y sus alternativos del modelo. El traslado hasta el alternativo no está en el precio: se dice cuántos km son para que la cuenta la hagas vos.">
             <PanoramaSalidas {...comunes} />
           </Bloque>
-          <Bloque orden={p.destinoEsContinente ? 4 : 3} titulo="Las más baratas del horizonte" objetivo="Una por día, destino y aeropuerto de salida: alternativas distintas, no variantes del mismo vuelo. Son tarifas cacheadas con su antigüedad; el enlace abre esa búsqueda en vivo en Aviasales.">
+          <Bloque orden={p.destinoEsContinente ? 4 : 3} titulo="¿Comprar ahora o esperar?" objetivo="Con cuánta anticipación estuvo más barato este par y qué muestra el historial de las bajadas. Son observaciones del cache, no un pronóstico; elegí un día en Rutas para saber si ese día está barato o caro.">
+            <Anticipacion origen={p.origen} destino={p.destino} />
+          </Bloque>
+          <Bloque orden={p.destinoEsContinente ? 5 : 4} titulo="Las más baratas del horizonte" objetivo="Una por día, destino y aeropuerto de salida: alternativas distintas, no variantes del mismo vuelo. Son tarifas cacheadas con su antigüedad; el enlace abre esa búsqueda en vivo en Aviasales.">
             <PanoramaBaratas {...comunes} marker={cobertura?.marker ?? null} bajoCosto={cobertura?.aerolineasBajoCosto ?? []} />
           </Bloque>
         </div>

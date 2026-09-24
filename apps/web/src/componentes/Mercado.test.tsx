@@ -2,7 +2,6 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Aeropuerto, BoletoMercado, Combinacion, ResultadoMercado } from "@az/core";
 import { Mercado } from "./Mercado";
-import { Tablero } from "./Tablero";
 
 const aeropuertos: Aeropuerto[] = [
   { iata: "AAA", nombre: "Anaa Airport", ciudad: "Anaa", pais: "Polinesia Francesa" }, // sin tarifas: no se sugiere con el campo vacío
@@ -42,7 +41,7 @@ describe("Mercado", () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : url.includes("/fechas") ? fechas : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
     const onResultado = vi.fn();
-    render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} pedido={null} onPedidoAplicado={() => undefined} />);
+    render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} pedido={null} onPedidoAplicado={() => undefined} onVerResumen={() => undefined} />);
     await waitFor(() => expect(screen.getByTestId("cobertura").textContent).toContain("Tarifas bajadas el 2026-09-17: 1 pares, salidas desde ASU; llegadas a MAD"));
     // Con el campo vacío sólo se sugieren los aeropuertos con tarifas bajadas para ese rol.
     fireEvent.focus(screen.getByRole("combobox", { name: "Origen" }));
@@ -90,26 +89,5 @@ describe("Mercado", () => {
     // Con ±7 días el botón busca los 15 días él solo (a 45 s cada uno).
     expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales los 15 días (12/01/2027 a 26/01/2027, ~12 min) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
-  });
-});
-
-describe("Tablero (mercado)", () => {
-  it("resume la búsqueda: mejores por criterio, por escalas, dónde está lo barato y frescura", () => {
-    render(<Tablero mercado={resultado} />);
-    const resumen = screen.getByTestId("tablero-resumen").textContent ?? "";
-    expect(resumen).toContain("3combinaciones2 desde ASU; 3 llegan a MAD; 1 de dos boletos");
-    expect(resumen).toContain("USD 300más barataIGU→MAD");
-    expect(resumen).toContain("13 h 00 minmás corta");
-    expect(resumen).toContain("directomenos escalas");
-    expect(screen.getByTestId("tablero-escalas").textContent).toContain("USD 330 más que la más barata"); // 2 escalas: 630 contra 300
-    const donde = screen.getByTestId("tablero-donde").textContent ?? "";
-    expect(donde).toContain("ASU2 (67 % de las combinaciones)desde USD 630");
-    expect(donde).toContain("TAP1");
-    expect(donde).toContain("City.Travel3");
-    expect(screen.getByTestId("tablero-dias").textContent).toContain("19/01/20272USD 630");
-    const frescura = screen.getByTestId("tablero-frescura").textContent ?? "";
-    expect(frescura).toContain("33 %a refrescar");
-    expect(frescura).toContain("±1 %/díadesvío");
-    expect(screen.getByTestId("tablero-corridas").textContent).toMatch(/2026-09-16 \(73 pares, 1\.?590 tarifas\)/);
   });
 });

@@ -117,10 +117,12 @@ export const reducirPrecios = (lista: readonly PrecioCacheado[]): PrecioCacheado
   return [...porClave.values()].sort(ordenNatural);
 };
 
-// La versión vigente de cada tarifa: la de la corrida más reciente.
-export const ultimos = (lista: readonly PrecioCacheado[]): PrecioCacheado[] => {
+// La versión vigente de cada tarifa: la de la corrida más reciente. Con `hasta` (día ISO), la vigente **a esa
+// fecha**: así se reconstruye lo que la app habría mostrado ese día (historial de precios, Fase 22).
+export const ultimos = (lista: readonly PrecioCacheado[], hasta?: string): PrecioCacheado[] => {
   const porClave = new Map<string, PrecioCacheado>();
   for (const p of lista) {
+    if (hasta !== undefined && p.encontradoEn.slice(0, 10) > hasta) continue;
     const k = claveTarifa(p);
     const previo = porClave.get(k);
     if (!previo || p.encontradoEn > previo.encontradoEn || (p.encontradoEn === previo.encontradoEn && p.precioUsd < previo.precioUsd)) porClave.set(k, p);

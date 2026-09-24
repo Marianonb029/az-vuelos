@@ -664,6 +664,28 @@ Pedido del dueño: una interfaz para el usuario que necesita la información, y 
 - Gris ≠ caro: el mapa dice "sin tarifas en el cache", que es falta de búsquedas de otros usuarios, no falta de vuelos. Se aclara en el bloque y en la leyenda.
 - Números nuevos en `config/espacio.json`: `mercado.diasHorizonte` (400, ya estaba implícito en el calendario) y `mercado.maxBaratasPanorama` (12).
 
+## Fase 22 (24/09/2026) — ¿compro o espero?, y la app ordenada por la pregunta que contesta cada pestaña
+
+Dos pedidos del dueño: la curva de anticipación (la única idea de tablero que responde *¿compro ahora o espero?*) y una UI que cualquiera entienda, con la información ordenada para decidir.
+
+**¿Compro o espero?** (`packages/core/src/anticipacion.ts`, `GET /mercado/anticipacion`). Dos cosas distintas, las dos medidas sobre el mismo cache y ninguna presentada como pronóstico:
+- **Curva de anticipación**: con cuántos días de anticipación estuvieron las tarifas más baratas de *ese* par, por tramos (`precios.anticipacion.tramosDias`, alineados con la cadencia de rebaja: 0–13, 14–29, 30–59, 60–89, 90–119, 120–179, 180–239, 240–299, 300+). Sale de una sola foto del cache, así que **mezcla anticipación con temporada** y la app lo dice en el pie del bloque.
+- **Historial**: qué mínimo habría mostrado la app para ese par y ese día en **cada corrida** de `pnpm precios`, reconstruido con `ultimos(precios, hasta)` (nuevo corte por día). Es lo único que dice si el precio se mueve, y sólo existe si el par se bajó más de una vez: hoy 1 871 de 45 274 (par, fecha) tienen dos o más días de observación, así que el caso "no alcanza" es el normal y se explica cómo conseguir el dato.
+- **Señal** (`leerSenal`): `comprar` (subió más que el ruido, o el día está por debajo de lo típico de su tramo), `esperar` (está caro y todavía falta para el tramo en que este par estuvo más barato), `mirar` (bajó, o está caro sin más que esperar), `no-alcanza` y `referencia` (el par entero, sin día elegido). Un cambio menor a `cambioSignificativoPct` (5 %) es ruido: es el orden del desvío que ya se asume por la antigüedad. Cada señal viene con `porque[]`: los hechos que la sostienen, con su incertidumbre. Verificado con ASU→LIS: bajó de USD 670 a 552 entre corridas y el 20/11 está 8,6 % por debajo de lo típico de su tramo.
+
+**La app ordenada por preguntas.** Las pestañas pasan a llamarse por lo que hacen y van en el orden del recorrido, con la pregunta que contesta cada una visible bajo la barra:
+| Antes | Ahora | Pregunta que contesta |
+|---|---|---|
+| Buscar | **Explorar precios** | ¿Cuándo y a dónde me conviene ir? |
+| Rutas | Rutas | ¿Qué hay para este día? |
+| Tablero | **Resumen de ruta** | ¿Qué me conviene de lo que encontré? |
+| Combinaciones (1ª) | Combinaciones (4ª, antes de Datos) | ¿Qué rutas existen, aunque no tengan precio? |
+| Datos | Datos | ¿De dónde sale cada número? |
+
+- **Resumen de ruta** (ex Tablero, reescrito): deja de ser una planilla de métricas. Arriba, **cuatro opciones comparables** de la misma búsqueda —la más barata, la más rápida, la de menos escalas y la más equilibrada (la que menos se aleja del mínimo en precio y en horas a la vez)— cada una con **qué se resigna** frente a la más barata ("USD 22 más, y llegás 4 h 45 antes"). Debajo, **conclusiones en frases con la cuenta a la vista** (traslado contra ahorro, qué cuesta la hora ahorrada, directo contra escalas, el día más barato de la ventana, bodega, dos boletos sin protección de conexión, una sola vendedora). Después la señal de comprar o esperar, después qué tan confiable es lo que se ve, y el detalle anterior queda plegado.
+- **Datos** abre con "Para qué sirve cada pestaña": pregunta que contesta, objetivo (qué decisión ayuda a tomar) y **qué no hace**, desde `lib/pestanas.ts` (la misma fuente que alimenta la barra de navegación, para que no se desincronicen). Glosario ampliado: mapa de calor, precio típico, curva de anticipación, historial, señal y Resumen de ruta.
+- **Rutas**: el formulario pasa a tener pasos ("1 · ¿De dónde a dónde?", "2 · ¿Qué día salís?"), el bloque técnico de cobertura del cache baja a un plegable al pie en vez de abrir la pantalla, y sobre la tabla aparece el titular "Lo más barato: USD N · itinerario · día" con un botón a las conclusiones.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

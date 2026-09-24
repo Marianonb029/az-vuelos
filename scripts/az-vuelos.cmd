@@ -18,6 +18,8 @@ if errorlevel 1 (
   start "AZ Vuelos - web" /min cmd /c "cd /d apps\web && "%NODE%" node_modules\vite\bin\vite.js >> ..\..\data\local\web.log 2>&1"
 )
 if "%~1"=="/sin-navegador" goto :fin
-timeout /t 4 /nobreak >nul
+rem Espera a que vite responda antes de abrir el navegador (ping en vez de timeout: timeout falla si la entrada
+rem esta redirigida, como cuando lo lanza otro proceso).
+ping -n 5 127.0.0.1 >nul
 start "" http://localhost:5173
 :fin

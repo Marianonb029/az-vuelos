@@ -7,3 +7,4 @@ export * from "./tendencias";
 export * from "./precios";
 export * from "./mercado";
 export * from "./panorama";
+export * from "./anticipacion";

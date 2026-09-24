@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { fechaHoraCorta } from "@az/core";
 import type { FuenteDato } from "@az/core";
 import { obtenerDatos } from "../lib/api";
+import { PESTANAS } from "../lib/pestanas";
 import { Bloque } from "./Bloque";
 
 const EXACTITUD: Record<FuenteDato["exactitud"], string> = { exacta: "bg-emerald-100 text-emerald-800", vigente: "bg-sky-100 text-sky-800", aproximada: "bg-amber-100 text-amber-800", supuesto: "bg-slate-200 text-slate-700" };
@@ -10,6 +11,12 @@ const describirError = (e: unknown) => (e instanceof Error ? e.message : String(
 
 // Glosario de lo que se ve en Rutas: qué significa cada término y de qué dato sale (la fila de Fuentes que lo alimenta).
 const GLOSARIO: { termino: string; significado: string; sale: string }[] = [
+  { termino: "Mapa de calor (Explorar precios)", significado: "Una celda por día del año, pintada según el precio de su combinación más barata. Los cortes son cuantiles de ese mismo par: verde es barato para esa ruta, no barato en general. Gris es 'sin tarifas en el cache', que significa que nadie lo buscó todavía, no que no haya vuelos.", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Precio típico de un día", significado: "Mediana del precio más bajo de cada día con tarifas. Sirve para saber si un día concreto está barato o caro para ese par; no es un promedio de todos los vuelos.", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Curva de anticipación", significado: "Con cuántos días de anticipación estuvieron las tarifas más baratas de ese par, por tramos (0–13, 14–29, 30–59… días). Sale de una sola foto del cache: mezcla anticipación con temporada, así que un tramo caro puede serlo por las fechas que abarca y no por la anticipación.", sale: "Precios cacheados (Travelpayouts)" },
+  { termino: "Historial del par", significado: "Qué mínimo habría mostrado la app para ese par y ese día en cada corrida de pnpm precios. Es lo único que dice si el precio se está moviendo, y sólo existe si el par se bajó más de una vez.", sale: "Corridas" },
+  { termino: "Señal: comprar / esperar / volvé a mirar", significado: "Conclusión armada con dos hechos: cuánto cambió el precio entre corridas y cómo se compara el día elegido con lo típico de su tramo de anticipación. Un cambio menor al 5 % se trata como ruido. Es una lectura de lo observado, nunca un pronóstico: cuando los datos no alcanzan, lo dice.", sale: "Corridas" },
+  { termino: "Resumen de ruta (pestaña)", significado: "Conclusiones de la última búsqueda de Rutas: la opción más barata, la más rápida, la de menos escalas y la más equilibrada (la que menos se aleja del mínimo en precio y en horas a la vez), cada una con lo que se resigna frente a la más barata.", sale: "Precios cacheados (Travelpayouts)" },
   { termino: "Combinaciones (pestaña)", significado: "Todas las rutas que el grafo de aerolíneas (VRS) permite desde el origen y sus alternativos hacia un aeropuerto o continente, en un boleto o dos por un hub, sin fecha ni precio; también las de baja frecuencia, en gris. 'En el mercado' dice si el par ya tiene tarifas bajadas: 'no' es una alternativa que la API no cubre y hay que buscar a mano.", sale: "Competencia: aerolíneas por tramo" },
   { termino: "Combinación", significado: "Una forma de llegar al destino con lo que la API tiene: un boleto, o dos encadenados donde termina el primero (con 3 a 24 h de espera). Sin límite de transbordos dentro de cada boleto.", sale: "Precios cacheados (Travelpayouts)" },
   { termino: "Orden 1–6", significado: "1. Aeropuerto de salida: el pedido primero, después los alternativos por cercanía. 2. Precio total. 3. Sin equipaje de bodega antes que con. 4. Horas totales. 5. Escalas. 6. Aerolíneas distintas. Cada criterio desempata al anterior.", sale: "—" },
@@ -57,7 +64,34 @@ export const TableroDatos = ({ visible }: { visible: boolean }) => {
           {error}
         </p>
       )}
-      <Bloque orden={1} titulo="Glosario: qué significa cada cosa que ves en Rutas y Tablero" objetivo="Cada término, en una frase, y de qué dato sale (fila de la ficha de abajo).">
+      <Bloque orden={1} titulo="Para qué sirve cada pestaña" objetivo="Qué pregunta contesta cada una, qué decisión ayuda a tomar y qué no hace, para no esperar de ella lo que no da.">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm" data-testid="proposito-pestanas">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
+                <th className="py-1 pr-3">Pestaña</th>
+                <th className="py-1 pr-3">Qué pregunta contesta</th>
+                <th className="py-1 pr-3">Objetivo: qué decisión ayuda a tomar</th>
+                <th className="py-1 pr-3">Qué no hace</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PESTANAS.map((p) => (
+                <tr key={p.id} className="border-b border-slate-100 align-top">
+                  <td className="py-1 pr-3 font-medium whitespace-nowrap text-slate-900">{p.titulo}</td>
+                  <td className="py-1 pr-3 font-medium text-slate-700">
+                    {p.pregunta}
+                    <span className="block text-xs font-normal text-slate-500">{p.para}</span>
+                  </td>
+                  <td className="py-1 pr-3 text-slate-700">{p.objetivo}</td>
+                  <td className="py-1 pr-3 text-xs text-slate-500">{p.noHace}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Bloque>
+      <Bloque orden={2} titulo="Glosario: qué significa cada cosa que ves en la app" objetivo="Cada término, en una frase, y de qué dato sale (fila de la ficha de abajo).">
         <div className="overflow-x-auto">
           <table className="w-full text-sm" data-testid="glosario">
             <thead>
@@ -80,7 +114,7 @@ export const TableroDatos = ({ visible }: { visible: boolean }) => {
         </div>
       </Bloque>
       {datos && (
-        <Bloque orden={2} titulo="Ficha de cada dato: fuente, última actualización, exactitud y refresco" objetivo="Lo vencido se marca en rojo con el comando para refrescarlo. Lo marcado 'aproximada' o 'supuesto' es estático: vive en config/espacio.json y no se actualiza solo; una búsqueda a meses vista vale lo que valgan estas fechas.">
+        <Bloque orden={3} titulo="Ficha de cada dato: fuente, última actualización, exactitud y refresco" objetivo="Lo vencido se marca en rojo con el comando para refrescarlo. Lo marcado 'aproximada' o 'supuesto' es estático: vive en config/espacio.json y no se actualiza solo; una búsqueda a meses vista vale lo que valgan estas fechas.">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { Continente, armarCombinaciones, armarPanorama, claveGrupo, diasEntre, ordenarCombinaciones, sumarDias, tasaDesvioDiaria } from "@az/core";
-import type { AeropuertoCandidato, CoberturaMercado, DatasetPrecios, FechasMercado, Panorama, PrecioCacheado, ResultadoMercado } from "@az/core";
+import { Continente, armarCombinaciones, armarPanorama, claveGrupo, curvaAnticipacion, diasEntre, leerSenal, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
+import type { Anticipacion, AeropuertoCandidato, CoberturaMercado, DatasetPrecios, FechasMercado, Panorama, PrecioCacheado, ResultadoMercado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, NombreAerolinea } from "@az/espacio";
 import type { ServicioEspacio } from "./espacio";
 import { lectorPrecios } from "./precios-cache";
@@ -20,10 +20,13 @@ export type ResultadoServicioFechas = { ok: true; resultado: FechasMercado } | {
 
 export type ResultadoServicioPanorama = { ok: true; resultado: Panorama } | { ok: false; motivo: string };
 
+export type ResultadoServicioAnticipacion = { ok: true; resultado: Anticipacion } | { ok: false; motivo: string };
+
 export interface ServicioMercado {
   buscar: (pedido: PedidoMercado) => ResultadoServicioMercado;
   fechas: (origen: string, destino: string) => ResultadoServicioFechas; // días con combinaciones, para el calendario
   panorama: (origen: string, destino: string) => ResultadoServicioPanorama; // Fase 21: todo el horizonte agregado, sin fecha elegida
+  anticipacion: (origen: string, destino: string, fechaIda: string | null) => ResultadoServicioAnticipacion; // Fase 22: ¿compro o espero?
   cobertura: () => CoberturaMercado; // qué aeropuertos, pares y grupos de continentes tienen tarifas bajadas
   flexDiasDefecto: number; // config: ventana ± días cuando la consulta no la trae
 }
@@ -183,6 +186,35 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     };
   };
 
+  // Fase 22: ¿compro o espero? La curva de anticipación sale de la foto de hoy; el historial se reconstruye
+  // corrida por corrida (`ultimos` con corte por día) y es lo único que dice si el precio se mueve.
+  const anticipacion = (origen: string, destino: string, fechaIda: string | null): ResultadoServicioAnticipacion => {
+    const { dataset, vigentes, aviso } = leerDataset();
+    const c = candidatos(origen, destino, vigentes);
+    if (!c.ok) return c;
+    const hoy = ahora().toISOString().slice(0, 10);
+    const hasta = sumarDias(hoy, config.mercado.diasHorizonte);
+    const tasa = tasaDesvioDiaria(dataset?.desvio ?? null, config.precios.desvioDiarioSupuestoPct);
+    const opciones = opcionesDe(tasa.tasaPct);
+    const base = { origenes: c.origenes, destinos: c.destinos, desde: hoy, hasta, hoy };
+    const deHoy = armarCombinaciones({ ...base, precios: vigentes }, opciones);
+    const tramos = curvaAnticipacion(deHoy, hoy, config.precios.anticipacion);
+    // Historial: para cada día en que se bajó algo de este par, el mínimo que la app habría mostrado ese día.
+    const delPar = (dataset?.precios ?? []).filter((p) => c.origenes.some((o) => o.iata === p.origen) || c.destinos.some((d) => d.iata === p.destino));
+    const dias = [...new Set(delPar.map((p) => p.encontradoEn.slice(0, 10)))].sort();
+    const historial = dias
+      .map((dia) => {
+        const lista = armarCombinaciones({ ...base, precios: ultimos(delPar, dia) }, opciones).filter((x) => fechaIda === null || x.fechaIda === fechaIda);
+        return { bajadaEn: dia, minUsd: lista.length ? Math.min(...lista.map((x) => x.totalUsd)) : 0, combinaciones: lista.length };
+      })
+      .filter((h) => h.combinaciones > 0);
+    const delDia = fechaIda === null ? [] : deHoy.filter((x) => x.fechaIda === fechaIda);
+    const minDelDia = delDia.length ? Math.min(...delDia.map((x) => x.totalUsd)) : null;
+    const masBarata = delDia.length ? [...delDia].sort((a, b) => a.totalUsd - b.totalUsd)[0] : undefined;
+    const senal = leerSenal({ origen, destino, fechaIda, hoy, tramos, historial, minDelDia, vistoHaceDias: masBarata?.vistoHaceDias ?? null, desvioDiarioPct: tasa.tasaPct }, config.precios.anticipacion);
+    return { ok: true, resultado: { origen, destino, fechaIda, hoy, tramos, historial, ...senal, porque: [...senal.porque, ...(aviso ? [aviso] : [])] } };
+  };
+
   const cobertura = (): CoberturaMercado => {
     const { dataset, vigentes } = leerDataset();
     const configVivo = { segundosPorBusquedaEnVivo: config.mercado.segundosPorBusquedaEnVivo, maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto };
@@ -215,5 +247,5 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     };
   };
 
-  return { buscar, fechas, panorama, cobertura, flexDiasDefecto: config.mercado.flexDiasDefecto };
+  return { buscar, fechas, panorama, anticipacion, cobertura, flexDiasDefecto: config.mercado.flexDiasDefecto };
 };

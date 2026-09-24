@@ -1157,7 +1157,13 @@
       { "hastaDiasAlViaje": 60, "cadaDias": 3 },
       { "hastaDiasAlViaje": null, "cadaDias": 7 }
     ],
-    "nota": "Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios (por continentes, según bajada.grupos) o pnpm precios ORIGEN DESTINO (un par) y cada corrida se guarda 90 días sin borrar la anterior; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio). Hasta tener ese desvío medido, cada fila estima ±1 % por día desde que se vio la tarifa (supuesto: las tarifas de largo radio se mueven del orden de 5–10 % por semana; se reemplaza por la tasa medida en cuanto hay dos corridas). Cadencia recomendada según lo que falta para el viaje: diaria en las últimas dos semanas, cada 3 días hasta 60 días, semanal más lejos."
+    "anticipacion": {
+      "tramosDias": [0, 14, 30, 60, 90, 120, 180, 240, 300],
+      "cambioSignificativoPct": 5,
+      "minObservaciones": 2,
+      "minDiasPorTramo": 3
+    },
+    "nota": "Anticipación (Fase 22): los tramos siguen la cadencia de rebaja (14 y 60 días) y después se abren de a 30/60 días hasta el año. Un cambio de menos de 5 % se trata como ruido: es el orden del desvío que ya se asume por la antigüedad de la tarifa. Para hablar de tendencia hacen falta dos días de bajada distintos del mismo par, y un tramo de la curva cuenta desde 3 días de salida con datos. La curva sale de una sola foto del cache: mezcla anticipación con temporada y la app lo dice. Travelpayouts (Aviasales Data API v3): precios que otros usuarios encontraron en los últimos días, no cotización viva. Se bajan con pnpm precios (por continentes, según bajada.grupos) o pnpm precios ORIGEN DESTINO (un par) y cada corrida se guarda 90 días sin borrar la anterior; Datos muestra el desvío medido entre corridas (mediana y p90 del cambio). Hasta tener ese desvío medido, cada fila estima ±1 % por día desde que se vio la tarifa (supuesto: las tarifas de largo radio se mueven del orden de 5–10 % por semana; se reemplaza por la tasa medida en cuanto hay dos corridas). Cadencia recomendada según lo que falta para el viaje: diaria en las últimas dos semanas, cada 3 días hasta 60 días, semanal más lejos."
   },
   "bajada": {
     "grupos": [

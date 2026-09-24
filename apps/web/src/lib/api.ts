@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CoberturaMercado, FechasMercado, FuenteDato, Panorama, ResultadoMercado } from "@az/core";
+import { Anticipacion, CoberturaMercado, FechasMercado, FuenteDato, Panorama, ResultadoMercado } from "@az/core";
 import { ResultadoRutasPosibles } from "@az/espacio";
 
 const BASE = "/api";
@@ -21,6 +21,8 @@ export const obtenerCobertura = () => pedir(CoberturaMercado, "/mercado/cobertur
 export const obtenerFechas = (origen: string, destino: string) => pedir(FechasMercado, `/mercado/fechas?origen=${origen}&destino=${destino}`);
 // Fase 21: el panorama del par en todo el horizonte, sin fecha elegida.
 export const obtenerPanorama = (origen: string, destino: string) => pedir(Panorama, `/mercado/panorama?origen=${origen}&destino=${destino}`);
+// Fase 22: ¿compro o espero? Curva de anticipación, historial de corridas y la señal.
+export const obtenerAnticipacion = (origen: string, destino: string, fechaIda?: string) => pedir(Anticipacion, `/mercado/anticipacion?origen=${origen}&destino=${destino}${fechaIda ? `&fechaIda=${fechaIda}` : ""}`);
 
 // Fase 18: actualización a pedido y sonda del cache (búsqueda en vivo → Data API → tabla).
 const EstadoActualizacion = z.object({ enCurso: z.boolean(), origen: z.string().nullable(), destino: z.string().nullable(), pedidos: z.number(), total: z.number(), tarifasNuevas: z.number(), iniciadoEn: z.string().nullable(), terminadoEn: z.string().nullable(), error: z.string().nullable() });

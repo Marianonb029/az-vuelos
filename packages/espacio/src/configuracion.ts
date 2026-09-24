@@ -74,6 +74,14 @@ export const ConfigPrecios = z.object({
   diasHistorial: z.number().int().min(1), // corridas anteriores que se conservan (por antigüedad de `encontradoEn`)
   desvioDiarioSupuestoPct: z.number().min(0), // % por día desde que se vio la tarifa, hasta que haya desvío medido entre corridas
   cadencia: z.array(z.object({ hastaDiasAlViaje: z.number().int().min(0).nullable(), cadaDias: z.number().int().min(1) })).min(1), // cada cuánto rebajar según lo que falta para el viaje
+  // Fase 22: "¿compro o espero?". Tramos de anticipación de la curva, qué cambio deja de ser ruido y cuántos
+  // datos hacen falta para hablar de tendencia.
+  anticipacion: z.object({
+    tramosDias: z.array(z.number().int().min(0)).min(2), // cortes en días al viaje
+    cambioSignificativoPct: z.number().min(0),
+    minObservaciones: z.number().int().min(2), // días de bajada distintos para comparar
+    minDiasPorTramo: z.number().int().min(1), // días de salida con datos para que un tramo cuente
+  }),
 });
 
 // Bajada por continentes (Fase 16): grupos de prioridad del dueño, presupuesto de pedidos por corrida y cada
