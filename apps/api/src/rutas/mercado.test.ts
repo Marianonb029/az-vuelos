@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Panorama, ResultadoMercado } from "@az/core";
 import type { PrecioCacheado } from "@az/core";
 import { crearApp } from "../app";
+import { crearServicioSeguidos } from "../servicios/seguidos";
 import { config } from "../config";
 import { crearServicioEspacio } from "../servicios/espacio";
 import { crearServicioActualizacion } from "../servicios/actualizacion";
@@ -57,7 +58,7 @@ const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEs
 const mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio, () => new Date("2026-09-17T12:00:00Z"), rutaPrecios);
 const feriados = { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) };
 const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: null });
-const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpeta, "tendencias.json") });
+const app = crearApp({ seguidos: () => crearServicioSeguidos(carpeta), espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpeta, "tendencias.json") });
 
 describe("GET /mercado", () => {
   it("arma las combinaciones del dataset con el orden del dueño y la ficha del dataset", async () => {
@@ -124,6 +125,19 @@ describe("GET /mercado", () => {
     // Con destino aeropuerto, un solo destino y sin los otros continentes.
     const uno = Panorama.parse((await app.inject({ method: "GET", url: "/mercado/panorama?origen=ASU&destino=MAD" })).json());
     expect(uno).toMatchObject({ destinoEsContinente: false, combinaciones: 4 });
+  });
+
+  it("sigue y deja de seguir un par, y guarda sólo lo que hace falta para volver a bajarlo (Fase 23)", async () => {
+    expect((await app.inject({ method: "GET", url: "/seguidos" })).json()).toMatchObject({ pares: [] });
+    const alta = await app.inject({ method: "POST", url: "/seguidos", payload: { origen: "ASU", destino: "MAD", vuelta: true, fechaIda: "2027-01-19" } });
+    expect(alta.statusCode).toBe(200);
+    expect((alta.json() as { pares: unknown[] }).pares[0]).toMatchObject({ origen: "ASU", destino: "MAD", ida: true, vuelta: true, fechaIda: "2027-01-19" });
+    // Seguirlo de nuevo actualiza las direcciones sin duplicar el par.
+    const otra = await app.inject({ method: "POST", url: "/seguidos", payload: { origen: "ASU", destino: "MAD", vuelta: false } });
+    expect((otra.json() as { pares: { vuelta: boolean }[] }).pares).toHaveLength(1);
+    expect((otra.json() as { pares: { vuelta: boolean }[] }).pares[0]?.vuelta).toBe(false);
+    expect((await app.inject({ method: "POST", url: "/seguidos", payload: { origen: "ASU", destino: "ASU" } })).statusCode).toBe(400);
+    expect((await app.inject({ method: "DELETE", url: "/seguidos?origen=ASU&destino=MAD" })).json()).toMatchObject({ pares: [] });
   });
 
   it("valida la consulta", async () => {

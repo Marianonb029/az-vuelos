@@ -92,6 +92,9 @@ export const ConfigBajada = z.object({
   redescubrirDias: z.number().int().min(1), // un origen se vuelve a preguntar (sin destino) pasado esto
   hubsDelOrigen: z.boolean(), // además de los destinos del grupo, bajar origen→aeropuerto grande del mismo continente (el primer boleto de un encadenado)
   paisesExcluidos: z.array(z.string().length(2)), // ISO 3166-1: ni como origen ni como destino de la bajada, ni como llegada cuando el destino es un continente
+  // Fase 23: parte del presupuesto de cada corrida se reserva para volver a bajar los pares seguidos. Sin volver
+  // sobre el mismo par no hay historial, y sin historial no se puede decir si el precio sube o baja.
+  presupuestoSeguidosPct: z.number().min(0).max(100),
   nota: z.string(),
 });
 

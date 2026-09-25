@@ -686,6 +686,22 @@ Dos pedidos del dueño: la curva de anticipación (la única idea de tablero que
 - **Datos** abre con "Para qué sirve cada pestaña": pregunta que contesta, objetivo (qué decisión ayuda a tomar) y **qué no hace**, desde `lib/pestanas.ts` (la misma fuente que alimenta la barra de navegación, para que no se desincronicen). Glosario ampliado: mapa de calor, precio típico, curva de anticipación, historial, señal y Resumen de ruta.
 - **Rutas**: el formulario pasa a tener pasos ("1 · ¿De dónde a dónde?", "2 · ¿Qué día salís?"), el bloque técnico de cobertura del cache baja a un plegable al pie en vez de abrir la pantalla, y sobre la tabla aparece el titular "Lo más barato: USD N · itinerario · día" con un botón a las conclusiones.
 
+## Fase 23 (25/09/2026) — que los datos alcancen: pares seguidos, ida y vuelta, y lectura sin esfuerzo
+
+Revisión del dueño sobre el propósito de la app. Se aplican seis cambios; dos quedan explicados y sin aplicar por decisión suya (búsqueda en vivo y qué hacer con el modelo).
+
+### 23.0 — los servidores dejan de morirse
+
+La tarea "AZ Vuelos - servidores" lanzaba los dos servidores con `start` y terminaba; Windows se llevaba por delante el árbol de procesos (registro con `^C`, tarea con código `0xC000013A`) de forma intermitente. Ahora hay **una tarea por servidor** (`AZ Vuelos - api` y `AZ Vuelos - web`), cada una corriendo su `.cmd` **en primer plano** (`scripts/az-api.cmd`, `scripts/az-web.cmd`): el proceso vive dentro de la tarea, que queda en estado "En ejecución" mientras el servidor corre, con `AllowHardTerminate` en falso y reinicio automático ante fallo. Los registros siguen en `data/local/api.log` y `web.log`. `scripts/az-vuelos.cmd` queda para el acceso directo del escritorio (levanta lo que falte y abre el navegador).
+
+### 23.1 — pares seguidos y presupuesto nocturno para ellos
+
+**El problema.** La señal "¿compro o espero?" necesita ver el **mismo par dos veces en días distintos**, y la bajada nocturna nunca vuelve sobre lo mismo: gasta sus 1.500 pedidos **descubriendo pares nuevos** y salta a un par ya bajado (`vigente()` lo filtra por 7 días). Resultado medido: sólo 1.871 de 45.274 combinaciones par+fecha tienen dos observaciones, y **una sola tiene tres**. La Fase 22 quedaba prometiendo algo que los datos no podían sostener.
+
+**La solución.** Un par se puede **seguir** (`data/local/seguidos.json`, `GET/POST/DELETE /seguidos`), opcionalmente con su vuelta. La bajada nocturna reserva `bajada.presupuestoSeguidosPct` (**30 %**) para bajar esos pares **antes** del barrido, ignorando la vigencia (es el punto: volver aunque esté fresco) y como mucho **una vez por día por par** (dos bajadas el mismo día no agregan historial). Lo que el cupo no usa vuelve al barrido por continentes. Con 1.500 pedidos por noche el cupo alcanza para ~450 pares por día, mucho más de lo que una persona sigue.
+
+**La tensión, resuelta.** La regla era "sin base de datos ni registros de uso". Seguir un par **no es un registro de uso**: es una decisión explícita de la persona, se ve en pantalla, se puede deshacer y el archivo guarda sólo origen, destino, direcciones y desde cuándo — ni búsquedas, ni historial de navegación, ni nada que la persona no haya pedido. Vive en `data/local/` (fuera del repo) y borrarlo sólo pierde el seguimiento, no los precios.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

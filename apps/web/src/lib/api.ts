@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Anticipacion, CoberturaMercado, FechasMercado, FuenteDato, Panorama, ResultadoMercado } from "@az/core";
+import { Anticipacion, CoberturaMercado, FechasMercado, FuenteDato, Panorama, ResultadoMercado, Seguidos } from "@az/core";
 import { ResultadoRutasPosibles } from "@az/espacio";
 
 const BASE = "/api";
@@ -33,6 +33,12 @@ export const iniciarActualizacion = (origen: string, destino: string, pares?: { 
   pedir(EstadoActualizacion, `/mercado/actualizar?origen=${origen}&destino=${destino}`, pares ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pares }) } : { method: "POST" });
 export const estadoActualizacion = () => pedir(EstadoActualizacion, "/mercado/actualizar/estado");
 export const sonda = (origen: string, destino: string, fechaIda: string, flexDias: number) => pedir(Sonda, `/mercado/sonda?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}&flexDias=${flexDias}`);
+
+// Fase 23: pares seguidos. Lo único que la app guarda por decisión de la persona: la bajada nocturna les reserva
+// pedidos para que se arme el historial (sin dos bajadas del mismo par no hay con qué comparar).
+export const obtenerSeguidos = () => pedir(Seguidos, "/seguidos");
+export const seguirPar = (p: { origen: string; destino: string; ida: boolean; vuelta: boolean; fechaIda: string | null }) => pedir(Seguidos, "/seguidos", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(p) });
+export const dejarPar = (origen: string, destino: string) => pedir(Seguidos, `/seguidos?origen=${origen}&destino=${destino}`, { method: "DELETE" });
 
 // Fase 17: todas las rutas que el grafo permite hacia un aeropuerto o continente, sin fecha ni precio.
 export const obtenerRutasPosibles = (origen: string, destino: string) => pedir(ResultadoRutasPosibles, `/rutas-posibles?origen=${origen}&destino=${destino}`);

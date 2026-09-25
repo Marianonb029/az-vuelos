@@ -1,9 +1,10 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { claveGrupo } from "@az/core";
+import { claveGrupo, paresASeguir } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, RutaCompacta } from "@az/espacio";
 import { crearBajada, crearClienteDataApi, paresDelModelo, soltarCandado, tomarCandado } from "../apps/api/src/servicios/bajada";
 import { crearServicioEspacio } from "../apps/api/src/servicios/espacio";
+import { crearServicioSeguidos } from "../apps/api/src/servicios/seguidos";
 
 // Precios cacheados de Travelpayouts (Aviasales Data API v3, `prices_for_dates`). Dos modos:
 //   pnpm precios [pedidos]        bajada por continentes según `bajada.grupos` (Fase 16): por cada aeropuerto de
@@ -41,6 +42,21 @@ try {
   } else {
     // --- modo continentes: grupos en orden de prioridad; orígenes con más salidas primero; sigue donde quedó
     const presupuesto = Number(args[0] ?? config.bajada.maxPedidosPorCorrida);
+    // Antes del barrido, los pares seguidos (Fase 23): son los únicos que se vuelven a bajar aunque estén
+    // vigentes, porque de ahí sale el historial que dice si el precio sube o baja. Lo que no usen vuelve al barrido.
+    const seguidos = crearServicioSeguidos(DATOS).leer().pares;
+    if (seguidos.length > 0) {
+      const hoy = new Date(b.hoyMs).toISOString().slice(0, 10);
+      const bajadoEn = new Map((b.previo?.pares ?? []).map((p) => [`${p.origen}|${p.destino}`, p.bajadoEn]));
+      const cupo = Math.floor((presupuesto * config.bajada.presupuestoSeguidosPct) / 100);
+      const pendientes = paresASeguir(seguidos, bajadoEn, hoy).slice(0, cupo);
+      console.log(`pares seguidos: ${seguidos.length} seguidos, ${pendientes.length} a bajar hoy (cupo ${cupo} de ${presupuesto} pedidos)`);
+      for (const [o, d] of pendientes) {
+        if (estado.pedidos >= presupuesto) break;
+        await b.bajarPar(o, d, null);
+      }
+      if (pendientes.length > 0) b.guardar();
+    }
     const catalogo = new Map(AeropuertoGeo.array().parse(JSON.parse(readFileSync(resolve(DATOS, "aeropuertos-geo.json"), "utf8"))).map((a) => [a.iata, a]));
     const salidas = new Map<string, number>();
     for (const r of RutaCompacta.array().parse(JSON.parse(readFileSync(resolve(DATOS, "rutas.json"), "utf8")))) salidas.set(r[1], (salidas.get(r[1]) ?? 0) + 1);

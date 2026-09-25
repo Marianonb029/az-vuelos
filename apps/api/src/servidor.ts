@@ -5,6 +5,7 @@ import { crearServicioFeriados } from "./servicios/feriados";
 import { crearServicioActualizacion } from "./servicios/actualizacion";
 import { crearClienteDataApi } from "./servicios/bajada";
 import { crearServicioMercado } from "./servicios/mercado";
+import { crearServicioSeguidos } from "./servicios/seguidos";
 import { iniciarRefresco } from "./servicios/refresco";
 
 // Los servicios se recrean cuando el refresco automático trae datasets nuevos.
@@ -15,7 +16,8 @@ const enVivo = { marker: process.env["TRAVELPAYOUTS_MARKER"] ?? null, actualizac
 let espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspacio);
 let mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio, undefined, undefined, enVivo);
 const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: token ? crearClienteDataApi(token) : null });
-const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados: crearServicioFeriados(), rutaTendencias: config.rutaTendencias });
+const seguidos = crearServicioSeguidos(config.directorioDatos);
+const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, seguidos: () => seguidos, feriados: crearServicioFeriados(), rutaTendencias: config.rutaTendencias });
 
 iniciarRefresco({
   fuentesVencidas: () => espacio.fuentes().filter((f) => f.vencida),

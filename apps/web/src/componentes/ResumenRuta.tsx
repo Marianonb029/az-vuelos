@@ -5,6 +5,7 @@ import { Anticipacion } from "./Anticipacion";
 import { Bloque } from "./Bloque";
 import { horas } from "./FilaMercado";
 import { Opcion, conclusiones, equilibrada, menor, ruta } from "./ResumenPiezas";
+import { Seguir } from "./Seguir";
 import { Ranking, pct, top } from "./TableroPiezas";
 
 interface Props {
@@ -91,7 +92,7 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
       </Bloque>
 
       <Bloque orden={2} titulo="¿Comprar ahora o esperar?" objetivo="Lo que muestra el historial de este par y la anticipación con la que estuvo más barato. Son observaciones del cache, no un pronóstico.">
-        <Anticipacion origen={origen} destino={destino} fechaIda={mercado.fechaIda} />
+        <Anticipacion origen={origen} destino={destino} fechaIda={mercado.fechaIda} seguir={mercado.destinoEsContinente ? undefined : <Seguir origen={origen} destino={destino} fechaIda={mercado.fechaIda} />} />
       </Bloque>
 
       <Bloque orden={3} titulo="Qué tan confiable es lo que estás viendo" objetivo="Las tarifas son las que otros viajeros vieron en Aviasales: cuanto más viejas, más pueden haberse movido.">

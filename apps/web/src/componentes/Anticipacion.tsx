@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { TEXTO_SENAL, etiquetaTramo, fechaCorta } from "@az/core";
 import type { Anticipacion as Datos } from "@az/core";
 import { obtenerAnticipacion } from "../lib/api";
@@ -10,12 +11,13 @@ interface Props {
   destino: string;
   fechaIda?: string; // sin fecha: la pregunta es del par entero
   compacto?: boolean; // sin la curva ni el historial: sólo la conclusión
+  seguir?: ReactNode; // el botón de seguir el par, cuando el destino es un aeropuerto
 }
 
 // Fase 22: "¿compro ahora o espero?". Muestra la conclusión con los hechos que la sostienen, la curva de
 // anticipación del par (con cuántos días antes estuvo más barato) y el historial de las bajadas. Nunca dice qué
 // va a pasar: dice qué se observó y con cuánto apoyo.
-export const Anticipacion = ({ origen, destino, fechaIda, compacto = false }: Props) => {
+export const Anticipacion = ({ origen, destino, fechaIda, compacto = false, seguir }: Props) => {
   const [d, setD] = useState<Datos | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -51,6 +53,7 @@ export const Anticipacion = ({ origen, destino, fechaIda, compacto = false }: Pr
             </li>
           ))}
         </ul>
+        {seguir && <div className="mt-2 border-t border-current/20 pt-2">{seguir}</div>}
       </div>
       {!compacto && d.historial.length > 0 && (
         <div>
