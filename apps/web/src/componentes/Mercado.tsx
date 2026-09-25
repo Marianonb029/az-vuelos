@@ -30,6 +30,7 @@ interface Props {
   pedido: PedidoInicial | null;
   onPedidoAplicado: () => void;
   onVerResumen: () => void; // lleva a Resumen de ruta con esta búsqueda
+  paresMultiples: readonly { origen: string; destino: string }[] | null; // boletos a buscar, desde Combinaciones
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -46,7 +47,7 @@ const FLEX: { valor: "0" | "3" | "7" | "15"; etiqueta: string }[] = [
 
 // Pestaña Rutas (Fase 15): el mercado. Lo que la API de Travelpayouts tiene para llegar al destino, en uno o dos
 // boletos, ordenado: aeropuerto de salida (el pedido primero), precio, sin bodega antes, horas, escalas, aerolíneas.
-export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicado, onVerResumen }: Props) => {
+export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicado, onVerResumen, paresMultiples }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [fechaIda, setFechaIda] = useState("");
@@ -226,7 +227,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
           <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} dias={diasEnVivo} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} segundosPorBusqueda={cobertura?.segundosPorBusquedaEnVivo ?? 45} hoy={hoy} onActualizado={actualizado} />
         )}
       </form>
-      <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle">
+      <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle" open={paresMultiples !== null && paresMultiples.length > 0}>
         <summary className="cursor-pointer text-sm font-medium text-slate-800">Búsqueda múltiple: varias rutas, una fecha y una ventana; la app busca en vivo cada una y trae todo al sistema</summary>
         <div className="mt-3">
           <BusquedaMultiple
@@ -234,6 +235,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
             cobertura={cobertura}
             hoy={hoy}
             onTraido={traido}
+            {...(paresMultiples ? { paresIniciales: paresMultiples } : {})}
             onElegirPar={(o, d) => {
               setOrigen(o);
               setDestino(d);

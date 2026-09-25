@@ -713,6 +713,14 @@ La tarea "AZ Vuelos - servidores" lanzaba los dos servidores con `start` y termi
 - **Días sin precio**: cada mes con huecos trae un botón *"Buscar los N días sin precio de nov"* que lleva el par y **esos días concretos** a Rutas; `EnVivo` acepta ahora una lista explícita de días, así la búsqueda en vivo recorre sólo los huecos y no la ventana completa. Cierra el círculo entre ver el vacío y taparlo.
 - **Ida y vuelta, integrada** (no una pestaña aparte: separarla duplicaría el formulario y rompería el recorrido). En Explorar precios, con destino aeropuerto, un bloque pide la estadía (7 / 10 / 14 / 21 / 30 días) y arma el total sumando **dos boletos de ida**: el de ida el día D y el de vuelta el día D + estadía, ordenados por total. Se dice expresamente que son dos boletos separados y que un ida y vuelta de la misma aerolínea **suele costar menos**, así que el número es un techo. Si el sentido inverso no está en el cache (pasa hoy con Europa → América, que es el tercer grupo del barrido), en vez de una tabla vacía aparece el porqué y el botón para seguir el par con su vuelta; a la mañana siguiente ya hay total. Verificado: ASU ⇄ LIS, ida y vuelta desde USD 933 (325 + 608) con 14 días de estadía.
 
+### 23.4 — Combinaciones accionable (sin sacar nada) y dos datos que prometían de más
+
+**Combinaciones.** Genera más de lo que un humano puede leer (69.915 rutas en LIS → MAD) y no dice qué hacer con eso. No se recorta nada: la lista completa sigue abajo, entera, con sus filtros. Arriba se agrega **"Qué conviene buscar a mano"**: los boletos que **ninguna tarifa cubre**, agrupados (un boleto lo usan muchas rutas), ordenados por lo que aportarían —primero los que tienen ruta directa, después los de más vuelos por semana y más rutas que dependen de ellos— y con un botón que los **carga en la búsqueda múltiple de Rutas** para buscarlos en vivo de una pasada. Es el puente que faltaba entre "esta ruta existe" y "traigámosle precio".
+
+**Los dos datos que prometían de más** (regla 2: lo aproximado y lo supuesto se dice):
+- **Aerolínea**: la API da una sola por boleto, la que lo **vende**. Un ASU→GRU→GIG→LIS→FRA vendido por Gol con el último tramo de TAP aparecía como "1 aerolínea" sin más. Ahora cada boleto con escalas dice "(vende el boleto)" y la columna 6 aclara debajo que cuenta vendedoras, no operadoras. El criterio de orden no cambia: cambia lo que la fila promete.
+- **Equipaje**: se deduce de la clave de tarifa del enlace (H = mano, L = bodega), que la API no documenta. Ahora va subrayado, con "(probable)" y el detalle al pasar el cursor: "confirmalo en la aerolínea antes de comprar". Los dos entran al glosario de Datos con su ficha.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

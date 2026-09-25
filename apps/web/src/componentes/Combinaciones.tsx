@@ -5,6 +5,7 @@ import type { Aeropuerto, CoberturaMercado, Continente } from "@az/core";
 import type { ResultadoRutasPosibles, RutaPosible } from "@az/espacio";
 import { obtenerCobertura, obtenerRutasPosibles } from "../lib/api";
 import { Aerolineas, tieneLowCost } from "./Aerolinea";
+import { CombinacionesPrioritarias } from "./CombinacionesPrioritarias";
 import { Bloque } from "./Bloque";
 import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
@@ -12,6 +13,7 @@ import type { Opcion } from "./Combobox";
 
 interface Props {
   aeropuertos: readonly Aeropuerto[];
+  onBuscarPares: (pares: { origen: string; destino: string }[]) => void; // llevar los boletos sin precio a la búsqueda múltiple
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -77,7 +79,7 @@ const Fila = ({ r, nombre, bajoCosto }: { r: RutaPosible; nombre: (iata: string)
 
 // Pestaña Combinaciones (Fase 17): todo lo que el grafo permite desde el origen y sus alternativos hacia un
 // aeropuerto o un continente, sin fecha ni precio. Agrupado por aeropuerto de salida y destino, plegado.
-export const Combinaciones = ({ aeropuertos }: Props) => {
+export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [intentado, setIntentado] = useState(false);
@@ -186,9 +188,14 @@ export const Combinaciones = ({ aeropuertos }: Props) => {
           {error}
         </p>
       )}
+      {resultado && aMano > 0 && (
+        <Bloque orden={1} titulo="Qué conviene buscar a mano (lo que el mercado todavía no tiene)" objetivo="De todas las rutas de abajo, los boletos que no tienen ni una tarifa en el cache, ordenados por lo que aportarían: primero los que tienen ruta directa y más vuelos por semana (más chance de que haya tarifa cuando se busque). Un botón los carga en la búsqueda múltiple de Rutas.">
+          <CombinacionesPrioritarias rutas={rutas} nombre={nombre} bajoCosto={bajoCosto} max={cobertura?.maxBusquedasEnVivo ? 20 : 20} onBuscar={onBuscarPares} />
+        </Bloque>
+      )}
       {resultado && (
         <Bloque
-          orden={1}
+          orden={aMano > 0 ? 2 : 1}
           titulo={`Combinaciones: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}`}
           objetivo="Por aeropuerto de salida (el pedido primero, después por cercanía) y, dentro, por destino: con destino aeropuerto, el pedido primero y después los alternativos por cercanía al pedido, siempre con el tramo final al pedido (vuelo aparte con sus aerolíneas, o por tierra hasta 400 km); con destino continente, por distancia en km desde esa salida. En cada destino: un boleto antes que dos, menos escalas, más aerolíneas que venden, más frecuencia. Abrí un destino para ver sus rutas. Las de baja frecuencia (menos de 7 vuelos semanales proxy) van en gris."
         >

@@ -13,14 +13,27 @@ export const horaLocal = (epoch: number) => {
   return `${iso.slice(8, 10)}/${iso.slice(5, 7)} ${iso.slice(11, 16)}`;
 };
 
+// El equipaje no viene como campo de la API: se deduce de la clave de tarifa del enlace (H = mano, L = bodega),
+// que no está documentada. Se muestra como probable y se dice que hay que confirmarlo. La aerolínea es una sola
+// por boleto —la que lo vende—, así que los tramos de una escala pueden ser de otra: también se dice.
 const equipaje = (mano: boolean | null, bodega: boolean | null) => (mano === null && bodega === null ? "no informado" : `mano ${mano === null ? "?" : mano ? "sí" : "no"} · bodega ${bodega === null ? "?" : bodega ? "sí" : "no"}`);
+const TITULO_EQUIPAJE = "Deducido de la clave de tarifa del enlace (H = mano, L = bodega): no es un dato documentado de la API. Confirmalo en la aerolínea antes de comprar.";
+const TITULO_VENDEDORA = "La API devuelve una sola aerolínea por boleto: la que lo vende. Los tramos de una escala pueden ser de otra (por ejemplo, un boleto de Gol con el último tramo operado por TAP).";
 
 const Boleto = ({ b, nombre, marker, bajoCosto }: { b: BoletoMercado; nombre: (iata: string) => string; marker: string | null; bajoCosto: readonly string[] }) => (
   <span className="block">
     {b.esperaMin !== null && <span className="block text-slate-500">espera {horas(b.esperaMin)} en {b.origen} (otro boleto: sin protección de conexión)</span>}
-    <span className="font-medium text-slate-900">{b.itinerario.join(" → ")}</span> · <Aerolineas codigos={[b.aerolinea]} nombre={nombre} bajoCosto={bajoCosto} /> {b.numeroVuelo && `${b.aerolinea} ${b.numeroVuelo}`} · USD {b.precioUsd.toLocaleString("es")} · {b.transbordos === 0 ? "directo" : `${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}`} · {horas(b.duracionMin)} · sale {horaLocal(b.salidaEpoch)}, llega {horaLocal(b.llegadaEpoch)} (hora local)
+    <span className="font-medium text-slate-900">{b.itinerario.join(" → ")}</span> ·{" "}
+    <span title={TITULO_VENDEDORA}>
+      <Aerolineas codigos={[b.aerolinea]} nombre={nombre} bajoCosto={bajoCosto} />
+      {b.itinerario.length > 2 ? <span className="text-slate-500"> (vende el boleto)</span> : null}
+    </span>{" "}
+    {b.numeroVuelo && `${b.aerolinea} ${b.numeroVuelo}`} · USD {b.precioUsd.toLocaleString("es")} · {b.transbordos === 0 ? "directo" : `${b.transbordos} transbordo${b.transbordos === 1 ? "" : "s"}`} · {horas(b.duracionMin)} · sale {horaLocal(b.salidaEpoch)}, llega {horaLocal(b.llegadaEpoch)} (hora local)
     <span className="block text-slate-500">
-      {equipaje(b.equipajeMano, b.equipajeBodega)} · vendía {b.agencia || "?"} · visto {b.vistoEn.slice(5)} ·{" "}
+      <span title={TITULO_EQUIPAJE} className="underline decoration-dotted">
+        {equipaje(b.equipajeMano, b.equipajeBodega)} (probable)
+      </span>{" "}
+      · vendía {b.agencia || "?"} · visto {b.vistoEn.slice(5)} ·{" "}
       <a href={conMarker(`${AVIASALES}${b.enlace}`, marker)} target="_blank" rel="noreferrer" className="text-sky-700 underline">
         abrir en Aviasales
       </a>
@@ -55,7 +68,10 @@ export const FilaMercado = ({ c, posicion, resultado, nombre, marker, bajoCosto 
         <span className="block text-base font-semibold tabular-nums text-slate-900">USD {c.totalUsd.toLocaleString("es")}</span>
         {c.boletos.length > 1 && <span className="text-slate-500">{c.boletos.length} boletos</span>}
       </td>
-      <td className={`${celda} whitespace-nowrap`}>{equipaje(c.equipajeMano, c.equipajeBodega)}</td>
+      <td className={`${celda} whitespace-nowrap`} title={TITULO_EQUIPAJE}>
+        <span className="underline decoration-dotted">{equipaje(c.equipajeMano, c.equipajeBodega)}</span>
+        <span className="block text-[10px] text-slate-400">probable: se deduce de la tarifa</span>
+      </td>
       <td className={`${celda} whitespace-nowrap`}>
         <span className="block font-semibold tabular-nums text-slate-900">{horas(c.duracionTotalMin)}</span>
         {c.boletos.length > 1 && <span className="text-slate-500">esperas incluidas</span>}
@@ -67,6 +83,9 @@ export const FilaMercado = ({ c, posicion, resultado, nombre, marker, bajoCosto 
       <td className={celda}>
         <span className="block font-semibold tabular-nums text-slate-900">{c.aerolineas.length}</span>
         <Aerolineas codigos={c.aerolineas} nombre={nombre} bajoCosto={bajoCosto} />
+        <span className="block text-[10px] text-slate-400" title={TITULO_VENDEDORA}>
+          {c.boletos.some((b) => b.itinerario.length > 2) ? "la que vende cada boleto; los tramos con escala pueden ser de otra" : "la que vende el boleto"}
+        </span>
       </td>
       <td className={`${celda} whitespace-nowrap`}>{c.fechaIda.slice(8)}/{c.fechaIda.slice(5, 7)}</td>
       <td className={`${celda} min-w-[12rem]`} data-testid="antiguedad">

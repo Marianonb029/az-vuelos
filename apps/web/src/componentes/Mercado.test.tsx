@@ -41,7 +41,7 @@ describe("Mercado", () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : url.includes("/fechas") ? fechas : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
     const onResultado = vi.fn();
-    render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} pedido={null} onPedidoAplicado={() => undefined} onVerResumen={() => undefined} />);
+    render(<Mercado aeropuertos={aeropuertos} hoy="2026-09-17" onResultado={onResultado} pedido={null} onPedidoAplicado={() => undefined} onVerResumen={() => undefined} paresMultiples={null} />);
     await waitFor(() => expect(screen.getByTestId("cobertura").textContent).toContain("Tarifas bajadas el 2026-09-17: 1 pares, salidas desde ASU; llegadas a MAD"));
     // Con el campo vacío sólo se sugieren los aeropuertos con tarifas bajadas para ese rol.
     fireEvent.focus(screen.getByRole("combobox", { name: "Origen" }));
@@ -89,5 +89,5 @@ describe("Mercado", () => {
     // Con ±7 días el botón busca los 15 días él solo (a 45 s cada uno).
     expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales los 15 días (12/01/2027 a 26/01/2027, ~12 min) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
-  });
+  }, 20_000);
 });

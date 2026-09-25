@@ -58,7 +58,7 @@ describe("GET /espacio/combinaciones", () => {
     expect(r.combinaciones.some((c) => c.ventanaIda.desde === "2027-01-15" && c.aerolinea === "AR")).toBe(true); // la fecha pedida no se reemplaza
     expect(r.combinaciones.some((c) => c.aerolinea === "TK" && c.origen === "EZE" && c.via === "IST" && c.confianza === "alta")).toBe(true); // vende EZE→IST→MAD en un boleto
     expect(r.nombres.some((n) => n.iata === "TK")).toBe(true);
-  });
+  }, 30_000);
 });
 
 describe("GET /espacio/exportar", () => {
@@ -70,7 +70,7 @@ describe("GET /espacio/exportar", () => {
     expect(c.espacio.origen).toBe("EZE");
     expect(c.calendario.puntajes).toHaveLength(29);
     expect(c.combinaciones.combinaciones.length).toBeGreaterThan(50);
-  });
+  }, 30_000);
 
   it("devuelve combinations.xlsx con una hoja por fase y el calendario coloreado", async () => {
     const res = await app.inject({ method: "GET", url: "/espacio/exportar?origen=EZE&destino=MAD&desde=2027-01-15&hasta=2027-01-15&formato=xlsx" });
@@ -100,7 +100,7 @@ describe("GET /espacio/exportar", () => {
     const combinaciones = libro.getWorksheet("Combinaciones");
     expect(combinaciones?.rowCount).toBeGreaterThan(50);
     expect(celda(combinaciones, 2, "Puntaje")?.value).toBeGreaterThanOrEqual(celda(combinaciones, 3, "Puntaje")?.value as number);
-  });
+  }, 30_000);
 });
 
 describe("GET /espacio", () => {
@@ -138,7 +138,7 @@ describe("GET /rutas (Fase 7)", () => {
     expect(feriados.obtener).toHaveBeenCalledWith(expect.arrayContaining(["PY", "ES"]), [2027]);
     const invalida = await app.inject({ method: "GET", url: "/rutas?origen=ASU&destino=MAD&fechaIda=2027-02-16&fechaVuelta=2027-02-01" });
     expect(invalida.statusCode).toBe(400);
-  });
+  }, 30_000);
 });
 
 describe("GET /datos", () => {

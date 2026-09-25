@@ -38,7 +38,7 @@ describe("Combinaciones (Fase 17)", () => {
   it("pide las rutas posibles hacia un continente, agrupa por origen y destino plegado, filtra y muestra cada ruta", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
-    render(<Combinaciones aeropuertos={aeropuertos} />);
+    render(<Combinaciones aeropuertos={aeropuertos} onBuscarPares={() => undefined} />);
     elegir("Origen", "ASU", /ASU/);
     elegir("Destino (aeropuerto o continente)", "Europa", /Europa/);
     fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));
@@ -88,7 +88,7 @@ describe("Combinaciones hacia un aeropuerto", () => {
     };
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : aAeropuerto) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
-    render(<Combinaciones aeropuertos={aeropuertos} />);
+    render(<Combinaciones aeropuertos={aeropuertos} onBuscarPares={() => undefined} />);
     elegir("Origen", "ASU", /ASU/);
     elegir("Destino (aeropuerto o continente)", "MAD", /MAD/);
     fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));

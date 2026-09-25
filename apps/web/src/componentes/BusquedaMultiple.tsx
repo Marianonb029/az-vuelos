@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { buscarAeropuertos, etiquetaAeropuerto, fechaCorta, sumarDias } from "@az/core";
 import type { Aeropuerto, CoberturaMercado } from "@az/core";
 import { estadoActualizacion, iniciarActualizacion, sonda } from "../lib/api";
@@ -15,6 +15,7 @@ interface Props {
   hoy: string;
   onTraido: (origen: string, destino: string, fechaIda: string, flex: "0" | "3" | "7" | "15") => void; // un par ya está en el sistema: mostrarlo en Rutas
   onElegirPar: (origen: Aeropuerto, destino: Aeropuerto) => void; // llevar un par al formulario de Rutas
+  paresIniciales?: readonly { origen: string; destino: string }[] | undefined; // precargados desde Combinaciones
 }
 
 type EstadoBusqueda = "pendiente" | "buscando" | "hecha" | "saltada";
@@ -50,7 +51,7 @@ const ICONO: Record<EstadoBusqueda, string> = { pendiente: "○", buscando: "◔
 // Fase 19: búsqueda múltiple. Una lista de pares, una fecha y una ventana; la app abre UNA ventana de Aviasales y
 // la lleva por cada búsqueda (par × día) a ritmo humano, sin leer nada; al terminar espera a que Aviasales publique
 // en su cache y trae sólo esos pares (un pedido por par), con un repaso a los 3 minutos. Cada paso se ve.
-export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onElegirPar }: Props) => {
+export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onElegirPar, paresIniciales }: Props) => {
   const [origen, setOrigen] = useState<Aeropuerto | null>(null);
   const [destino, setDestino] = useState<Aeropuerto | null>(null);
   const [pares, setPares] = useState<{ origen: Aeropuerto; destino: Aeropuerto }[]>([]);
@@ -73,6 +74,12 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
     setPares((l) => [...l, { origen, destino }]);
   };
   const quitar = (i: number) => setPares((l) => l.filter((_, j) => j !== i));
+  // Los boletos que faltan bajar, llegados desde Combinaciones: reemplazan la lista para poder buscarlos de una vez.
+  useEffect(() => {
+    if (paresIniciales === undefined || paresIniciales.length === 0) return;
+    const buscar = (iata: string) => aeropuertos.find((a) => a.iata === iata);
+    setPares(paresIniciales.map((x) => ({ origen: buscar(x.origen), destino: buscar(x.destino) })).filter((x): x is { origen: Aeropuerto; destino: Aeropuerto } => x.origen !== undefined && x.destino !== undefined));
+  }, [paresIniciales, aeropuertos]);
   const dias = fechaIda === "" ? [] : Array.from({ length: Number(flex) * 2 + 1 }, (_, i) => sumarDias(fechaIda, i - Number(flex))).filter((f) => f >= hoy);
   const total = pares.length * dias.length;
   const esperar = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));

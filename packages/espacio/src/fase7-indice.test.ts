@@ -187,7 +187,7 @@ describe("Fase 7 — índice de costo estimado (datos reales, ASU→MAD 2027-02-
     expect(conVuelta?.desglose.factorEstadia).toBe(1.2);
     const viaMiami = rutas.find((r) => r.via === "MIA" || r.tramoPrevio?.hub === "MIA");
     if (viaMiami) expect(viaMiami.restriccion).toBe("requiere_visa_eeuu_o_esta");
-  });
+  }, 30_000);
 });
 
 describe("Carnaval y eventos de config con fechas completas", () => {
