@@ -16,7 +16,7 @@ export const PESTANAS: FichaPestana[] = [
     id: "explorar",
     titulo: "Explorar precios",
     pregunta: "¿Cuándo y a dónde me conviene ir?",
-    para: "Sin fecha: el precio más bajo de cada día del año, el mejor mes, a qué ciudad se llega más barato, desde qué aeropuerto conviene salir y si este par conviene comprarlo ahora o esperar.",
+    para: "Sin fecha: el precio más bajo de cada día del año, el mejor mes, a qué ciudad se llega más barato, desde qué aeropuerto conviene salir, cuánto sale el viaje entero si volvés, y si conviene comprar ahora o esperar. Arriba, tus pares seguidos con lo que se movieron.",
     objetivo: "Elegir cuándo viajar y a qué ciudad, cuando la fecha es flexible o el destino da igual. Es el único lugar donde se ve el año entero de una vez.",
     noHace: "No muestra vuelos concretos ni horarios: para eso está Rutas, a un clic de cualquier día.",
   },

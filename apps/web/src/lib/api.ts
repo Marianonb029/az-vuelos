@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Anticipacion, CoberturaMercado, FechasMercado, FuenteDato, Panorama, ResultadoMercado, Seguidos } from "@az/core";
+import { Anticipacion, CoberturaMercado, EstadoSeguidos, FechasMercado, FuenteDato, Panorama, ResultadoMercado, Seguidos } from "@az/core";
 import { ResultadoRutasPosibles } from "@az/espacio";
 
 const BASE = "/api";
@@ -37,6 +37,8 @@ export const sonda = (origen: string, destino: string, fechaIda: string, flexDia
 // Fase 23: pares seguidos. Lo único que la app guarda por decisión de la persona: la bajada nocturna les reserva
 // pedidos para que se arme el historial (sin dos bajadas del mismo par no hay con qué comparar).
 export const obtenerSeguidos = () => pedir(Seguidos, "/seguidos");
+// A cuánto está cada par seguido y cuánto se movió (Fase 25).
+export const obtenerEstadoSeguidos = () => pedir(EstadoSeguidos, "/seguidos/estado");
 export const seguirPar = (p: { origen: string; destino: string; ida: boolean; vuelta: boolean; fechaIda: string | null }) => pedir(Seguidos, "/seguidos", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(p) });
 export const dejarPar = (origen: string, destino: string) => pedir(Seguidos, `/seguidos?origen=${origen}&destino=${destino}`, { method: "DELETE" });
 

@@ -9,3 +9,4 @@ export * from "./mercado";
 export * from "./panorama";
 export * from "./anticipacion";
 export * from "./seguidos";
+export * from "./comprobacion";

@@ -24,6 +24,34 @@ export type Seguidos = z.infer<typeof Seguidos>;
 
 export const claveSeguido = (p: Pick<ParSeguido, "origen" | "destino">) => `${p.origen}|${p.destino}`;
 
+// Lo que se ve de un par seguido sin entrar a buscarlo: a cuánto está, cuánto se movió desde que lo seguís y
+// cuándo se bajó por última vez. La dirección de vuelta va aparte, y el total es la suma de las dos.
+export const DireccionSeguida = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  minUsd: z.number().min(0).nullable(), // el más barato de todo el horizonte hoy
+  mejorDia: FechaIso.nullable(),
+  cambioPct: z.number().nullable(), // entre la primera y la última bajada; null: falta historial
+  bajadas: z.number().int().min(0), // días distintos en que se bajó este par
+  ultimaBajada: FechaIso.nullable(),
+  diasConTarifas: z.number().int().min(0),
+  titular: z.string(), // la conclusión de la Fase 22 para este par
+});
+export type DireccionSeguida = z.infer<typeof DireccionSeguida>;
+
+export const EstadoSeguido = z.object({
+  origen: IataAeropuerto,
+  destino: IataAeropuerto,
+  desde: FechaIso,
+  ida: DireccionSeguida,
+  vuelta: DireccionSeguida.nullable(), // null: no se sigue la vuelta
+  totalIdaVueltaUsd: z.number().min(0).nullable(), // suma de los dos mínimos: un techo, son dos boletos sueltos
+});
+export type EstadoSeguido = z.infer<typeof EstadoSeguido>;
+
+export const EstadoSeguidos = z.object({ actualizadoEn: z.iso.datetime(), pares: z.array(EstadoSeguido) });
+export type EstadoSeguidos = z.infer<typeof EstadoSeguidos>;
+
 // Los pedidos que toca hacer por los pares seguidos, en orden: primero los que hace más tiempo que no se bajan.
 // `bajadoEn` viene del dataset (el par, en cualquiera de las dos direcciones).
 export const paresASeguir = (seguidos: readonly ParSeguido[], bajadoEn: ReadonlyMap<string, string>, hoy: string): [string, string][] => {

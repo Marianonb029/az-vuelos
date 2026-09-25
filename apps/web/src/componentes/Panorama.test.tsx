@@ -7,7 +7,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Barajas", ciudad: "Madrid", pais: "España" },
 ];
-const cobertura = { actualizadoEn: null, marker: "123", actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }], pares: [] };
+const cobertura = { actualizadoEn: null, marker: "123", actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }], pares: [] };
 const boleto = { origen: "GRU", destino: "MAD", aerolinea: "G3", numeroVuelo: "1", fechaIda: "2026-11-05", transbordos: 0, duracionMin: 720, itinerario: ["GRU", "MAD"], salidaEpoch: 36000, llegadaEpoch: 79200, equipajeMano: true, equipajeBodega: false, agencia: "Mytrip", precioUsd: 284, enlace: "/search/GRU0511MAD1", vistoEn: "2026-09-17", encontradoEn: "2026-09-17T10:00:00.000Z", esperaMin: null };
 const barata: Combinacion = { origen: "GRU", llegaA: "MAD", trasladoOrigenKm: 1137, boletos: [boleto], totalUsd: 284, fechaIda: "2026-11-05", duracionTotalMin: 720, escalas: 0, cambiosBoleto: 0, aerolineas: ["G3"], equipajeMano: true, equipajeBodega: false, vistoHaceDias: 6, desvioEstimadoPct: 6, refrescar: false, cadenciaDias: 7, trasladoDestinoKm: 0 };
 const panorama: PanoramaDatos = {

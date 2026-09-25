@@ -29,7 +29,7 @@ export const crearApp = (op: OpcionesApp) => {
   const tendencias = listaJson(op.rutaTendencias, Tendencia);
   app.get("/salud", async () => ({ ok: true }));
   rutasMercado(app, op.mercado, op.actualizacion);
-  rutasSeguidos(app, op.seguidos);
+  rutasSeguidos(app, op.seguidos, op.mercado);
   rutasPosibles(app, op.espacio);
   rutasPriorizadas(app, {
     espacio: op.espacio,

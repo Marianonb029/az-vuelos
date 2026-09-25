@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { z } from "zod";
-import { Continente, claveGrupo, diasEntre, preciarRuta, ventanaBoleto } from "@az/core";
+import { Comprobaciones, Continente, claveGrupo, diasEntre, preciarRuta, resumirComprobaciones, ventanaBoleto } from "@az/core";
 import type { BoletoAPreciar, DatasetPrecios, FuenteDato, PrecioCacheado } from "@az/core";
 import {
   AeropuertoGeo,
@@ -98,6 +98,22 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     return { variable: "Corroboración de rutas (Wikipedia)", fuente: "Wikipedia, tabla Airlines and destinations (API de MediaWiki)", actualizadoEn: d.aeropuertos.map((a) => a.leidoEn).sort().at(-1) ?? null, detalle: resumen };
   };
 
+  // Fase 25: comprobación a mano (`pnpm comprobar`): qué pasó al abrir el enlace de una tarifa cacheada. Es la
+  // única medida del desvío contra la realidad; el resto se mide entre corridas o se supone.
+  const filaComprobaciones = (): { variable: string; fuente: string; actualizadoEn: string | null; detalle: string } => {
+    const ruta = resolve(directorioDatos, "local", "comprobaciones.json");
+    const base = { variable: "Comprobación a mano (cacheado contra lo que muestra Aviasales)", fuente: "`pnpm comprobar`: abrir el enlace de una tarifa y anotar el precio que muestra Aviasales" };
+    if (!existsSync(ruta)) return { ...base, actualizadoEn: null, detalle: "Sin comprobaciones todavía: `pnpm comprobar` elige tarifas de distintas antigüedades y muestra sus enlaces; `pnpm comprobar ORIGEN DESTINO FECHA PRECIO` anota lo que mostraba Aviasales. Con unas decenas de casos, el desvío deja de ser un supuesto." };
+    const parseado = Comprobaciones.safeParse(leerJson(ruta));
+    const r = parseado.success ? resumirComprobaciones(parseado.data.casos) : null;
+    if (!parseado.success || !r) return { ...base, actualizadoEn: null, detalle: "El archivo de comprobaciones no se pudo leer: `pnpm comprobar` lo rehace" };
+    return {
+      ...base,
+      actualizadoEn: parseado.data.actualizadoEn,
+      detalle: `${r.casos} casos comprobados: ${r.seguian} seguían en Aviasales y ${r.desaparecidas} ya no estaban. El precio cambió ${r.medianaCambioPct} % en la mitad de los casos (p90 ${r.p90CambioPct} %), que son ${r.cambioDiarioPct} % por día de antigüedad de la tarifa; ${r.bajaron} bajaron, ${r.subieron} subieron y ${r.iguales} estaban igual. Compará ese % por día con la tasa que usa la app en cada fila: si difieren, la tasa está mal calibrada.`,
+    };
+  };
+
   const filaPrecios = (): { variable: string; fuente: string; actualizadoEn: string | null; detalle: string } => {
     const d = precios();
     if (!d) return { variable: "Precios cacheados (Travelpayouts)", fuente: "Travelpayouts · Aviasales Data API v3 (prices_for_dates)", actualizadoEn: null, detalle: `Sin dataset legible${existsSync(rutaPrecios) ? " (formato anterior)" : ""}: \`pnpm precios\` baja por continentes (${configBase.bajada.grupos.map((g) => g.nota).join("; ")}) los precios encontrados por usuarios de Aviasales; \`pnpm precios ORIGEN DESTINO\`, los pares de boletos del modelo para un par (token gratuito en TRAVELPAYOUTS_TOKEN)` };
@@ -112,6 +128,7 @@ export const crearServicioEspacio = (directorioDatos: string, rutaConfig: string
     fuente({ variable: "Competencia: aerolíneas por tramo", fuente: "Virtual Radar Server standing data (CC0, diario)", actualizadoEn: meta.descargadoEn, exactitud: "vigente", detalle: `${meta.rutas.registros} rutas por número de vuelo; sin horarios ni fecha de última observación (pueden quedar números discontinuados); ${configBase.grafo.aerolineasExcluidas.length} códigos excluidos (cargueras y desaparecidas); grupos tarifarios que cuentan como uno: ${Object.keys(configBase.grafo.gruposTarifarios).join(", ")}`, cadenciaDias: 30, comando: "pnpm catalogos" }),
     fuente({ ...corroboracion(), exactitud: "vigente", cadenciaDias: 30, comando: "pnpm corroborar" }),
     fuente({ ...filaPrecios(), exactitud: "vigente", cadenciaDias: configBase.precios.cadenciaDias, comando: "pnpm precios ORIGEN DESTINO" }),
+    fuente({ ...filaComprobaciones(), exactitud: "exacta", cadenciaDias: 30, comando: "pnpm comprobar" }),
     fuente({ variable: "Itinerario, horarios y agencia de cada tarifa", fuente: "Enlace de búsqueda de cada tarifa (campo `link` de la API)", actualizadoEn: precios()?.actualizadoEn ?? null, exactitud: "exacta", detalle: "La API da aerolínea, fecha, transbordos, duración y precio; los aeropuertos por los que pasa, la hora de salida y llegada y la fecha en que se vio la tarifa vienen en su enlace. Con las horas se encadenan dos boletos separados (espera de " + `${configBase.mercado.conexionMinHoras} a ${configBase.mercado.conexionMaxHoras} h)`, cadenciaDias: configBase.precios.cadenciaDias, comando: "pnpm precios ORIGEN DESTINO" }),
     fuente({ variable: "Equipaje de mano y de bodega", fuente: "Clave de tarifa del enlace (static_fare_key, no documentada)", actualizadoEn: precios()?.actualizadoEn ?? null, exactitud: "aproximada", detalle: "Se lee 'H' como equipaje de mano y 'L' como bodega: es una inferencia (en el dataset las low cost salen H0 y las de red H1; las tarifas más baratas siempre L0). Si la clave no viene, la fila dice 'no informado'. Confirmar en la aerolínea antes de comprar", cadenciaDias: null, comando: null }),
     fuente({ variable: "Antigüedad y desvío estimado de cada tarifa", fuente: "Calculado: días desde que se vio × tasa diaria (medida entre corridas o supuesto de config)", actualizadoEn: null, exactitud: precios()?.desvio ? "aproximada" : "supuesto", detalle: `Cadencia recomendada según lo que falta para el viaje: ${configBase.precios.cadencia.map((c) => `${c.hastaDiasAlViaje === null ? "más lejos" : `hasta ${c.hastaDiasAlViaje} días`}: cada ${c.cadaDias}`).join("; ")}. Tasa supuesta ${configBase.precios.desvioDiarioSupuestoPct} % por día hasta que dos corridas en días distintos la midan`, cadenciaDias: null, comando: null }),

@@ -10,6 +10,7 @@ import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
 import { PanoramaCalendario, PanoramaMeses } from "./PanoramaCalendario";
 import { IdaYVuelta } from "./IdaYVuelta";
+import { PanelSeguidos } from "./PanelSeguidos";
 import { PanoramaBaratas, PanoramaDestinos, PanoramaSalidas } from "./PanoramaListas";
 import { Seguir } from "./Seguir";
 import { fechaCorta } from "@az/core";
@@ -44,6 +45,7 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [p, setP] = useState<PanoramaDatos | null>(null);
   const [cobertura, setCobertura] = useState<CoberturaMercado | null>(null);
+  const [versionSeguidos, setVersionSeguidos] = useState(0); // sube al seguir o dejar de seguir: refresca el panel
   useEffect(() => {
     let activo = true;
     obtenerCobertura()
@@ -104,6 +106,7 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
 
   return (
     <div className="grid gap-6">
+      <PanelSeguidos version={versionSeguidos} onVer={(o, d, f) => onElegirDia(o, d, f)} />
       <form onSubmit={(e) => void ver(e)} noValidate className="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5">
         <div>
           <h2 className="text-lg font-semibold text-slate-900">¿A dónde querés ir?</h2>
@@ -166,7 +169,7 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
             </Bloque>
           )}
           <Bloque orden={p.destinoEsContinente ? 3 : 4} titulo="¿Comprar ahora o esperar?" objetivo="Con cuánta anticipación estuvo más barato este par y qué muestra el historial de las bajadas. Son observaciones del cache, no un pronóstico; elegí un día en Rutas para saber si ese día está barato o caro.">
-            <Anticipacion origen={p.origen} destino={p.destino} seguir={p.destinoEsContinente ? undefined : <Seguir origen={p.origen} destino={p.destino} />} />
+            <Anticipacion origen={p.origen} destino={p.destino} seguir={p.destinoEsContinente ? undefined : <Seguir origen={p.origen} destino={p.destino} onCambio={() => setVersionSeguidos((v) => v + 1)} />} />
           </Bloque>
           <Bloque orden={p.destinoEsContinente ? 4 : 5} titulo="Las más baratas del horizonte" objetivo="Una por día, destino y aeropuerto de salida: alternativas distintas, no variantes del mismo vuelo. Son tarifas cacheadas con su antigüedad; el enlace abre esa búsqueda en vivo en Aviasales.">
             <PanoramaBaratas {...comunes} marker={cobertura?.marker ?? null} bajoCosto={cobertura?.aerolineasBajoCosto ?? []} />

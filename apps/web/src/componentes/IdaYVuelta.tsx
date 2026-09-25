@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
-import type { Panorama } from "@az/core";
-import { obtenerPanorama } from "../lib/api";
+import type { Anticipacion, Panorama } from "@az/core";
+import { obtenerAnticipacion, obtenerPanorama } from "../lib/api";
 import { Seguir } from "./Seguir";
 
 const ESTADIAS = [7, 10, 14, 21, 30];
@@ -11,6 +11,41 @@ interface Props {
   ida: Panorama; // el panorama del par que ya se está mirando
   onElegirDia: (destino: string, fecha: string) => void;
 }
+
+// Fase 25: ¿comprar o esperar?, pero del viaje entero. Lo que se compra son dos boletos, así que la señal útil es
+// la del total: se piden las dos direcciones y se suma lo que cada una se movió entre corridas.
+const SenalTotal = ({ ida, vuelta, mejor }: { ida: Panorama; vuelta: Panorama; mejor: Salida }) => {
+  const [a, setA] = useState<{ ida: Anticipacion; vuelta: Anticipacion } | null>(null);
+  useEffect(() => {
+    let activo = true;
+    Promise.all([obtenerAnticipacion(ida.origen, ida.destino, mejor.dia), obtenerAnticipacion(vuelta.origen, vuelta.destino, mejor.vuelta)])
+      .then(([i, v]) => activo && setA({ ida: i, vuelta: v }))
+      .catch(() => activo && setA(null));
+    return () => {
+      activo = false;
+    };
+  }, [ida.origen, ida.destino, vuelta.origen, vuelta.destino, mejor.dia, mejor.vuelta]);
+  if (!a) return null;
+  const cambios = [a.ida.cambioPct, a.vuelta.cambioPct];
+  const conHistorial = cambios.filter((x): x is number => x !== null);
+  const totalAntes = (a.ida.historial[0]?.minUsd ?? 0) + (a.vuelta.historial[0]?.minUsd ?? 0);
+  const totalAhora = (a.ida.historial.at(-1)?.minUsd ?? 0) + (a.vuelta.historial.at(-1)?.minUsd ?? 0);
+  const cambioTotal = conHistorial.length === 2 && totalAntes > 0 ? Math.round(((totalAhora - totalAntes) / totalAntes) * 1000) / 10 : null;
+  return (
+    <p className="mt-1 text-xs" data-testid="ida-y-vuelta-senal">
+      {cambioTotal === null ? (
+        <>El total todavía no tiene historial en las dos direcciones: seguí el par con su vuelta y en un día ya se puede decir si sube o baja.</>
+      ) : (
+        <>
+          <strong>El viaje entero {cambioTotal < 0 ? "bajó" : cambioTotal > 0 ? "subió" : "no se movió"}{cambioTotal === 0 ? "" : ` ${Math.abs(cambioTotal)} %`}</strong> desde que se empezó a seguir (ida {a.ida.cambioPct} %, vuelta {a.vuelta.cambioPct} %). Es lo que se compra: dos boletos, cada uno con su propio movimiento.
+        </>
+      )}{" "}
+      <span className="text-emerald-800/70">
+        Ida: {a.ida.titular} · Vuelta: {a.vuelta.titular}
+      </span>
+    </p>
+  );
+};
 
 interface Salida {
   dia: string;
@@ -87,9 +122,12 @@ export const IdaYVuelta = ({ ida, onElegirDia }: Props) => {
       ) : (
         <>
           {mejor && (
-            <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900" data-testid="ida-y-vuelta-mejor">
-              <strong>Ida y vuelta desde USD {mejor.totalUsd.toLocaleString("es")}</strong>: salir el {fechaCorta(mejor.dia)} (USD {mejor.idaUsd.toLocaleString("es")}) y volver el {fechaCorta(mejor.vuelta)} (USD {mejor.vueltaUsd.toLocaleString("es")}), quedándote {estadia} días.
-            </p>
+            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900" data-testid="ida-y-vuelta-mejor">
+              <p>
+                <strong>Ida y vuelta desde USD {mejor.totalUsd.toLocaleString("es")}</strong>: salir el {fechaCorta(mejor.dia)} (USD {mejor.idaUsd.toLocaleString("es")}) y volver el {fechaCorta(mejor.vuelta)} (USD {mejor.vueltaUsd.toLocaleString("es")}), quedándote {estadia} días.
+              </p>
+              <SenalTotal ida={ida} vuelta={vuelta} mejor={mejor} />
+            </div>
           )}
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="ida-y-vuelta-tabla">

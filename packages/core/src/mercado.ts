@@ -82,6 +82,8 @@ export const CoberturaMercado = z.object({
   actualizacionDisponible: z.boolean(), // el servidor tiene el token: "Actualizar este par" funciona
   segundosPorBusquedaEnVivo: z.number().int().min(1), // búsqueda múltiple (config mercado)
   maxBusquedasEnVivo: z.number().int().min(1),
+  segundosEntreSondasMedicion: z.number().int().min(5), // Fase 25: medición de cuánto tarda Aviasales en publicar
+  maxMinutosMedicion: z.number().int().positive(),
   aerolineasBajoCosto: z.array(IataAerolinea), // perfil bajo costo (config fase6): la tarifa barata suele ser sólo con mano; Rutas y Combinaciones las marcan
   grupos: z.array(z.object({ prioridad: z.number().int(), grupo: z.string(), origen: z.array(Continente), destino: z.array(Continente), pares: z.number().int(), tarifas: z.number().int(), origenesDescubiertos: z.number().int(), origenesPendientes: z.number().int() })),
   aeropuertos: z.array(z.object({ iata: IataAeropuerto, comoOrigen: z.number().int().min(0), comoDestino: z.number().int().min(0) })), // tarifas vigentes que salen / llegan

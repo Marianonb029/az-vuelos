@@ -749,6 +749,25 @@ Ahora hay **una tarea por servidor** (`AZ Vuelos - api` y `AZ Vuelos - web`). Ca
 
 Con el presupuesto cortado —que es siempre— el orden del modelo trae ~5× más tarifas en los primeros pedidos. Cada corrida informa ahora **tarifas por pedido** para poder ajustar los pesos con datos y no a ojo.
 
+## Fase 25 (25/09/2026) — medir en vez de suponer, y que lo seguido se vea
+
+Las cuatro recomendaciones aceptadas de la revisión. La quinta (un recargo de impuestos declarado en config) **no se aplica**: ver el porqué al final.
+
+- **Medir cuánto tarda Aviasales en publicar** (`mercado.segundosEntreSondasMedicion` 10 s, `maxMinutosMedicion` 5). Los 45 s por búsqueda eran un supuesto que nunca se verificó y gobiernan el único proceso lento de la app. El botón "Medir cuánto tarda en publicarse" hace **una** búsqueda y sondea seguido hasta que aparece: devuelve el tiempo real. No toca la config: informa, y el número se cambia con decisión escrita.
+- **Panel de pares seguidos** (`GET /seguidos/estado`, arriba de Explorar precios). Sin esto el historial se juntaba todas las noches y nadie lo miraba. Muestra por par: a cuánto está hoy, cuánto se movió desde la primera bajada, cuántas bajadas lleva, la última, la señal de la Fase 22 y —si se sigue la vuelta— el **total de los dos boletos** en sus mejores días.
+- **La señal, del viaje entero.** Lo que se compra son dos boletos, así que en el bloque de ida y vuelta la conclusión ahora habla del **total**: pide la anticipación de las dos direcciones y dice cuánto se movió la suma, con el detalle de cada tramo.
+- **Comprobación a mano** (`pnpm comprobar`, `packages/core/src/comprobacion.ts`, `data/local/comprobaciones.json`). La app estima el desvío entre corridas o lo supone; esto mide lo único que importa: **abrir el enlace y ver qué precio tiene hoy**. El script elige tarifas de distintas antigüedades y muestra sus enlaces; `pnpm comprobar ORIGEN DESTINO FECHA PRECIO` anota lo visto (o `no` si la tarifa ya no está). Datos muestra el resumen como una fuente más, con el **cambio por día de antigüedad** para comparar contra la tasa que usa cada fila.
+  - Primera comprobación real (25/09): ASU→LIS del 16/01, cacheado USD 692 visto hacía 2 días; Aviasales mostraba **USD 576** (−16,8 %, **8,4 % por día**). Un solo caso no prueba nada, pero ya sugiere que el supuesto de 1 %/día se queda corto. Con unas decenas de casos se reemplaza el supuesto por el dato.
+
+### Por qué no se aplica el recargo de impuestos
+
+El dueño preguntó en qué se basaba. La respuesta honesta: **en nada verificado**. La propuesta era un campo de config que él llenaría con su número, no un número que la app estimara; y la regla 5 exige que todo número sea un supuesto declarado con decisión escrita, así que sin una fuente confiable no corresponde inventarlo. Lo que sí se verificó (25/09) y queda anotado:
+
+- La **documentación oficial** de la Aviasales Data API describe `price` como "ticket price in the specified currency" y **no menciona impuestos ni cargos** en ninguna parte: no hay fuente que respalde una u otra interpretación.
+- **Comprobación contra la realidad**: al abrir una búsqueda, Aviasales muestra el precio del boleto (por ejemplo `$576`) y aparte `$680 including baggage 1×50lb`. El precio que la app cachea es el **precio de compra del boleto** —lo que cobra la agencia, con sus tasas dentro—, y el equipaje de bodega es un extra que se paga por fuera. Eso coincide con el caso del 19/09: la app tenía USD 714 y Aviasales mostraba USD 715 en el botón de compra.
+- **Lo que queda fuera del precio en todos los casos**: equipaje de bodega, cambios y reembolsos, y cualquier recargo del medio de pago o impuesto local al comprar desde Paraguay. La app no puede saberlos y no los inventa.
+- **Partir el viaje en dos boletos no cambia los impuestos** de la comparación: cada boleto trae los suyos dentro de su precio, así que la suma que muestra la tabla es lo que se paga. Medido sobre el dataset (pares con las dos opciones el mismo día): **partir gana sólo en 20 % de los días**, con ahorro mediano **5 %** y p90 13 %. Lo que cambia al partir no son los impuestos sino lo que no está en el precio: equipaje que se paga dos veces y la falta de protección de conexión.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

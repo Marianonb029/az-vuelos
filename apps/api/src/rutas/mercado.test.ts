@@ -148,6 +148,19 @@ describe("GET /mercado", () => {
     expect((await app.inject({ method: "DELETE", url: "/seguidos?origen=ASU&destino=MAD" })).json()).toMatchObject({ pares: [] });
   });
 
+  it("informa el estado de cada par seguido: a cuánto está, cuánto se movió y el total con la vuelta (Fase 25)", async () => {
+    await app.inject({ method: "POST", url: "/seguidos", payload: { origen: "ASU", destino: "MAD", vuelta: true } });
+    const r = (await app.inject({ method: "GET", url: "/seguidos/estado" })).json() as { pares: { ida: { minUsd: number | null; bajadas: number; titular: string }; vuelta: { minUsd: number | null } | null; totalIdaVueltaUsd: number | null }[] };
+    expect(r.pares).toHaveLength(1);
+    // El mínimo del horizonte sale de IGU, un origen alternativo; el fixture tiene dos días de bajada.
+    expect(r.pares[0]?.ida).toMatchObject({ minUsd: 300, bajadas: 2 });
+    expect(r.pares[0]?.ida.titular).toContain("Bajó 66.7 % desde que lo miramos"); // la conclusión de la Fase 22, lista para el panel
+    // La vuelta (MAD→ASU) no está en el cache: sin mínimo y sin total.
+    expect(r.pares[0]?.vuelta?.minUsd).toBeNull();
+    expect(r.pares[0]?.totalIdaVueltaUsd).toBeNull();
+    await app.inject({ method: "DELETE", url: "/seguidos?origen=ASU&destino=MAD" });
+  });
+
   it("valida la consulta", async () => {
     expect((await app.inject({ method: "GET", url: "/mercado?origen=ASU&destino=ASU&fechaIda=2027-01-19" })).statusCode).toBe(400);
     expect((await app.inject({ method: "GET", url: "/mercado?origen=ASU&destino=ZZZ&fechaIda=2027-01-19" })).statusCode).toBe(404);
