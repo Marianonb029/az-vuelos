@@ -692,7 +692,11 @@ Revisión del dueño sobre el propósito de la app. Se aplican seis cambios; dos
 
 ### 23.0 — los servidores dejan de morirse
 
-La tarea "AZ Vuelos - servidores" lanzaba los dos servidores con `start` y terminaba; Windows se llevaba por delante el árbol de procesos (registro con `^C`, tarea con código `0xC000013A`) de forma intermitente. Ahora hay **una tarea por servidor** (`AZ Vuelos - api` y `AZ Vuelos - web`), cada una corriendo su `.cmd` **en primer plano** (`scripts/az-api.cmd`, `scripts/az-web.cmd`): el proceso vive dentro de la tarea, que queda en estado "En ejecución" mientras el servidor corre, con `AllowHardTerminate` en falso y reinicio automático ante fallo. Los registros siguen en `data/local/api.log` y `web.log`. `scripts/az-vuelos.cmd` queda para el acceso directo del escritorio (levanta lo que falte y abre el navegador).
+La tarea "AZ Vuelos - servidores" lanzaba los dos servidores con `start` y terminaba; Windows se llevaba por delante el árbol de procesos (registro con `^C`, tarea con código `0xC000013A`) de forma intermitente.
+
+Ahora hay **una tarea por servidor** (`AZ Vuelos - api` y `AZ Vuelos - web`). Cada una corre `powershell -WindowStyle Hidden -Command "Start-Process scripts\az-XXX.cmd -WindowStyle Hidden -Wait"`: el servidor arranca **en su propia consola oculta**, sin colgarse de ninguna consola ajena, y el PowerShell que espera mantiene la tarea en estado "En ejecución" mientras el servidor vive. Las dos vueltas anteriores fallaron y quedan anotadas para no repetirlas: `start /min` desde un `.cmd` deja el proceso huérfano y Windows lo mata; correr el `.cmd` directo como acción de la tarea funciona si se lanza desde el Programador, pero **muere con `^C` si la tarea se arranca desde dentro de otro `.cmd`** (el proceso hereda esa consola). Registros en `data/local/api.log` y `web.log`; reinicio automático ante fallo.
+
+`scripts/az-reiniciar.cmd` reinicia los dos (hace falta al cambiar código del API: la web recarga sola). Termina las tareas, **mata lo que esté escuchando 3001 y 5173** —`schtasks /end` deja vivo el node y la instancia nueva no puede tomar el puerto— y espera hasta 30 s a que los dos respondan. `scripts/az-vuelos.cmd` queda para el acceso directo del escritorio (levanta lo que falte y abre el navegador).
 
 ### 23.1 — pares seguidos y presupuesto nocturno para ellos
 
