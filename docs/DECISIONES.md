@@ -702,6 +702,17 @@ La tarea "AZ Vuelos - servidores" lanzaba los dos servidores con `start` y termi
 
 **La tensión, resuelta.** La regla era "sin base de datos ni registros de uso". Seguir un par **no es un registro de uso**: es una decisión explícita de la persona, se ve en pantalla, se puede deshacer y el archivo guarda sólo origen, destino, direcciones y desde cuándo — ni búsquedas, ni historial de navegación, ni nada que la persona no haya pedido. Vive en `data/local/` (fuera del repo) y borrarlo sólo pierde el seguimiento, no los precios.
 
+### 23.2 — el calendario se lee sin pasar el cursor por encima
+
+**El problema.** El mapa de calor eran cuadraditos de 13 px: para saber de qué día era cada uno y cuánto costaba había que dejar el cursor encima y esperar el tooltip. Servía para ver la forma del año, no para decidir.
+
+**La solución.** Un **mes por tarjeta** (tres por fila en pantalla ancha) con el calendario real, y en cada día el **número y el precio escritos**. El color sigue siendo el nivel de ese precio dentro del propio par. La cabecera de cada mes dice desde cuánto y cuántos días tienen precio; los meses sin ninguna tarifa se resumen en una línea en vez de ocupar una tarjeta gris.
+
+### 23.3 — "buscar los días sin precio" y la ida y vuelta
+
+- **Días sin precio**: cada mes con huecos trae un botón *"Buscar los N días sin precio de nov"* que lleva el par y **esos días concretos** a Rutas; `EnVivo` acepta ahora una lista explícita de días, así la búsqueda en vivo recorre sólo los huecos y no la ventana completa. Cierra el círculo entre ver el vacío y taparlo.
+- **Ida y vuelta, integrada** (no una pestaña aparte: separarla duplicaría el formulario y rompería el recorrido). En Explorar precios, con destino aeropuerto, un bloque pide la estadía (7 / 10 / 14 / 21 / 30 días) y arma el total sumando **dos boletos de ida**: el de ida el día D y el de vuelta el día D + estadía, ordenados por total. Se dice expresamente que son dos boletos separados y que un ida y vuelta de la misma aerolínea **suele costar menos**, así que el número es un techo. Si el sentido inverso no está en el cache (pasa hoy con Europa → América, que es el tercer grupo del barrido), en vez de una tabla vacía aparece el porqué y el botón para seguir el par con su vuelta; a la mañana siguiente ya hay total. Verificado: ASU ⇄ LIS, ida y vuelta desde USD 933 (325 + 608) con 14 días de estadía.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

@@ -18,8 +18,8 @@ export const App = () => {
   const [mercado, setMercado] = useState<ResultadoMercado | null>(null);
   // Un día elegido en Explorar precios abre Rutas con ese par y esa fecha ya cargados.
   const [pedido, setPedido] = useState<PedidoInicial | null>(null);
-  const verEnRutas = (origen: string, destino: string, fechaIda: string) => {
-    setPedido({ origen, destino, fechaIda, flex: "0" });
+  const verEnRutas = (origen: string, destino: string, fechaIda: string, dias?: readonly string[]) => {
+    setPedido({ origen, destino, fechaIda, flex: "0", ...(dias ? { dias } : {}) });
     setPestana("rutas");
   };
   const actual = PESTANAS.find((p) => p.id === pestana);

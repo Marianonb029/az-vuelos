@@ -20,6 +20,7 @@ export interface PedidoInicial {
   destino: string; // aeropuerto o continente
   fechaIda: string;
   flex: "0" | "3" | "7" | "15";
+  dias?: readonly string[]; // días concretos a buscar en vivo (los sin precio de un mes de Explorar precios)
 }
 
 interface Props {
@@ -57,6 +58,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
   const [cobertura, setCobertura] = useState<CoberturaMercado | null>(null);
   const [fechas, setFechas] = useState<FechasMercado | null>(null);
   const [cargandoFechas, setCargandoFechas] = useState(false);
+  const [diasEnVivo, setDiasEnVivo] = useState<readonly string[] | undefined>(undefined); // días pedidos desde Explorar precios
 
   // Con origen y destino elegidos se piden los días con combinaciones: el calendario habilita sólo esos.
   const [version, setVersion] = useState(0); // sube cuando "Actualizar este par" cambió el dataset
@@ -76,10 +78,12 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
   const cambiarOrigen = (a: Aeropuerto | null) => {
     setOrigen(a);
     setFechaIda("");
+    setDiasEnVivo(undefined);
   };
   const cambiarDestino = (a: Aeropuerto | null) => {
     setDestino(a);
     setFechaIda("");
+    setDiasEnVivo(undefined);
   };
   // El dataset cambió (búsqueda en vivo traída, actualización): se rehacen el calendario y, si hay par y fecha, la tabla.
   const actualizado = () => {
@@ -110,6 +114,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
     setDestino(ad);
     setFechaIda(pedido.fechaIda);
     setFlex(pedido.flex);
+    setDiasEnVivo(pedido.dias);
     void buscarMercado(pedido.flex, ao, ad, pedido.fechaIda);
   }, [pedido]);
 
@@ -212,8 +217,13 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
             {cargando ? "Buscando…" : "Buscar en el mercado"}
           </button>
         </div>
+        {diasEnVivo !== undefined && diasEnVivo.length > 0 && (
+          <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900" data-testid="dias-sin-precio">
+            Venís de Explorar precios: estos <strong>{diasEnVivo.length} días no tienen precio en el cache</strong> (nadie los buscó todavía). "Buscar en vivo" los recorre uno por uno en Aviasales y los trae al sistema; no hace falta que estén en la ventana de arriba.
+          </p>
+        )}
         {origen && destino && !esContinente(destino) && (
-          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} segundosPorBusqueda={cobertura?.segundosPorBusquedaEnVivo ?? 45} hoy={hoy} onActualizado={actualizado} />
+          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} dias={diasEnVivo} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} segundosPorBusqueda={cobertura?.segundosPorBusquedaEnVivo ?? 45} hoy={hoy} onActualizado={actualizado} />
         )}
       </form>
       <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle">

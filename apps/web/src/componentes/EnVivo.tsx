@@ -12,6 +12,7 @@ interface Props {
   disponible: boolean; // el servidor tiene el token
   segundosPorBusqueda: number; // config mercado.segundosPorBusquedaEnVivo
   hoy: string;
+  dias?: readonly string[] | undefined; // días concretos a buscar (los sin precio de un mes); si no, la ventana
   onActualizado: () => void; // el dataset cambió: rehacer calendario y mercado
 }
 
@@ -30,7 +31,7 @@ type Fase = "quieto" | "buscando" | "vigilando" | "actualizando";
 // la lleva día por día a ritmo humano (la búsqueda la hace Aviasales en el navegador de la persona; la app no la
 // lee). Después sondea el cache de la Data API cada minuto y, en cuanto Aviasales publica algo nuevo para el par,
 // lo trae (un pedido) y rehace la tabla. "Actualizar este par ahora" baja los ~90 pares del modelo a mano.
-export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible, segundosPorBusqueda, hoy, onActualizado }: Props) => {
+export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible, segundosPorBusqueda, hoy, dias: diasPedidos, onActualizado }: Props) => {
   const [fase, setFase] = useState<Fase>("quieto");
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [dias, setDias] = useState<{ fecha: string; estado: EstadoDia }[]>([]);
@@ -50,10 +51,11 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     setDias([]);
     setEnCache(null);
     setTerminado(false);
-  }, [origen, destino, fechaIda, flexDias]);
+  }, [origen, destino, fechaIda, flexDias, diasPedidos]);
 
   const esperar = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
-  const fechas = fechaIda === "" ? [] : Array.from({ length: flexDias * 2 + 1 }, (_, i) => sumarDias(fechaIda, i - flexDias)).filter((f) => f >= hoy);
+  // Con días pedidos (los huecos de un mes en Explorar precios) se buscan exactamente ésos; si no, la ventana.
+  const fechas = diasPedidos !== undefined && diasPedidos.length > 0 ? diasPedidos.filter((f) => f >= hoy) : fechaIda === "" ? [] : Array.from({ length: flexDias * 2 + 1 }, (_, i) => sumarDias(fechaIda, i - flexDias)).filter((f) => f >= hoy);
   const minutos = Math.ceil((fechas.length * segundosPorBusqueda) / 60);
 
   // Espera a que termine una actualización ya iniciada y devuelve cuántas tarifas trajo.
@@ -178,7 +180,7 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     <div className="grid gap-1" data-testid="en-vivo">
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={() => void buscarEnVivo()} disabled={ocupado || fechas.length === 0} title={fechas.length === 0 ? "Elegí una fecha en el calendario (cualquier día futuro)" : `Abre una ventana de Aviasales con ${origen} → ${destino} y la lleva por ${fechas.length} día${fechas.length === 1 ? "" : "s"}`} className="rounded-md border border-sky-600 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
-          Buscar en vivo en Aviasales{fechas.length === 1 ? ` (${fechaCorta(fechaIda)})` : fechas.length > 1 ? ` los ${fechas.length} días (${fechaCorta(fechas[0] ?? fechaIda)} a ${fechaCorta(fechas[fechas.length - 1] ?? fechaIda)}, ~${minutos} min)` : ""} y traer al sistema
+          Buscar en vivo en Aviasales{fechas.length === 1 ? ` (${fechaCorta(fechas[0] ?? fechaIda)})` : fechas.length > 1 ? ` los ${fechas.length} días ${diasPedidos !== undefined && diasPedidos.length > 0 ? "sin precio" : ""} (${fechaCorta(fechas[0] ?? fechaIda)} a ${fechaCorta(fechas[fechas.length - 1] ?? fechaIda)}, ~${minutos} min)` : ""} y traer al sistema
         </button>
         <button type="button" onClick={() => void actualizarModelo()} disabled={ocupado || !disponible} title={disponible ? "Baja ahora los ~90 pares del modelo para este par desde la Data API (1–2 min)" : "El servidor no tiene TRAVELPAYOUTS_TOKEN"} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
           Actualizar este par ahora

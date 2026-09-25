@@ -9,13 +9,14 @@ import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
 import { PanoramaCalendario, PanoramaMeses } from "./PanoramaCalendario";
+import { IdaYVuelta } from "./IdaYVuelta";
 import { PanoramaBaratas, PanoramaDestinos, PanoramaSalidas } from "./PanoramaListas";
 import { Seguir } from "./Seguir";
 import { fechaCorta } from "@az/core";
 
 interface Props {
   aeropuertos: readonly Aeropuerto[];
-  onElegirDia: (origen: string, destino: string, fecha: string) => void; // abre Rutas con ese par y día
+  onElegirDia: (origen: string, destino: string, fecha: string, dias?: readonly string[]) => void; // abre Rutas con ese par y día; con `dias`, los que hay que buscar en vivo
 }
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
@@ -93,6 +94,8 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
   const datosAeropuerto = new Map(p?.aeropuertos.map((a) => [a.iata, a]) ?? []);
   const ciudad = (iata: string) => datosAeropuerto.get(iata)?.ciudad ?? "";
   const elegir = (d: string, fecha: string) => p && onElegirDia(p.origen, d, fecha);
+  // Los días sin precio de un mes: se llevan a Rutas para buscarlos en vivo de una pasada.
+  const llenar = (_mes: string, dias: readonly string[]) => p && dias[0] && onElegirDia(p.origen, p.destino, dias[0], dias);
   const mejorDestino = p?.porDestino[0];
   const mejorMes = p?.porMes.length ? [...p.porMes].sort((a, b) => a.minUsd - b.minUsd)[0] : undefined;
   const mejorSalida = p?.porOrigen[0];
@@ -134,7 +137,7 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
             <Cifra
               etiqueta="lo más barato del horizonte"
               valor={p.minUsd === null ? "—" : `USD ${p.minUsd.toLocaleString("es")}`}
-              detalle={mejorDestino ? `${p.origen} → ${mejorDestino.iata} ${ciudad(mejorDestino.iata)} · ${fechaCorta(mejorDestino.mejorDia)} · ${mejorDestino.escalasDelMin === 0 ? "directo" : `${mejorDestino.escalasDelMin} escalas`}` : "sin combinaciones en el cache"}
+              detalle={mejorDestino ? `${p.origen} → ${mejorDestino.iata} ${ciudad(mejorDestino.iata)} · ${fechaCorta(mejorDestino.mejorDia)} · ${mejorDestino.escalasDelMin === 0 ? "directo" : `${mejorDestino.escalasDelMin} escala${mejorDestino.escalasDelMin === 1 ? "" : "s"}`}` : "sin combinaciones en el cache"}
               acento="emerald"
             />
             <Cifra etiqueta="precio típico de un día" valor={p.medianaUsd === null ? "—" : `USD ${p.medianaUsd.toLocaleString("es")}`} detalle={`mediana del mínimo diario sobre ${p.diasConTarifas} días con tarifas; el mejor día está ${ahorro} % por debajo`} />
@@ -145,8 +148,8 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
               detalle={mejorSalida ? `desde USD ${mejorSalida.minUsd.toLocaleString("es")}${mejorSalida.trasladoKm === 0 ? " · es el que pediste" : ` · a ${mejorSalida.trasladoKm.toLocaleString("es")} km de ${p.origen}: el traslado va aparte`}` : ""}
             />
           </div>
-          <Bloque orden={1} titulo="Cuándo es más barato" objetivo="Cada celda es un día del horizonte, pintada por el precio de su combinación más barata. Los cortes son cuantiles de este mismo par: verde = barato para esta ruta. Gris = sin tarifas en el cache (no quiere decir que no haya vuelos: nadie lo buscó todavía).">
-            <PanoramaCalendario dias={p.porDia} desde={p.desde} hasta={p.hasta} onElegirDia={(f) => elegir(p.destino, f)} />
+          <Bloque orden={1} titulo="Cuándo es más barato" objetivo="Un mes por tarjeta y, en cada día, el precio más bajo que hay para ese día: se lee sin pasar el cursor por encima. El color dice si ese precio es barato o caro para esta misma ruta (los cortes son cuantiles del propio par). Los días en blanco no tienen precio porque nadie los buscó todavía, no porque no haya vuelos: el botón de cada mes los busca en vivo y los trae.">
+            <PanoramaCalendario dias={p.porDia} desde={p.desde} hasta={p.hasta} onElegirDia={(f) => elegir(p.destino, f)} {...(p.destinoEsContinente ? {} : { onLlenarMes: llenar })} />
             <PanoramaMeses meses={p.porMes} onElegirDia={(f) => elegir(p.destino, f)} />
           </Bloque>
           {p.destinoEsContinente && (
@@ -157,10 +160,15 @@ export const Panorama = ({ aeropuertos, onElegirDia }: Props) => {
           <Bloque orden={p.destinoEsContinente ? 3 : 2} titulo="Desde qué aeropuerto sale más barato" objetivo="El que pediste y sus alternativos del modelo. El traslado hasta el alternativo no está en el precio: se dice cuántos km son para que la cuenta la hagas vos.">
             <PanoramaSalidas {...comunes} />
           </Bloque>
-          <Bloque orden={p.destinoEsContinente ? 4 : 3} titulo="¿Comprar ahora o esperar?" objetivo="Con cuánta anticipación estuvo más barato este par y qué muestra el historial de las bajadas. Son observaciones del cache, no un pronóstico; elegí un día en Rutas para saber si ese día está barato o caro.">
+          {!p.destinoEsContinente && (
+            <Bloque orden={3} titulo="Y si vuelvo, ¿cuánto sale el viaje entero?" objetivo="La suma de dos boletos de ida: el de ida el día que salís y el de vuelta el día que volvés, para la estadía que elijas. Ordenado por total, con los diez mejores días de salida.">
+              <IdaYVuelta ida={p} onElegirDia={elegir} />
+            </Bloque>
+          )}
+          <Bloque orden={p.destinoEsContinente ? 3 : 4} titulo="¿Comprar ahora o esperar?" objetivo="Con cuánta anticipación estuvo más barato este par y qué muestra el historial de las bajadas. Son observaciones del cache, no un pronóstico; elegí un día en Rutas para saber si ese día está barato o caro.">
             <Anticipacion origen={p.origen} destino={p.destino} seguir={p.destinoEsContinente ? undefined : <Seguir origen={p.origen} destino={p.destino} />} />
           </Bloque>
-          <Bloque orden={p.destinoEsContinente ? 5 : 4} titulo="Las más baratas del horizonte" objetivo="Una por día, destino y aeropuerto de salida: alternativas distintas, no variantes del mismo vuelo. Son tarifas cacheadas con su antigüedad; el enlace abre esa búsqueda en vivo en Aviasales.">
+          <Bloque orden={p.destinoEsContinente ? 4 : 5} titulo="Las más baratas del horizonte" objetivo="Una por día, destino y aeropuerto de salida: alternativas distintas, no variantes del mismo vuelo. Son tarifas cacheadas con su antigüedad; el enlace abre esa búsqueda en vivo en Aviasales.">
             <PanoramaBaratas {...comunes} marker={cobertura?.marker ?? null} bajoCosto={cobertura?.aerolineasBajoCosto ?? []} />
           </Bloque>
         </div>

@@ -68,13 +68,16 @@ describe("Panorama (Fase 21)", () => {
     expect(cifras).toContain("noviembre 2026");
     expect(cifras).toContain("GRU");
     expect(cifras).toContain("a 1137 km de ASU: el traslado va aparte");
-    // Mapa de calor: una celda por día con tarifas, pintada por nivel; los días sin tarifas quedan grises.
-    const celdas = screen.getAllByTestId("celda-dia");
+    // Calendario: un mes por tarjeta y el precio escrito en cada día (sin pasar el cursor por encima).
+    const celdas = screen.getAllByTestId("dia-con-precio");
     expect(celdas).toHaveLength(3);
     expect(celdas.map((c) => c.getAttribute("data-fecha"))).toEqual(["2026-09-25", "2026-10-25", "2026-11-05"]);
-    expect(celdas[0]?.className).toContain("bg-orange-400"); // el más caro de los tres: con tres días nada supera el p85, que es él mismo
+    expect(celdas[0]?.textContent).toBe("25900"); // día 25, USD 900
+    expect(celdas[0]?.className).toContain("bg-orange-200"); // el más caro de los tres: con tres días nada supera el p85, que es él mismo
     expect(celdas[2]?.className).toContain("bg-emerald-600"); // el más barato
-    expect(screen.getAllByTestId("celda-vacia").length).toBeGreaterThan(30);
+    expect(screen.getAllByTestId("mes-calendario").map((m) => m.getAttribute("data-mes"))).toEqual(["2026-09", "2026-10", "2026-11"]);
+    expect(screen.getByTestId("panorama-calendario").textContent).toContain("septiembre 2026");
+    expect(screen.getAllByTestId("dia-sin-precio").length).toBeGreaterThan(30);
     // Un clic en un día abre Rutas con ese par y esa fecha.
     fireEvent.click(celdas[2] as HTMLElement);
     expect(onElegirDia).toHaveBeenCalledWith("ASU", "EU", "2026-11-05");
