@@ -63,7 +63,7 @@ try {
     for (const r of rutas) salidas.set(r[1], (salidas.get(r[1]) ?? 0) + 1);
     // El grafo del modelo: con él se ordenan los destinos de cada origen (Fase 24).
     const grafo = new Grafo(rutas, [...catalogo.values()], config.grafo.aerolineasExcluidas, config.grafo.equivalencias);
-    console.log(`bajada por continentes: ${config.bajada.grupos.map((g) => g.nota).join(" · ")} · hasta ${presupuesto} pedidos (~${Math.ceil(presupuesto / 60)} min)`);
+    console.log(`bajada: primero los corredores del dueño (${config.bajada.grupos.map((g) => g.nota).join(" · ")})${config.bajada.cubrirTodoElMundo ? " y después el resto del mundo" : ""} · hasta ${presupuesto} pedidos (~${Math.ceil(presupuesto / 60)} min)`);
     const excluido = (pais: string) => config.bajada.paisesExcluidos.includes(pais);
     let ultimoGuardado = 0;
     for (const grupo of config.bajada.grupos) {
@@ -98,6 +98,42 @@ try {
       }
       console.log(`${grupo.nota}: ${descubiertos} orígenes descubiertos, ${paresGrupo} pares bajados, ${estado.pedidos > 0 ? Math.round(estado.nuevos / estado.pedidos) : 0} tarifas por pedido${estado.pedidos >= presupuesto ? " (presupuesto agotado: la próxima corrida sigue acá)" : ""}`);
       if (estado.pedidos >= presupuesto) break;
+    }
+
+    // Fase 26: los grupos son el ORDEN, no el límite. Terminados los corredores del dueño, el barrido sigue por
+    // todo el mundo —cualquier aeropuerto con servicio regular hacia cualquiera de sus destinos con cache— con los
+    // de más salidas primero y, dentro de cada uno, el orden del modelo. Sin esto el cache tenía un techo: África,
+    // Oceanía, Asia→Europa y los vuelos dentro de un mismo continente no entraban nunca.
+    if (config.bajada.cubrirTodoElMundo && estado.pedidos < presupuesto) {
+      const origenes = [...catalogo.values()].filter((a) => a.servicioRegular && !excluido(a.pais)).sort((x, y) => (salidas.get(y.iata) ?? 0) - (salidas.get(x.iata) ?? 0));
+      let descubiertos = 0;
+      let paresMundo = 0;
+      console.log(`resto del mundo: ${origenes.length} aeropuertos con servicio regular, los de más salidas primero`);
+      for (const a of origenes) {
+        if (estado.pedidos >= presupuesto) break;
+        let desc = b.descubrimientos.get(a.iata);
+        if (!desc || b.hoyMs - Date.parse(desc.en) > config.bajada.redescubrirDias * 86_400_000) {
+          desc = await b.descubrir(a.iata);
+          descubiertos++;
+        }
+        const candidatos = desc.destinos.filter((d) => {
+          const c = catalogo.get(d);
+          return c !== undefined && d !== a.iata && !excluido(c.pais);
+        });
+        const objetivos = ordenarPorPrioridad(candidatos, { origen: a.iata, grafo, aeropuertos: catalogo, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, pesos: config.bajada.prioridad }).map((x) => x.destino);
+        for (const d of objetivos) {
+          if (estado.pedidos >= presupuesto) break;
+          if (b.vigente(a.iata, d)) continue;
+          await b.bajarPar(a.iata, d, "mundo");
+          paresMundo++;
+        }
+        if (estado.pedidos - ultimoGuardado >= 200) {
+          b.guardar();
+          ultimoGuardado = estado.pedidos;
+          console.log(`  resto del mundo: ${estado.pedidos} pedidos, ${estado.nuevos} tarifas, guardado`);
+        }
+      }
+      console.log(`resto del mundo: ${descubiertos} orígenes descubiertos, ${paresMundo} pares bajados${estado.pedidos >= presupuesto ? " (presupuesto agotado: la próxima corrida sigue acá)" : ""}`);
     }
   }
 

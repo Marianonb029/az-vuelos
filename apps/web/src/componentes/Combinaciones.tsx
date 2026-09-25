@@ -150,7 +150,7 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
       <form onSubmit={(e) => void buscar(e)} noValidate className="grid gap-5">
         <p className="text-xs text-slate-600">
           Todas las rutas que el grafo de aerolíneas permite (rutas vigentes por número de vuelo, VRS) desde el origen y sus alternativos, en un boleto o en dos por un hub. Sin fecha ni precio: es para buscar alternativas a mano cuando el mercado no alcanza; "en el mercado" dice si ese par ya tiene tarifas bajadas (las que no, son las que faltan buscar). Las aerolíneas low cost llevan distintivo: su tarifa barata suele ser sólo con equipaje de mano.
-          {cobertura?.grupos.length ? ` Grupos de la bajada, en orden: ${cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}`).join(" · ")}.` : ""}
+          {cobertura?.grupos.length ? ` La app sirve cualquier par del mundo; el cache se precarga en este orden y después sigue por el resto: ${cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}`).join(" · ")}.` : ""}
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="c-origen" etiqueta="Origen" error={errores.origen}>

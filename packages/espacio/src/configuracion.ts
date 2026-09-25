@@ -94,6 +94,9 @@ export const ConfigBajada = z.object({
   paisesExcluidos: z.array(z.string().length(2)), // ISO 3166-1: ni como origen ni como destino de la bajada, ni como llegada cuando el destino es un continente
   // Fase 23: parte del presupuesto de cada corrida se reserva para volver a bajar los pares seguidos. Sin volver
   // sobre el mismo par no hay historial, y sin historial no se puede decir si el precio sube o baja.
+  // Fase 26: los grupos son el orden de preferencia, no el límite. Con esto en true, terminados los corredores el
+  // barrido sigue por todos los aeropuertos del mundo con servicio regular: la app sirve para cualquier par.
+  cubrirTodoElMundo: z.boolean(),
   presupuestoSeguidosPct: z.number().min(0).max(100),
   // Fase 24: el modelo ordena los destinos de cada origen, para que el presupuesto se gaste primero donde hay más
   // chance de tarifas buenas. Sólo ordena: nada se descarta.

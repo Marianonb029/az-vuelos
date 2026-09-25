@@ -768,6 +768,21 @@ El dueño preguntó en qué se basaba. La respuesta honesta: **en nada verificad
 - **Lo que queda fuera del precio en todos los casos**: equipaje de bodega, cambios y reembolsos, y cualquier recargo del medio de pago o impuesto local al comprar desde Paraguay. La app no puede saberlos y no los inventa.
 - **Partir el viaje en dos boletos no cambia los impuestos** de la comparación: cada boleto trae los suyos dentro de su precio, así que la suma que muestra la tabla es lo que se paga. Medido sobre el dataset (pares con las dos opciones el mismo día): **partir gana sólo en 20 % de los días**, con ahorro mediano **5 %** y p90 13 %. Lo que cambia al partir no son los impuestos sino lo que no está en el precio: equipaje que se paga dos veces y la falta de protección de conexión.
 
+## Fase 26 (25/09/2026) — cualquier par del mundo
+
+**La corrección del dueño**: el objetivo nunca fue buscar desde Asunción. ASU aparecía en los ejemplos y de ahí se coló un supuesto que además era falso (el dueño no vive en Paraguay). La app tiene que servir para **cualquier aeropuerto del mundo**.
+
+**Qué estaba realmente atado a ASU.** En el código, nada: sólo comentarios de ejemplo y fixtures de tests, sin defaults ni lógica. El sesgo estaba en **la cobertura del cache**: `bajada.grupos` no era sólo un orden, era un **filtro**. Los cinco corredores (SA→EU, NA→EU, EU→NA+SA, EU→AS, NA+SA→AS) dejaban afuera para siempre África, Oceanía, Asia→Europa, Asia→América y **todos los vuelos dentro de un mismo continente**: por más que la corrida nocturna siguiera años, NRT→SIN o JNB→LHR no iban a entrar nunca.
+
+**Los cambios:**
+- **`bajada.cubrirTodoElMundo`** (true): terminados los corredores del dueño, el barrido **sigue por todo el mundo** — todos los aeropuertos con servicio regular (menos los países excluidos), los de más salidas primero, hacia todos sus destinos con cache, con el orden del modelo dentro de cada uno. Los grupos pasan a ser **el orden de precarga, no el techo**.
+- **Un par sin cache es accionable en el momento.** Antes, si la búsqueda no traía nada, el aviso decía "corré `pnpm precios ORIGEN DESTINO`". Ahora aparece un bloque con los tres caminos y el botón de seguir: traerlo ahora (1–2 min), buscarlo en vivo si nadie lo buscó nunca, o seguirlo para que entre en la corrida de las 03:00. **Nadie tiene que esperar al barrido.**
+- **Los textos** (CLAUDE.md, README, Combinaciones, Rutas, glosario de Datos) dicen que la app sirve cualquier par y que los grupos son sólo el orden de precarga.
+
+**Verificado** (25/09) con tres pares que el barrido anterior nunca habría tocado: en 3 pedidos y 12 segundos entraron NRT→SIN (USD 150, 75 días con tarifas), JNB→LHR (USD 326) y SYD→AKL (USD 204).
+
+**Queda abierto para el dueño**, ahora que el alcance es mundial: si el orden de los cinco corredores sigue siendo el que quiere (era su prioridad de la Fase 16) y si mantiene a Rusia excluida (`bajada.paisesExcluidos`, decidido cuando el alcance era América–Europa). Las dos son decisiones suyas y no se tocan sin que las escriba.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

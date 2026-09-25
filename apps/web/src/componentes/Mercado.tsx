@@ -12,6 +12,7 @@ import { Campo } from "./Campo";
 import { Combobox } from "./Combobox";
 import type { Opcion } from "./Combobox";
 import { FilaMercado } from "./FilaMercado";
+import { Seguir } from "./Seguir";
 import { Toggle } from "./Toggle";
 
 // Un par y un día elegidos en otra pestaña (Buscar): se cargan en el formulario y se busca solo.
@@ -254,7 +255,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
               : `Tarifas bajadas el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} pares, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
           {cobertura && cobertura.grupos.length > 0 && (
             <span className="block" data-testid="cobertura-grupos">
-              Bajada por continentes (pnpm precios, en este orden):{" "}
+              La app sirve cualquier par del mundo: el que no esté cacheado se trae en el momento. El cache se precarga en este orden y después sigue por el resto del mundo:{" "}
               {cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
             </span>
           )}
@@ -292,6 +293,27 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
               <button type="button" onClick={onVerResumen} className="rounded-md border border-emerald-600 px-3 py-1 text-xs font-medium text-emerald-800 hover:bg-emerald-100">
                 Ver conclusiones y si conviene comprar →
               </button>
+            </div>
+          )}
+          {/* Fase 26: la app sirve cualquier par del mundo. Si el barrido todavía no llegó a éste, no hay que
+              esperarlo: se trae en el momento o se sigue para que entre en la corrida de todas las noches. */}
+          {filas.length === 0 && origen && destino && !esContinente(destino) && (
+            <div className="grid gap-2 rounded-md border border-sky-200 bg-sky-50 p-3" data-testid="par-sin-cache">
+              <p className="text-sm font-medium text-sky-900">
+                Todavía no hay nada cacheado para {origen.iata} → {destino.iata} en estos días. No hace falta esperar a la corrida nocturna: cualquier par del mundo se puede traer ahora.
+              </p>
+              <ol className="grid gap-1 text-xs text-sky-900">
+                <li>
+                  <strong>1.</strong> "Actualizar este par ahora" (abajo) lo baja de la API en 1–2 min: trae lo que otros viajeros ya buscaron.
+                </li>
+                <li>
+                  <strong>2.</strong> Si sigue vacío es que nadie lo buscó en Aviasales: "Buscar en vivo" lo busca por vos y lo trae al sistema.
+                </li>
+                <li>
+                  <strong>3.</strong> Seguilo y la corrida de las 03:00 lo baja todas las noches.
+                </li>
+              </ol>
+              <Seguir origen={origen.iata} destino={destino.iata} {...(fechaIda === "" ? {} : { fechaIda })} />
             </div>
           )}
           {resultado.avisos.map((a) => (
