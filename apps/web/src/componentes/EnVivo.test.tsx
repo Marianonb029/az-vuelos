@@ -17,8 +17,8 @@ describe("Búsqueda en vivo de un par (Fase 18)", () => {
     };
     render(<EnVivo origen="ASU" destino="FRA" fechaIda="2026-09-20" flexDias={1} marker={null} disponible segundosPorBusqueda={45} segundosEntreSondasMedicion={10} maxMinutosMedicion={5} hoy="2026-09-19" fechasConTarifas={fechas} onActualizado={vi.fn()} />);
     // Ventana de tres días: uno fresco se saltea, quedan el viejo y el que no tiene precio.
-    expect(screen.getByTestId("dias-frescos").textContent).toContain("Se saltean 1 de los 3 días de la ventana");
-    expect(screen.getByRole("button", { name: /Buscar en vivo en Aviasales los 2 días que hacen falta/ })).toBeTruthy();
+    expect(screen.getByTestId("dias-frescos").textContent).toContain("Se saltean 1 de los 3 días");
+    expect(screen.getByRole("button", { name: /Buscar en Aviasales los 2 días que hacen falta/ })).toBeTruthy();
   });
 
   it("si el API no responde durante la vigilancia, avisa y reintenta al minuto en vez de abortar", async () => {
@@ -45,7 +45,7 @@ describe("Búsqueda en vivo de un par (Fase 18)", () => {
     const onActualizado = vi.fn();
     render(<EnVivo origen="ASU" destino="FRA" fechaIda="2027-01-19" flexDias={0} marker={null} disponible segundosPorBusqueda={45} segundosEntreSondasMedicion={10} maxMinutosMedicion={5} hoy="2026-09-19" fechasConTarifas={null} onActualizado={onActualizado} />);
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: /Buscar en vivo en Aviasales/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Buscar en Aviasales/ }));
     });
     // Termina la única búsqueda (45 s) y empieza la vigilancia: la pasada 1 falla por red.
     await act(async () => {

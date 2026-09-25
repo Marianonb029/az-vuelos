@@ -28,9 +28,9 @@ export const PanoramaDestinos = ({ p, ciudad, onElegir }: Comunes) => {
             <th className="py-1 pr-3">Ciudad</th>
             <th className="py-1 pr-3">Desde</th>
             <th className="py-1 pr-3 w-1/3">Precio relativo</th>
-            <th className="py-1 pr-3">Mejor día</th>
-            <th className="py-1 pr-3">La más barata</th>
-            <th className="py-1 pr-3 text-right">Días con tarifas</th>
+            <th className="py-1 pr-3">Día más barato</th>
+            <th className="py-1 pr-3">La opción más barata</th>
+            <th className="py-1 pr-3 text-right">Días con precio</th>
           </tr>
         </thead>
         <tbody>
@@ -73,8 +73,8 @@ export const PanoramaSalidas = ({ p, ciudad, onElegir }: Comunes) => {
             <th className="py-1 pr-3">Sale de</th>
             <th className="py-1 pr-3">Desde</th>
             <th className="py-1 pr-3 w-1/3">Precio relativo</th>
-            <th className="py-1 pr-3">Mejor día</th>
-            <th className="py-1 pr-3">Traslado hasta ahí</th>
+            <th className="py-1 pr-3">Día más barato</th>
+            <th className="py-1 pr-3">Qué tan lejos queda</th>
           </tr>
         </thead>
         <tbody>
@@ -95,7 +95,7 @@ export const PanoramaSalidas = ({ p, ciudad, onElegir }: Comunes) => {
                   </button>
                 </td>
                 <td className="py-1 pr-3 text-xs text-slate-600">
-                  {o.trasladoKm === 0 ? `el aeropuerto pedido` : `a ${o.trasladoKm.toLocaleString("es")} km de ${p.origen}${ahorro > 0 ? ` · ahorra USD ${ahorro.toLocaleString("es")}, el traslado no está incluido` : " · no es más barato"}`}
+                  {o.trasladoKm === 0 ? `es el que pediste` : `a ${o.trasladoKm.toLocaleString("es")} km de ${p.origen}${ahorro > 0 ? ` · ahorrás USD ${ahorro.toLocaleString("es")}, pero llegar hasta ahí lo pagás aparte` : " · no sale más barato"}`}
                 </td>
               </tr>
             );
@@ -115,7 +115,7 @@ export const PanoramaBaratas = ({ p, nombre, ciudad, onElegir, marker, bajoCosto
         <div key={`${c.fechaIda}-${c.origen}-${c.llegaA}-${i}`} className="grid grid-cols-[auto_1fr_auto] items-start gap-3 rounded-md border border-slate-200 p-2">
           <span className="w-24 shrink-0">
             <span className="block text-base font-semibold tabular-nums text-slate-900">USD {c.totalUsd.toLocaleString("es")}</span>
-            <span className="block text-[11px] text-slate-500">{c.boletos.length === 1 ? "un boleto" : `${c.boletos.length} boletos`}</span>
+            <span className="block text-[11px] text-slate-500">{c.boletos.length === 1 ? "un pasaje" : `${c.boletos.length} pasajes`}</span>
           </span>
           <span className="text-xs text-slate-700">
             <span className="block font-medium text-slate-900">
@@ -125,7 +125,7 @@ export const PanoramaBaratas = ({ p, nombre, ciudad, onElegir, marker, bajoCosto
               sale {fechaCorta(c.fechaIda)} · {horas(c.duracionTotalMin)} · {c.escalas === 0 ? "directo" : `${c.escalas} escala${c.escalas === 1 ? "" : "s"}`} · <Aerolineas codigos={c.aerolineas} nombre={nombre} bajoCosto={bajoCosto} /> · bodega {c.equipajeBodega === null ? "?" : c.equipajeBodega ? "sí" : "no"}
             </span>
             <span className="block text-slate-500">
-              visto hace {c.vistoHaceDias} {c.vistoHaceDias === 1 ? "día" : "días"} (puede haberse movido ±{c.desvioEstimadoPct} %)
+              precio visto hace {c.vistoHaceDias} {c.vistoHaceDias === 1 ? "día" : "días"} (puede haber cambiado ±{c.desvioEstimadoPct} %)
               {c.trasladoOrigenKm > 0 ? ` · sale de ${c.origen}, a ${c.trasladoOrigenKm.toLocaleString("es")} km de ${p.origen}` : ""}
             </span>
           </span>

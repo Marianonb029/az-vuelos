@@ -27,8 +27,8 @@ describe("Anticipación (Fase 22)", () => {
     const r = leerSenal({ ...base, fechaIda: null, tramos: [], historial: [], minDelDia: null, vistoHaceDias: null }, o);
     expect(r.senal).toBe("no-alcanza");
     expect(r.cambioPct).toBeNull();
-    expect(r.porque[0]).toContain("este par se bajó todavía no");
-    expect(r.porque[0]).toContain("pnpm precios ASU LIS");
+    expect(r.porque[0]).toContain("los precios de esta ruta se actualizaron todavía ninguna");
+    expect(r.porque[0]).toContain("Seguí la ruta y se actualiza sola cada noche");
   });
 
   it("con historial que baja más que el ruido, manda volver a mirar antes de comprar", () => {
@@ -39,8 +39,8 @@ describe("Anticipación (Fase 22)", () => {
     const r = leerSenal({ ...base, fechaIda: "2026-10-24", tramos: [{ desdeDias: 30, hastaDias: 59, dias: 5, minUsd: 500, medianaUsd: 560 }], historial, minDelDia: 552, vistoHaceDias: 2 }, o);
     expect(r.senal).toBe("mirar");
     expect(r.cambioPct).toBe(-17.6);
-    expect(r.titular).toBe("Bajó 17.6 % desde que lo miramos: volvé a mirar antes de comprar.");
-    expect(r.porque[0]).toContain("el mínimo pasó de USD 670 a USD 552 (-17.6 %)");
+    expect(r.titular).toBe("Bajó 17.6 % desde que la seguimos: volvé a mirar antes de comprar.");
+    expect(r.porque[0]).toContain("el más barato pasó de USD 670 a USD 552 (-17.6 %)");
     expect(r.diaPedido).toEqual({ fecha: "2026-10-24", minUsd: 552, anticipacionDias: 30, medianaDelTramoUsd: 560, difPct: -1.4 });
   });
 
@@ -61,24 +61,24 @@ describe("Anticipación (Fase 22)", () => {
     ];
     const barato = leerSenal({ ...base, fechaIda: "2026-10-24", tramos, historial: [], minDelDia: 300, vistoHaceDias: 2 }, o);
     expect(barato.senal).toBe("comprar");
-    expect(barato.titular).toContain("25 % por debajo de lo típico");
+    expect(barato.titular).toContain("25 % por debajo de lo normal");
     expect(barato.tramoMasBarato).toMatchObject({ desdeDias: 30, medianaUsd: 400 });
     // Un día caro cuando todavía falta para el tramo más barato: se puede esperar.
     const caro = leerSenal({ ...base, fechaIda: "2026-12-24", tramos: [{ desdeDias: 0, hastaDias: 13, dias: 10, minUsd: 300, medianaUsd: 400 }], historial: [], minDelDia: 800, vistoHaceDias: 2 }, o);
     expect(caro.senal).toBe("esperar");
-    expect(caro.titular).toContain("todavía falta para la anticipación con la que este par estuvo más barato");
+    expect(caro.titular).toContain("todavía falta para la anticipación con la que esta ruta suele estar más barata");
     // En lo típico: ni apuro ni espera.
     const medio = leerSenal({ ...base, fechaIda: "2026-10-24", tramos, historial: [], minDelDia: 400, vistoHaceDias: 2 }, o);
     expect(medio.senal).toBe("mirar");
-    expect(medio.titular).toBe("Está en lo típico para esta anticipación: no hay señal de apuro ni de esperar.");
+    expect(medio.titular).toBe("Está en lo normal para esta anticipación: no hay apuro ni motivo para esperar.");
     // Sin día elegido no hay veredicto: sólo la referencia del par.
     const sinDia = leerSenal({ ...base, fechaIda: null, tramos, historial: [], minDelDia: null, vistoHaceDias: null }, o);
     expect(sinDia.senal).toBe("referencia");
-    expect(sinDia.titular).toBe("Lo más barato de este par aparece con 30 a 59 días de anticipación (típico USD 400).");
+    expect(sinDia.titular).toBe("Lo más barato de esta ruta aparece comprando con 30 a 59 días de anticipación (normalmente USD 400).");
   });
 
   it("declara el desvío medido de 0 % en vez de un ±0 % que no dice nada", () => {
     const r = leerSenal({ ...base, desvioDiarioPct: 0, fechaIda: null, tramos: [], historial: [{ bajadaEn: "2026-09-17", minUsd: 500, combinaciones: 1 }, { bajadaEn: "2026-09-23", minUsd: 500, combinaciones: 1 }], minDelDia: null, vistoHaceDias: 3 }, o);
-    expect(r.porque.some((x) => x.includes("El desvío medido entre corridas dio 0 %"))).toBe(true);
+    expect(r.porque.some((x) => x.includes("la mayoría de los precios no cambió (0 %)"))).toBe(true);
   });
 });

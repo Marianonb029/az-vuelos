@@ -32,8 +32,8 @@ export const Anticipacion = ({ origen, destino, fechaIda, compacto = false, segu
     };
   }, [origen, destino, fechaIda]);
 
-  if (error) return <p className="text-xs text-amber-700">No se pudo leer la anticipación: {error}</p>;
-  if (!d) return <p className="text-xs text-slate-500">Mirando el historial de este par…</p>;
+  if (error) return <p className="text-xs text-amber-700">No se pudo ver cómo se movieron los precios: {error}</p>;
+  if (!d) return <p className="text-xs text-slate-500">Mirando cómo se movieron los precios de esta ruta…</p>;
   const señal = TEXTO_SENAL[d.senal];
   const tope = Math.max(...d.tramos.map((t) => t.medianaUsd), 1);
   const topeHist = Math.max(...d.historial.map((h) => h.minUsd), 1);
@@ -58,7 +58,7 @@ export const Anticipacion = ({ origen, destino, fechaIda, compacto = false, segu
       {!compacto && d.historial.length > 0 && (
         <div>
           <p className="text-xs font-semibold text-slate-700">
-            Qué mostraba la app cada vez que se bajó este par{d.fechaIda ? ` para salir el ${fechaCorta(d.fechaIda)}` : ""}
+            Cómo cambió el precio más barato en cada actualización{d.fechaIda ? `, para salir el ${fechaCorta(d.fechaIda)}` : ""}
           </p>
           <div className="mt-1 flex flex-wrap items-end gap-1" data-testid="anticipacion-historial">
             {d.historial.map((h, i) => {
@@ -75,12 +75,12 @@ export const Anticipacion = ({ origen, destino, fechaIda, compacto = false, segu
               );
             })}
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">Cada barra es una corrida de `pnpm precios`: el mínimo que la app habría mostrado ese día. Es lo único que dice si el precio se mueve.</p>
+          <p className="mt-1 text-[11px] text-slate-500">Cada barra es un día en que se actualizaron los precios: lo más barato que había ese día. Es lo único que dice si el precio se está moviendo.</p>
         </div>
       )}
       {!compacto && d.tramos.length > 0 && (
         <div>
-          <p className="text-xs font-semibold text-slate-700">Con cuánta anticipación estuvo más barato este par</p>
+          <p className="text-xs font-semibold text-slate-700">Con cuánta anticipación conviene comprar esta ruta</p>
           <div className="mt-1 grid gap-1" data-testid="anticipacion-curva">
             {d.tramos.map((t) => {
               const esDelDia = d.diaPedido !== null && d.diaPedido.anticipacionDias >= t.desdeDias && (t.hastaDias === null || d.diaPedido.anticipacionDias <= t.hastaDias);
@@ -95,13 +95,13 @@ export const Anticipacion = ({ origen, destino, fechaIda, compacto = false, segu
                     <span className={`absolute inset-y-0 left-0 rounded ${esMasBarato ? "bg-emerald-500" : "bg-sky-300"}`} style={{ width: `${(t.medianaUsd / tope) * 100}%` }} />
                   </span>
                   <span className="whitespace-nowrap tabular-nums text-slate-600">
-                    típico USD {t.medianaUsd.toLocaleString("es")} · mínimo {t.minUsd.toLocaleString("es")} · {t.dias} d
+                    normalmente USD {t.medianaUsd.toLocaleString("es")} · más barato {t.minUsd.toLocaleString("es")} · {t.dias} días
                   </span>
                 </div>
               );
             })}
           </div>
-          <p className="mt-1 text-[11px] text-slate-500">Sale de la foto de hoy del cache: mezcla anticipación con temporada. Un tramo caro puede serlo porque cae en vacaciones, no por la anticipación.</p>
+          <p className="mt-1 text-[11px] text-slate-500">Sale de los precios que hay guardados hoy, así que mezcla la anticipación con la temporada: un tramo puede salir caro porque cae en vacaciones, no por comprar con más o menos tiempo.</p>
         </div>
       )}
     </div>

@@ -41,15 +41,15 @@ describe("Búsqueda múltiple (Fase 19)", () => {
     const onTraido = vi.fn();
     const onElegirPar = vi.fn();
     render(<BusquedaMultiple aeropuertos={aeropuertos} cobertura={cobertura} hoy="2026-09-18" onTraido={onTraido} onElegirPar={onElegirPar} />);
-    elegir("Origen de la ruta", "ASU", /ASU/);
-    elegir("Destino de la ruta", "LIS", /LIS/);
+    elegir("Salgo de", "ASU", /ASU/);
+    elegir("Voy a", "LIS", /LIS/);
     fireEvent.click(screen.getByRole("button", { name: "Agregar ruta" }));
-    elegir("Origen de la ruta", "IGU", /IGU/);
-    elegir("Destino de la ruta", "LIS", /LIS/);
+    elegir("Salgo de", "IGU", /IGU/);
+    elegir("Voy a", "LIS", /LIS/);
     fireEvent.click(screen.getByRole("button", { name: "Agregar ruta" }));
     expect(screen.getByTestId("bm-pares").textContent).toContain("ASU → LIS");
     expect(screen.getByTestId("bm-pares").textContent).toContain("IGU → LIS");
-    fireEvent.change(screen.getByLabelText("Fecha de ida de la lista"), { target: { value: "2027-01-20" } });
+    fireEvent.change(screen.getByLabelText("Fecha de ida (la misma para todas)"), { target: { value: "2027-01-20" } });
     fireEvent.click(screen.getByRole("radio", { name: "Sólo ese día" }));
     const boton = screen.getByRole("button", { name: /Buscar en vivo 2 búsquedas \(2 rutas × 1 días, ~2 min\) y traer al sistema/ });
     await act(async () => {

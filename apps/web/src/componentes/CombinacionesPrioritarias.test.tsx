@@ -35,13 +35,13 @@ describe("Qué conviene buscar a mano (Fase 23)", () => {
     const filas = screen.getAllByTestId("par-faltante").map((f) => f.textContent ?? "");
     expect(filas[0]).toContain("GRU → MAD");
     expect(filas[0]).toContain("Iberia");
-    expect(filas[0]).toContain("hay ruta directa con este boleto");
-    fireEvent.click(screen.getByRole("button", { name: /Buscar estos 2 boletos en vivo/ }));
+    expect(filas[0]).toContain("hay vuelo directo en este tramo");
+    fireEvent.click(screen.getByRole("button", { name: /Buscar estos 2 tramos en Aviasales/ }));
     expect(onBuscar).toHaveBeenCalledWith([{ origen: "GRU", destino: "MAD" }, { origen: "LIS", destino: "MAD" }]);
   });
 
   it("cuando no falta nada lo dice", () => {
     render(<CombinacionesPrioritarias rutas={[rutas[0] as RutaPosible]} nombre={(i) => i} bajoCosto={[]} max={10} onBuscar={vi.fn()} />);
-    expect(screen.getByText(/Todos los boletos de estas rutas ya tienen tarifas/)).toBeTruthy();
+    expect(screen.getByText(/Todos los tramos de estas rutas ya tienen precio/)).toBeTruthy();
   });
 });

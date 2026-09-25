@@ -67,7 +67,7 @@ describe("Panorama (Fase 21)", () => {
     expect(cifras).toContain("el mejor día está 43 % por debajo");
     expect(cifras).toContain("noviembre 2026");
     expect(cifras).toContain("GRU");
-    expect(cifras).toContain("a 1137 km de ASU: el traslado va aparte");
+    expect(cifras).toContain("está a 1137 km: llegar hasta ahí lo pagás aparte");
     // Calendario: un mes por tarjeta y el precio escrito en cada día (sin pasar el cursor por encima).
     const celdas = screen.getAllByTestId("dia-con-precio");
     expect(celdas).toHaveLength(3);
@@ -83,12 +83,12 @@ describe("Panorama (Fase 21)", () => {
     expect(onElegirDia).toHaveBeenCalledWith("ASU", "EU", "2026-11-05");
     // Ranking de ciudades y de aeropuertos de salida, con el traslado dicho aparte.
     expect(screen.getByTestId("panorama-destinos").textContent).toContain("MAD MadridUSD 28405/11/2026directo · 12 h 00 min1");
-    expect(screen.getByTestId("panorama-salidas").textContent).toContain("a 1137 km de ASU · ahorra USD 216, el traslado no está incluido");
+    expect(screen.getByTestId("panorama-salidas").textContent).toContain("a 1137 km de ASU · ahorrás USD 216, pero llegar hasta ahí lo pagás aparte");
     // Las más baratas: la combinación con su antigüedad, el distintivo low cost y el enlace con marker.
     const baratas = screen.getByTestId("panorama-baratas");
     expect(baratas.textContent).toContain("GRU → MAD");
     expect(baratas.textContent).toContain("GOLlow cost");
-    expect(baratas.textContent).toContain("visto hace 6 días (puede haberse movido ±6 %)");
+    expect(baratas.textContent).toContain("precio visto hace 6 días (puede haber cambiado ±6 %)");
     expect(baratas.querySelector("a")?.getAttribute("href")).toBe("https://www.aviasales.com/search/GRU0511MAD1?marker=123");
     fireEvent.click(screen.getAllByRole("button", { name: "Ver ese día" })[0] as HTMLElement);
     expect(onElegirDia).toHaveBeenLastCalledWith("ASU", "MAD", "2026-11-05");

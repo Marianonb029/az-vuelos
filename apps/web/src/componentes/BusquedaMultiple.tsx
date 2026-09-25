@@ -195,10 +195,10 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
     <div className="grid gap-3" data-testid="busqueda-multiple">
       <p className="text-xs text-slate-600">Armá una lista de rutas, una fecha y una ventana. La app abre una sola ventana de Aviasales y la lleva por cada búsqueda (par × día) a {segundos} s cada una, sin leer nada; vigila el cache de la Data API cada minuto y, en cuanto Aviasales publica una ruta, la trae al sistema (un pedido por ruta) hasta que todas tengan sus días. Vos sólo dejás esa ventana abierta.</p>
       <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-        <Campo id="bm-origen" etiqueta="Origen de la ruta">
+        <Campo id="bm-origen" etiqueta="Salgo de">
           <Combobox id="bm-origen" placeholder="Código, aeropuerto o ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opciones} onCambio={setOrigen} />
         </Campo>
-        <Campo id="bm-destino" etiqueta="Destino de la ruta">
+        <Campo id="bm-destino" etiqueta="Voy a">
           <Combobox id="bm-destino" placeholder="Código, aeropuerto o ciudad" valor={destino} etiquetaValor={etiquetaAeropuerto} buscar={opciones} onCambio={setDestino} />
         </Campo>
         <button type="button" onClick={agregar} disabled={!origen || !destino || fase === "buscando"} className="self-end rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
@@ -220,7 +220,7 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
         </ul>
       )}
       <div className="flex flex-wrap items-end gap-4">
-        <Campo id="bm-fecha" etiqueta="Fecha de ida de la lista">
+        <Campo id="bm-fecha" etiqueta="Fecha de ida (la misma para todas)">
           <input id="bm-fecha" type="date" value={fechaIda} min={hoy} onChange={(e) => setFechaIda(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" />
         </Campo>
         <Campo id="bm-flex" etiqueta="Ventana">

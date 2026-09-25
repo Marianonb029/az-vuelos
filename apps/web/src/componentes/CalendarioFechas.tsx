@@ -76,7 +76,7 @@ export const CalendarioFechas = ({ fechas, valor, onCambio, hoy, cargando }: Pro
         })}
       </div>
       <p className="mt-1 text-xs text-slate-500" data-testid="calendario-nota">
-        {fechas === null ? (cargando ? "Buscando los días con tarifas…" : "Elegí origen y destino: los días con tarifas en el dataset van en verde") : fechas.length === 0 ? "Sin tarifas para este par en el dataset: elegí igual una fecha y buscá en vivo en Aviasales para traerlas" : `${enElMes.length} días con tarifas en este mes (verde, con el mínimo visto en USD) · ${fechas.length} en total, entre ${fechaCorta(fechas[0]?.fecha ?? hoy)} y ${fechaCorta(fechas[fechas.length - 1]?.fecha ?? hoy)} · los demás días se pueden elegir para buscar en vivo`}
+        {fechas === null ? (cargando ? "Buscando los días que ya tienen precio…" : "Elegí origen y destino: los días que ya tienen precio van en verde") : fechas.length === 0 ? "Esta ruta todavía no tiene ningún precio: elegí igual una fecha y buscala en Aviasales desde el botón de abajo" : `${enElMes.length} días con precio en este mes (en verde, con el más barato en USD) · ${fechas.length} en total, entre el ${fechaCorta(fechas[0]?.fecha ?? hoy)} y el ${fechaCorta(fechas[fechas.length - 1]?.fecha ?? hoy)} · los demás días también se pueden elegir para buscarlos`}
       </p>
     </div>
   );

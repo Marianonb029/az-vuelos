@@ -48,16 +48,16 @@ interface Props {
 // boletos faltan bajar para que estas rutas aparezcan en el mercado, ordenados por lo que aportarían.
 export const CombinacionesPrioritarias = ({ rutas, nombre, bajoCosto, max, onBuscar }: Props) => {
   const faltantes = paresFaltantes(rutas, max);
-  if (faltantes.length === 0) return <p className="text-xs text-slate-600">Todos los boletos de estas rutas ya tienen tarifas en el mercado: no queda nada por buscar a mano.</p>;
+  if (faltantes.length === 0) return <p className="text-xs text-slate-600">Todos los tramos de estas rutas ya tienen precio: no queda nada por buscar.</p>;
   return (
     <div className="grid gap-2" data-testid="pares-faltantes">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
-              <th className="py-1 pr-3">Boleto sin precio</th>
-              <th className="py-1 pr-3">Quién lo vende</th>
-              <th className="py-1 pr-3 text-right">Vuelos/sem</th>
+              <th className="py-1 pr-3">Tramo sin precio</th>
+              <th className="py-1 pr-3">Quién lo vuela</th>
+              <th className="py-1 pr-3 text-right">Vuelos por semana</th>
               <th className="py-1 pr-3 text-right">Rutas que lo usan</th>
               <th className="py-1 pr-3">Por qué conviene buscarlo</th>
             </tr>
@@ -72,7 +72,7 @@ export const CombinacionesPrioritarias = ({ rutas, nombre, bajoCosto, max, onBus
                 <td className="py-1 pr-3 text-right tabular-nums text-slate-700">{p.vuelosSemanales}</td>
                 <td className="py-1 pr-3 text-right tabular-nums text-slate-700">{p.rutas.toLocaleString("es")}</td>
                 <td className="py-1 pr-3 text-xs text-slate-600">
-                  {p.directo ? "hay ruta directa con este boleto" : "completa rutas con escala"} · {p.ejemplo.itinerario.join("→")}
+                  {p.directo ? "hay vuelo directo en este tramo" : "completa rutas con escala"} · {p.ejemplo.itinerario.join("→")}
                 </td>
               </tr>
             ))}
@@ -80,7 +80,7 @@ export const CombinacionesPrioritarias = ({ rutas, nombre, bajoCosto, max, onBus
         </table>
       </div>
       <button type="button" onClick={() => onBuscar(faltantes.map((p) => ({ origen: p.origen, destino: p.destino })))} className="justify-self-start rounded-md border border-sky-600 px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-50">
-        Buscar estos {faltantes.length} boletos en vivo (los carga en la búsqueda múltiple de Rutas)
+        Buscar estos {faltantes.length} tramos en Aviasales (los carga en Rutas, listos para buscar)
       </button>
     </div>
   );

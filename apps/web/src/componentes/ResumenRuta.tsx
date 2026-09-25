@@ -20,7 +20,7 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
         <p className="text-sm font-medium text-slate-800">Todavía no hay una búsqueda para resumir.</p>
-        <p className="mt-1 text-sm text-slate-600">Elegí un par y un día en Rutas: acá aparecen las conclusiones de ese resultado (qué conviene, qué se resigna y si conviene comprar ahora).</p>
+        <p className="mt-1 text-sm text-slate-600">Elegí una ruta y un día en Rutas: acá aparecen las conclusiones de ese resultado (qué conviene, qué resignás en cada opción y si conviene comprar ahora).</p>
         <button type="button" onClick={() => irA("rutas")} className="mt-3 rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700">
           Ir a Rutas
         </button>
@@ -34,9 +34,9 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-6">
         <p className="text-sm font-medium text-amber-900">
-          La búsqueda {origen} → {aDonde} del {fechaCorta(mercado.desde)} al {fechaCorta(mercado.hasta)} no trajo ninguna combinación.
+          La búsqueda {origen} → {aDonde} del {fechaCorta(mercado.desde)} al {fechaCorta(mercado.hasta)} no trajo ninguna opción.
         </p>
-        <p className="mt-1 text-sm text-amber-800">Sin filas no hay nada que resumir. En Rutas podés ampliar la ventana de salida, probar otro día del calendario o usar "Buscar en vivo" para traer ese par al sistema.</p>
+        <p className="mt-1 text-sm text-amber-800">Sin resultados no hay nada que resumir. En Rutas podés mirar más días alrededor, probar otra fecha o buscar esa ruta en Aviasales para traer sus precios.</p>
         {mercado.avisos.map((a) => (
           <p key={a} className="mt-1 text-xs text-amber-700">
             {a}
@@ -67,17 +67,17 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
           {origen} → {aDonde}, saliendo entre el {fechaCorta(mercado.desde)} y el {fechaCorta(mercado.hasta)}
         </p>
         <p className="text-sm text-slate-600">
-          {lista.length} combinaciones desde {porOrigen.length} aeropuerto{porOrigen.length === 1 ? "" : "s"} de salida, entre USD {Math.min(...lista.map((c) => c.totalUsd)).toLocaleString("es")} y USD {Math.max(...lista.map((c) => c.totalUsd)).toLocaleString("es")}.
-          {aRefrescar > 0 ? ` ${aRefrescar} están más viejas que su cadencia: conviene refrescarlas antes de decidir.` : " Todas están dentro de la cadencia con que corresponde rebajarlas."}
+          {lista.length} opciones desde {porOrigen.length} aeropuerto{porOrigen.length === 1 ? "" : "s"} de salida, entre USD {Math.min(...lista.map((c) => c.totalUsd)).toLocaleString("es")} y USD {Math.max(...lista.map((c) => c.totalUsd)).toLocaleString("es")}.
+          {aRefrescar > 0 ? ` ${aRefrescar} precios están viejos: conviene actualizarlos antes de decidir.` : " Todos los precios están actualizados."}
         </p>
       </div>
 
-      <Bloque orden={1} titulo="Qué te conviene, según lo que priorices" objetivo="Cuatro opciones de la misma búsqueda, cada una con lo que cuesta elegirla frente a la más barata. Si dos coinciden, es que esa opción gana por todos lados.">
+      <Bloque orden={1} titulo="Qué te conviene, según lo que priorices" objetivo="Cuatro opciones de la misma búsqueda, cada una con lo que te cuesta elegirla en vez de la más barata. Si dos coinciden, esa opción gana por todos lados.">
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="resumen-opciones">
           <Opcion titulo="La más barata" para="Si el precio manda y el tiempo no." c={barata} mejor={barata} resultado={mercado} nombre={nombre} destacada />
           <Opcion titulo="La más rápida" para="Si llegar pronto vale más que el ahorro." c={rapida} mejor={barata} resultado={mercado} nombre={nombre} />
           <Opcion titulo="La de menos escalas" para="Menos conexiones, menos riesgo de perder un tramo." c={directa} mejor={barata} resultado={mercado} nombre={nombre} />
-          <Opcion titulo="La más equilibrada" para="El mejor punto entre precio y horas de esta búsqueda." c={media} mejor={barata} resultado={mercado} nombre={nombre} />
+          <Opcion titulo="La más equilibrada" para="El mejor equilibrio entre precio y horas de viaje." c={media} mejor={barata} resultado={mercado} nombre={nombre} />
         </div>
         <ul className="grid gap-1 text-sm text-slate-700" data-testid="resumen-conclusiones">
           {conclusiones(mercado, nombre).map((x) => (
@@ -91,44 +91,44 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
         </ul>
       </Bloque>
 
-      <Bloque orden={2} titulo="¿Comprar ahora o esperar?" objetivo="Lo que muestra el historial de este par y la anticipación con la que estuvo más barato. Son observaciones del cache, no un pronóstico.">
+      <Bloque orden={2} titulo="¿Comprar ahora o esperar?" objetivo="Cómo se movió el precio en las últimas actualizaciones y con cuánta anticipación suele estar más barata esta ruta. Es lo que se observó, no una predicción.">
         <Anticipacion origen={origen} destino={destino} fechaIda={mercado.fechaIda} seguir={mercado.destinoEsContinente ? undefined : <Seguir origen={origen} destino={destino} fechaIda={mercado.fechaIda} />} />
       </Bloque>
 
-      <Bloque orden={3} titulo="Qué tan confiable es lo que estás viendo" objetivo="Las tarifas son las que otros viajeros vieron en Aviasales: cuanto más viejas, más pueden haberse movido.">
+      <Bloque orden={3} titulo="Qué tan confiable es lo que estás viendo" objetivo="Los precios son los que otros viajeros vieron en Aviasales: cuanto más viejos, más pueden haber cambiado.">
         <div className="grid gap-2 sm:grid-cols-4" data-testid="resumen-frescura">
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
             <p className="text-2xl font-semibold tabular-nums text-slate-900">{pct(lista.length - aRefrescar, lista.length)}</p>
-            <p className="text-xs font-medium text-slate-700">al día</p>
-            <p className="text-xs text-slate-500">{aRefrescar > 0 ? `${aRefrescar} pasaron su cadencia: "Actualizar este par ahora" en Rutas` : "ninguna pasó su cadencia de rebaja"}</p>
+            <p className="text-xs font-medium text-slate-700">precios al día</p>
+            <p className="text-xs text-slate-500">{aRefrescar > 0 ? `${aRefrescar} están viejos: "Actualizar esta ruta ahora" en Rutas` : "ninguno quedó viejo"}</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
             <p className="text-2xl font-semibold tabular-nums text-slate-900">{top(lista.map(antiguedad), 1)[0]?.[0] ?? "—"}</p>
-            <p className="text-xs font-medium text-slate-700">antigüedad típica</p>
+            <p className="text-xs font-medium text-slate-700">hace cuánto se vieron</p>
             <p className="text-xs text-slate-500">{top(lista.map(antiguedad), 4).map(([k, n]) => `${k}: ${n}`).join(" · ")}</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
             <p className="text-2xl font-semibold tabular-nums text-slate-900">{dataset?.desvio ? `${dataset.desvio.medianaPct} %` : dataset ? `±${dataset.tasaDesvioDiariaPct} %/día` : "—"}</p>
-            <p className="text-xs font-medium text-slate-700">cuánto se movieron</p>
-            <p className="text-xs text-slate-500">{dataset?.desvio ? `medido entre corridas sobre ${dataset.desvio.comparados.toLocaleString("es")} tarifas: ${dataset.desvio.subieron} subieron, ${dataset.desvio.bajaron} bajaron (p90 ${dataset.desvio.p90Pct} %)` : "supuesto de config hasta tener dos corridas"}</p>
+            <p className="text-xs font-medium text-slate-700">cuánto cambiaron</p>
+            <p className="text-xs text-slate-500">{dataset?.desvio ? `medido sobre ${dataset.desvio.comparados.toLocaleString("es")} precios entre dos actualizaciones: ${dataset.desvio.subieron} subieron, ${dataset.desvio.bajaron} bajaron (9 de cada 10, menos de ${dataset.desvio.p90Pct} %)` : "es un supuesto hasta tener dos actualizaciones"}</p>
           </div>
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
             <p className="text-2xl font-semibold tabular-nums text-slate-900">{conBodega.length}</p>
-            <p className="text-xs font-medium text-slate-700">con bodega incluida</p>
-            <p className="text-xs text-slate-500">de {lista.length}; el equipaje se infiere de la clave de tarifa y conviene confirmarlo en la aerolínea</p>
+            <p className="text-xs font-medium text-slate-700">con valija incluida</p>
+            <p className="text-xs text-slate-500">de {lista.length}; el equipaje se deduce de la tarifa y conviene confirmarlo en la aerolínea</p>
           </div>
         </div>
       </Bloque>
 
       <details className="rounded-lg border border-slate-200 p-3" data-testid="resumen-detalle">
-        <summary className="cursor-pointer text-sm font-medium text-slate-800">Ver el detalle: dónde está lo barato, qué se paga por menos escalas y el estado del dataset</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">Ver el detalle: dónde está lo barato, qué se paga por menos escalas y desde cuándo son los precios</summary>
         <div className="mt-3 grid gap-4">
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="resumen-escalas">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="py-1 pr-3">Escalas</th>
-                  <th className="py-1 pr-3 text-right">Combinaciones</th>
+                  <th className="py-1 pr-3 text-right">Opciones</th>
                   <th className="py-1 pr-3 text-right">Más barata</th>
                   <th className="py-1 pr-3 text-right">Más corta</th>
                   <th className="py-1 pr-3">Qué se paga por menos escalas</th>
@@ -148,17 +148,17 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
             </table>
           </div>
           <div className="grid gap-2 md:grid-cols-2" data-testid="resumen-donde">
-            <Ranking titulo="Aeropuertos de salida (combinaciones y mínimo)" items={porOrigen.map((x) => [x.o, x.n] as [string, number])} total={lista.length} unidad="las combinaciones" extra={(o) => `desde USD ${porOrigen.find((x) => x.o === o)?.min.toLocaleString("es") ?? ""}`} />
-            <Ranking titulo="Aerolíneas que venden (en cuántas combinaciones)" items={top(vendedoras, 10)} total={lista.length} unidad="las combinaciones" extra={minPorVendedora} />
-            <Ranking titulo="Escalas y cambios de boleto más frecuentes" items={top(escalas, 10)} total={lista.length} unidad="las combinaciones" />
-            <Ranking titulo="Agencias que vendían la tarifa" items={top(agencias, 8)} total={lista.length} unidad="las combinaciones" nota="Quién tenía ese precio cuando se vio: la compra se hace ahí o en la aerolínea." />
+            <Ranking titulo="Aeropuertos de salida (opciones y precio más bajo)" items={porOrigen.map((x) => [x.o, x.n] as [string, number])} total={lista.length} unidad="las opciones" extra={(o) => `desde USD ${porOrigen.find((x) => x.o === o)?.min.toLocaleString("es") ?? ""}`} />
+            <Ranking titulo="Aerolíneas que venden (en cuántas opciones)" items={top(vendedoras, 10)} total={lista.length} unidad="las opciones" extra={minPorVendedora} />
+            <Ranking titulo="Ciudades de escala más frecuentes" items={top(escalas, 10)} total={lista.length} unidad="las opciones" />
+            <Ranking titulo="Quién vendía cada precio" items={top(agencias, 8)} total={lista.length} unidad="las opciones" nota="La agencia que tenía ese precio cuando se vio: la compra se hace ahí o en la aerolínea." />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm" data-testid="resumen-dias">
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="py-1 pr-3">Día de salida</th>
-                  <th className="py-1 pr-3 text-right">Combinaciones</th>
+                  <th className="py-1 pr-3 text-right">Opciones</th>
                   <th className="py-1 pr-3 text-right">Más barata ese día</th>
                 </tr>
               </thead>
@@ -175,8 +175,8 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
           </div>
           {dataset && (
             <p className="text-xs text-slate-600" data-testid="resumen-corridas">
-              Dataset del {dataset.actualizadoEn.slice(0, 10)}
-              {dataset.vencido ? " (vencido)" : ""}: {dataset.tarifasVigentes.toLocaleString("es")} tarifas vigentes, {dataset.tarifasHistoricas.toLocaleString("es")} de corridas anteriores conservadas, {dataset.paresBajados} pares bajados. La más barata de esta búsqueda es {barata ? ruta(barata) : ""}.
+              Precios actualizados el {dataset.actualizadoEn.slice(0, 10)}
+              {dataset.vencido ? " (ya vencidos)" : ""}: {dataset.tarifasVigentes.toLocaleString("es")} precios vigentes, {dataset.tarifasHistoricas.toLocaleString("es")} guardados de actualizaciones anteriores, {dataset.paresBajados} rutas actualizadas. La opción más barata de esta búsqueda es {barata ? ruta(barata) : ""}.
             </p>
           )}
         </div>

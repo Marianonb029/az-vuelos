@@ -80,7 +80,7 @@ export const PanoramaCalendario = ({ dias, desde, hasta, onElegirDia, onLlenarMe
                     );
                   if (!d)
                     return (
-                      <span key={fecha} className="rounded bg-slate-50 py-0.5 text-[10px] text-slate-400" title={`${fechaCorta(fecha)}: nadie buscó este día todavía`} data-testid="dia-sin-precio">
+                      <span key={fecha} className="rounded bg-slate-50 py-0.5 text-[10px] text-slate-400" title={`${fechaCorta(fecha)}: todavía no hay precio para este día`} data-testid="dia-sin-precio">
                         {i + 1}
                       </span>
                     );
@@ -90,7 +90,7 @@ export const PanoramaCalendario = ({ dias, desde, hasta, onElegirDia, onLlenarMe
                       key={fecha}
                       type="button"
                       onClick={() => onElegirDia(fecha)}
-                      title={`${fechaCorta(fecha)}: ${d.combinaciones} combinaciones desde USD ${d.minUsd.toLocaleString("es")} · clic para verlas en Rutas`}
+                      title={`${fechaCorta(fecha)}: ${d.combinaciones} opciones desde USD ${d.minUsd.toLocaleString("es")} · clic para verlas en Rutas`}
                       data-testid="dia-con-precio"
                       data-fecha={fecha}
                       className={`rounded py-0.5 leading-tight ${nivel.clase} hover:ring-2 hover:ring-slate-900`}
@@ -112,7 +112,7 @@ export const PanoramaCalendario = ({ dias, desde, hasta, onElegirDia, onLlenarMe
       </div>
       {sinDatos.length > 0 && (
         <p className="text-xs text-slate-500" data-testid="meses-sin-datos">
-          Sin ninguna tarifa en el cache: {sinDatos.map((m) => `${MES_CORTO[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`).join(" · ")}. No quiere decir que no haya vuelos: nadie los buscó todavía.
+          Sin ningún precio todavía: {sinDatos.map((m) => `${MES_CORTO[Number(m.slice(5, 7)) - 1]} ${m.slice(2, 4)}`).join(" · ")}. No quiere decir que no haya vuelos: nadie los buscó todavía.
         </p>
       )}
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
@@ -126,7 +126,7 @@ export const PanoramaCalendario = ({ dias, desde, hasta, onElegirDia, onLlenarMe
             {i < cortes.length ? ` ≤ USD ${(cortes[i] ?? 0).toLocaleString("es")}` : ""}
           </span>
         ))}
-        <span>· clic en un día para ver sus combinaciones en Rutas</span>
+        <span>· clic en un día para ver sus vuelos en Rutas</span>
       </p>
     </div>
   );
@@ -138,7 +138,7 @@ export const PanoramaMeses = ({ meses, onElegirDia }: { meses: readonly Panorama
   return (
     <div className="grid gap-1" data-testid="panorama-meses">
       {meses.map((m) => (
-        <button key={m.mes} type="button" onClick={() => onElegirDia(m.mejorDia)} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-2 rounded px-1 py-0.5 text-left text-xs hover:bg-slate-50" title={`Mejor día de ${m.mes}: ${fechaCorta(m.mejorDia)} · clic para verlo en Rutas`}>
+        <button key={m.mes} type="button" onClick={() => onElegirDia(m.mejorDia)} className="grid grid-cols-[5.5rem_1fr_auto] items-center gap-2 rounded px-1 py-0.5 text-left text-xs hover:bg-slate-50" title={`Día más barato de ${m.mes}: ${fechaCorta(m.mejorDia)} · clic para verlo en Rutas`}>
           <span className="font-medium text-slate-700">
             {MES_CORTO[Number(m.mes.slice(5, 7)) - 1]} {m.mes.slice(2, 4)}
           </span>
@@ -147,7 +147,7 @@ export const PanoramaMeses = ({ meses, onElegirDia }: { meses: readonly Panorama
             <span className="absolute inset-y-0 left-0 rounded bg-emerald-500" style={{ width: `${(m.minUsd / tope) * 100}%` }} />
           </span>
           <span className="whitespace-nowrap tabular-nums text-slate-700">
-            <span className="font-semibold text-emerald-700">USD {m.minUsd.toLocaleString("es")}</span> <span className="text-slate-400">típico {m.medianaUsd.toLocaleString("es")}</span> · {m.dias} d
+            <span className="font-semibold text-emerald-700">USD {m.minUsd.toLocaleString("es")}</span> <span className="text-slate-400">normal {m.medianaUsd.toLocaleString("es")}</span> · {m.dias} d
           </span>
         </button>
       ))}

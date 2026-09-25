@@ -36,8 +36,8 @@ const Fila = ({ r, nombre, bajoCosto }: { r: RutaPosible; nombre: (iata: string)
     <tr className={`border-b border-slate-100 ${r.conservada ? "" : "text-slate-400"}`} data-testid="fila-posible" data-mercado={enMercado(r) ? "si" : "no"} data-low-cost={tieneLowCost(aerolineasDe(r), bajoCosto) ? "si" : "no"}>
       <td className={`${celda} whitespace-nowrap font-medium ${r.conservada ? "text-slate-900" : ""}`}>
         {r.itinerario.join(" → ")}
-        {r.hub && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 boletos en {r.hub}</span>}
-        {r.tramoFinal && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] uppercase text-amber-800">{r.tramoFinal.porTierra ? `+ tierra a ${r.tramoFinal.destino}` : `+ vuelo aparte a ${r.tramoFinal.destino}`}</span>}
+        {r.hub && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] uppercase text-violet-800">2 pasajes, con escala en {r.hub}</span>}
+        {r.tramoFinal && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] uppercase text-amber-800">{r.tramoFinal.porTierra ? `+ tren o bus a ${r.tramoFinal.destino}` : `+ vuelo aparte a ${r.tramoFinal.destino}`}</span>}
         {!r.conservada && <span className="ml-1 rounded bg-slate-100 px-1 text-[10px] uppercase">baja frecuencia</span>}
       </td>
       <td className={celda}>
@@ -72,7 +72,7 @@ const Fila = ({ r, nombre, bajoCosto }: { r: RutaPosible; nombre: (iata: string)
       <td className={`${celda} whitespace-nowrap`}>
         {r.escalas === 0 ? "directo" : `${r.escalas} escala${r.escalas === 1 ? "" : "s"}`} · {r.etiquetaNivel.toLowerCase()} ({r.vuelosSemanales}/sem)
       </td>
-      <td className={`${celda} whitespace-nowrap ${enMercado(r) ? "" : "font-semibold text-sky-800"}`}>{enMercado(r) ? `sí: ${r.tarifasMercado.join(" + ")} tarifas` : r.tarifasMercado.some((n) => n > 0) ? `parcial (${r.tarifasMercado.join(" + ")}): buscar a mano` : "no: buscar a mano"}</td>
+      <td className={`${celda} whitespace-nowrap ${enMercado(r) ? "" : "font-semibold text-sky-800"}`}>{enMercado(r) ? `sí: ${r.tarifasMercado.join(" + ")} precios` : r.tarifasMercado.some((n) => n > 0) ? `sólo un tramo (${r.tarifasMercado.join(" + ")}): falta buscar el otro` : "no: hay que buscarla"}</td>
     </tr>
   );
 };
@@ -149,8 +149,8 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
     <div className="grid gap-6">
       <form onSubmit={(e) => void buscar(e)} noValidate className="grid gap-5">
         <p className="text-xs text-slate-600">
-          Todas las rutas que el grafo de aerolíneas permite (rutas vigentes por número de vuelo, VRS) desde el origen y sus alternativos, en un boleto o en dos por un hub. Sin fecha ni precio: es para buscar alternativas a mano cuando el mercado no alcanza; "en el mercado" dice si ese par ya tiene tarifas bajadas (las que no, son las que faltan buscar). Las aerolíneas low cost llevan distintivo: su tarifa barata suele ser sólo con equipaje de mano.
-          {cobertura?.grupos.length ? ` La app sirve cualquier par del mundo; el cache se precarga en este orden y después sigue por el resto: ${cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}`).join(" · ")}.` : ""}
+          Todas las rutas que las aerolíneas vuelan hoy desde tu aeropuerto y los cercanos, en un pasaje o en dos con escala en una ciudad. Sin fecha ni precio: sirve para encontrar caminos a mano cuando todavía no hay precios guardados. La columna "¿tiene precio?" dice si esa ruta ya los tiene; las que no, son las que falta buscar. Las aerolíneas low cost llevan distintivo: su precio barato suele ser sólo con equipaje de mano.
+          {cobertura?.grupos.length ? ` La app sirve cualquier ruta del mundo; los precios se van trayendo en este orden y después sigue por el resto: ${cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}`).join(" · ")}.` : ""}
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="c-origen" etiqueta="Origen" error={errores.origen}>
@@ -174,11 +174,11 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700" data-testid="c-filtros">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={soloAMano} onChange={(e) => setSoloAMano(e.target.checked)} />
-              Sólo rutas para buscar a mano (sin tarifas en el mercado: {aMano.toLocaleString("es")})
+              Sólo las rutas que todavía no tienen precio ({aMano.toLocaleString("es")})
             </label>
-            <label className="flex items-center gap-2" title="Necesito valija de bodega: la low cost barata pierde la ventaja">
+            <label className="flex items-center gap-2" title="Si viajás con valija despachada, el precio bajo de las low cost deja de serlo">
               <input type="checkbox" checked={sinLowCost} onChange={(e) => setSinLowCost(e.target.checked)} />
-              Sin aerolíneas low cost (necesito bodega; con low cost: {conLowCost.toLocaleString("es")})
+              Sin aerolíneas low cost, porque viajo con valija ({conLowCost.toLocaleString("es")} rutas las usan)
             </label>
           </div>
         )}
@@ -189,7 +189,7 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
         </p>
       )}
       {resultado && aMano > 0 && (
-        <Bloque orden={1} titulo="Qué conviene buscar a mano (lo que el mercado todavía no tiene)" objetivo="De todas las rutas de abajo, los boletos que no tienen ni una tarifa en el cache, ordenados por lo que aportarían: primero los que tienen ruta directa y más vuelos por semana (más chance de que haya tarifa cuando se busque). Un botón los carga en la búsqueda múltiple de Rutas.">
+        <Bloque orden={1} titulo="Qué conviene buscar (lo que todavía no tiene precio)" objetivo="De todas las rutas de abajo, los tramos que no tienen ningún precio guardado, ordenados por lo que aportarían: primero los que tienen vuelo directo y más vuelos por semana, porque son los que más chance tienen de traer un buen precio. El botón los carga en la búsqueda de varias rutas de Rutas.">
           <CombinacionesPrioritarias rutas={rutas} nombre={nombre} bajoCosto={bajoCosto} max={cobertura?.maxBusquedasEnVivo ? 20 : 20} onBuscar={onBuscarPares} />
         </Bloque>
       )}
@@ -197,7 +197,7 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
         <Bloque
           orden={aMano > 0 ? 2 : 1}
           titulo={`Combinaciones: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}`}
-          objetivo="Por aeropuerto de salida (el pedido primero, después por cercanía) y, dentro, por destino: con destino aeropuerto, el pedido primero y después los alternativos por cercanía al pedido, siempre con el tramo final al pedido (vuelo aparte con sus aerolíneas, o por tierra hasta 400 km); con destino continente, por distancia en km desde esa salida. En cada destino: un boleto antes que dos, menos escalas, más aerolíneas que venden, más frecuencia. Abrí un destino para ver sus rutas. Las de baja frecuencia (menos de 7 vuelos semanales proxy) van en gris."
+          objetivo="Ordenado por aeropuerto de salida (el que pediste primero, después los cercanos) y, dentro de cada uno, por destino: si pediste un aeropuerto, primero ése y después los cercanos, siempre con el último tramo hasta el que pediste (en vuelo aparte o por tierra si está a menos de 400 km); si pediste un continente, por distancia. En cada destino: primero con un solo pasaje, después menos escalas, más aerolíneas que lo venden y más vuelos por semana. Abrí un destino para ver sus rutas. Las que tienen pocos vuelos por semana van en gris."
         >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
@@ -205,7 +205,7 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
             </p>
           ))}
           <p className="text-sm text-slate-600" data-testid="resumen-posibles">
-            {rutas.length.toLocaleString("es")} rutas{f ? ` (filtro "${filtro}")` : ""}{soloAMano ? " (sólo para buscar a mano)" : ""}{sinLowCost ? " (sin low cost)" : ""} · {porOrigen.length} aeropuertos de salida · {resultado.destinos} destinos considerados · {rutas.filter((r) => r.hub === null).length.toLocaleString("es")} de un boleto y {rutas.filter((r) => r.hub !== null).length.toLocaleString("es")} de dos{resultado.destinoEsContinente ? "" : ` · ${rutas.filter((r) => r.tramoFinal !== null).length.toLocaleString("es")} llegan por un alternativo con tramo final a ${resultado.destino}`} · {rutas.filter(enMercado).length.toLocaleString("es")} con tarifas en el mercado y {rutas.filter((r) => !enMercado(r)).length.toLocaleString("es")} para buscar a mano · {rutas.filter((r) => tieneLowCost(aerolineasDe(r), bajoCosto)).length.toLocaleString("es")} con low cost
+            {rutas.length.toLocaleString("es")} rutas{f ? ` (filtro "${filtro}")` : ""}{soloAMano ? " (sólo las que no tienen precio)" : ""}{sinLowCost ? " (sin low cost)" : ""} · {porOrigen.length} aeropuertos de salida · {resultado.destinos} destinos mirados · {rutas.filter((r) => r.hub === null).length.toLocaleString("es")} con un pasaje y {rutas.filter((r) => r.hub !== null).length.toLocaleString("es")} con dos{resultado.destinoEsContinente ? "" : ` · ${rutas.filter((r) => r.tramoFinal !== null).length.toLocaleString("es")} llegan por un alternativo con tramo final a ${resultado.destino}`} · {rutas.filter(enMercado).length.toLocaleString("es")} ya tienen precio y {rutas.filter((r) => !enMercado(r)).length.toLocaleString("es")} hay que buscarlas · {rutas.filter((r) => tieneLowCost(aerolineasDe(r), bajoCosto)).length.toLocaleString("es")} con low cost
           </p>
           {porOrigen.map(({ o, rutas: deOrigen }) => {
             const info = resultado.origenes.find((x) => x.iata === o);
@@ -223,7 +223,7 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
                   return (
                     <div key={k}>
                       <button type="button" onClick={() => alternar(k)} aria-expanded={abiertos.has(k)} className="w-full rounded px-4 py-1 text-left text-xs text-slate-800 hover:bg-slate-50">
-                        {abiertos.has(k) ? "▾" : "▸"} → {d} {ciudad(d) ? `(${ciudad(d)})` : ""}{llegada} · {deDestino.length} rutas: {deDestino.filter((r) => r.hub === null).length} de un boleto, {deDestino.filter((r) => r.hub !== null).length} de dos · {deDestino.filter(enMercado).length} en el mercado, {deDestino.filter((r) => !enMercado(r)).length} a mano · {deDestino.filter((r) => tieneLowCost(aerolineasDe(r), bajoCosto)).length} con low cost
+                        {abiertos.has(k) ? "▾" : "▸"} → {d} {ciudad(d) ? `(${ciudad(d)})` : ""}{llegada} · {deDestino.length} rutas: {deDestino.filter((r) => r.hub === null).length} con un pasaje, {deDestino.filter((r) => r.hub !== null).length} con dos · {deDestino.filter(enMercado).length} con precio, {deDestino.filter((r) => !enMercado(r)).length} sin precio · {deDestino.filter((r) => tieneLowCost(aerolineasDe(r), bajoCosto)).length} con low cost
                       </button>
                       {abiertos.has(k) && (
                         <div className="overflow-x-auto pl-4">
@@ -231,11 +231,11 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
                             <thead>
                               <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                                 <th className="py-1 pr-3">Ruta</th>
-                                <th className="py-1 pr-3">Quién vende (buscar en)</th>
-                                <th className="py-1 pr-3">Quién opera cada tramo</th>
+                                <th className="py-1 pr-3">Quién vende el pasaje</th>
+                                <th className="py-1 pr-3">Quién vuela cada tramo</th>
                                 <th className="py-1 pr-3">km</th>
-                                <th className="py-1 pr-3">Escalas · frecuencia</th>
-                                <th className="py-1 pr-3">En el mercado</th>
+                                <th className="py-1 pr-3">Escalas · cuántos vuelos por semana</th>
+                                <th className="py-1 pr-3">¿Tiene precio?</th>
                               </tr>
                             </thead>
                             <tbody>

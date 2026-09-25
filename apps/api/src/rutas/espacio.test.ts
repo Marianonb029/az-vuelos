@@ -146,7 +146,7 @@ describe("GET /datos", () => {
     const res = await app.inject({ method: "GET", url: "/datos" });
     expect(res.statusCode).toBe(200);
     const datos = res.json() as { variable: string; exactitud: string; vencida: boolean }[];
-    expect(datos.map((d) => d.variable)).toContain("Competencia: aerolíneas por tramo");
+    expect(datos.map((d) => d.variable)).toContain("Aerolíneas que vuelan cada tramo");
     expect(datos.map((d) => d.variable)).toContain("Eventos masivos");
     expect(datos.every((d) => ["exacta", "vigente", "aproximada", "supuesto"].includes(d.exactitud))).toBe(true);
   });

@@ -1329,6 +1329,6 @@
       "destinosAlternativosPorOrigen": 8,
       "destinosAlternativosHub": 4
     },
-    "nota": "Índice de costo estimado, no precio: km equivalentes (tarifa por km decreciente + fijo por boleto + traslado a alternativos, terrestre por km o aéreo con boleto extra por encima de trasladoAereoDesdeKm + tasas de salida por aeropuerto/país en km equivalentes) x competencia efectiva (grupos tarifarios ponderados por frecuencia, tramo más cerrado; tabla interpolada) x bajo costo (según equipaje) x presión (−50…100) x escalas x boletos separados x restricción de vía x anticipación x estadía. Tasas: orden de magnitud público (APD británica larga distancia ~£90–200; tasas de embarque BR/AR/PY) en km equivalentes, revisar anualmente. Menor índice = mayor chance de tarifa baja."
+    "nota": "Estos números no son precios: son los que usa el sistema para estimar qué rutas tienen más chance de conseguir un precio bajo, y así decidir cuáles consultar primero. Tienen en cuenta la distancia, cuántas aerolíneas compiten en cada tramo, si es una low cost (y si viajás con valija), qué tan pedida está la fecha, las escalas, si hay que comprar dos pasajes por separado, con cuánta anticipación se compra y cuántos días dura el viaje. Las tasas de salida son valores públicos aproximados (Reino Unido ~£90–200 en vuelos largos; tasas de embarque de Brasil, Argentina y Paraguay) y conviene revisarlas una vez por año. Cuanto más bajo el número, más chance de encontrar barato."
   }
 }

@@ -45,7 +45,7 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
   const leerDataset = (): { dataset: DatasetPrecios | null; vigentes: readonly PrecioCacheado[]; aviso: string | null } => {
     const l = leerPrecios();
     if (l.estado === "ok") return { dataset: l.dataset, vigentes: l.vigentes, aviso: null };
-    return { dataset: null, vigentes: [], aviso: l.estado === "sin-archivo" ? "Sin dataset de precios: `pnpm precios` baja las tarifas cacheadas de Travelpayouts por continentes; `pnpm precios ORIGEN DESTINO`, las de un par" : "data/local/precios.json tiene un formato anterior: `pnpm precios` lo migra o lo aparta y lo rehace" };
+    return { dataset: null, vigentes: [], aviso: l.estado === "sin-archivo" ? "Todavía no hay precios guardados: `pnpm precios` los trae de Travelpayouts; `pnpm precios ORIGEN DESTINO`, los de una ruta" : "El archivo de precios tiene un formato anterior: `pnpm precios` lo rehace" };
   };
 
   // Candidatos: los orígenes son el pedido y sus alternativos del modelo (con km de traslado). La llegada es
@@ -113,10 +113,10 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     const setDestinos = new Set(destinos.map((a) => a.iata));
     const paraEstePar = vigentes.filter((p) => setOrigenes.has(p.origen) || setDestinos.has(p.destino));
     const comando = continente.success ? "pnpm precios" : `pnpm precios ${origen} ${destino}`;
-    if (dataset && paraEstePar.length === 0) avisos.push(`El dataset no tiene tarifas que salgan de ${origen} o sus alternativos ni que lleguen a ${destino}: corré \`${comando}\``);
-    if (dataset && paraEstePar.length > 0 && combinaciones.length === 0) avisos.push(`Hay ${paraEstePar.length} tarifas para estos aeropuertos pero ninguna sale entre ${desde} y ${hasta}: ampliá la ventana o cambiá la fecha`);
+    if (dataset && paraEstePar.length === 0) avisos.push(`No hay ningún precio guardado que salga de ${origen} (ni de los aeropuertos cercanos) ni que llegue a ${destino}. Se traen con "Actualizar esta ruta ahora", buscándola en vivo, o con \`${comando}\``);
+    if (dataset && paraEstePar.length > 0 && combinaciones.length === 0) avisos.push(`Hay ${paraEstePar.length} precios guardados para estos aeropuertos, pero ninguno sale entre el ${desde} y el ${hasta}: ampliá los días alrededor o probá otra fecha`);
     const vencido = dataset ? diasEntre(dataset.actualizadoEn.slice(0, 10), hoy) > config.precios.cadenciaDias : false;
-    if (vencido && dataset) avisos.push(`Precios del ${dataset.actualizadoEn.slice(0, 10)}, más de ${config.precios.cadenciaDias} días: corré \`${comando}\``);
+    if (vencido && dataset) avisos.push(`Los precios son del ${dataset.actualizadoEn.slice(0, 10)}, hace más de ${config.precios.cadenciaDias} días: conviene actualizarlos (\`${comando}\`)`);
     const usados = new Set(combinaciones.flatMap((c) => [c.origen, c.llegaA, ...c.boletos.flatMap((b) => b.itinerario)]));
     const conRol = [
       ...origenes.map((a) => ({ ...a, rol: "origen" as const })),
@@ -168,8 +168,8 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     const agregados = armarPanorama(h.lista, { maxBaratas: config.mercado.maxBaratasPanorama, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto });
     const avisos = h.aviso ? [h.aviso] : [];
     const comando = h.continente ? "pnpm precios" : `pnpm precios ${origen} ${destino}`;
-    if (h.dataset && agregados.combinaciones === 0) avisos.push(`El cache no tiene ninguna combinación de ${origen} a ${destino} en los próximos ${config.mercado.diasHorizonte} días: buscá el par en vivo desde Rutas o corré \`${comando}\``);
-    if (h.dataset && diasEntre(h.dataset.actualizadoEn.slice(0, 10), h.hoy) > config.precios.cadenciaDias) avisos.push(`Precios del ${h.dataset.actualizadoEn.slice(0, 10)}, más de ${config.precios.cadenciaDias} días: corré \`${comando}\``);
+    if (h.dataset && agregados.combinaciones === 0) avisos.push(`No hay ningún precio guardado de ${origen} a ${destino} para los próximos ${config.mercado.diasHorizonte} días: traelos desde Rutas con "Actualizar esta ruta ahora" o buscándola en vivo`);
+    if (h.dataset && diasEntre(h.dataset.actualizadoEn.slice(0, 10), h.hoy) > config.precios.cadenciaDias) avisos.push(`Los precios son del ${h.dataset.actualizadoEn.slice(0, 10)}, hace más de ${config.precios.cadenciaDias} días: conviene actualizarlos (\`${comando}\`)`);
     const usados = new Set([...agregados.porOrigen.map((o) => o.iata), ...agregados.porDestino.map((d) => d.iata)]);
     return {
       ok: true,

@@ -44,30 +44,30 @@ describe("Combinaciones (Fase 17)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));
     await waitFor(() => expect(screen.getByTestId("resumen-posibles")).toBeTruthy());
     expect(fetchMock).toHaveBeenCalledWith("/api/rutas-posibles?origen=ASU&destino=EU", undefined);
-    expect(screen.getByTestId("resumen-posibles").textContent).toContain("4 rutas · 2 aeropuertos de salida · 466 destinos considerados · 2 de un boleto y 2 de dos · 2 con tarifas en el mercado y 2 para buscar a mano · 2 con low cost");
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("4 rutas · 2 aeropuertos de salida · 466 destinos mirados · 2 con un pasaje y 2 con dos · 2 ya tienen precio y 2 hay que buscarlas · 2 con low cost");
     const origenes = screen.getAllByTestId("origen-posible").map((e) => e.textContent ?? "");
     expect(origenes[0]).toContain("Desde ASU (Asunción) — el aeropuerto pedido · 3 rutas a 2 destinos");
     expect(origenes[1]).toContain("Desde GRU (São Paulo) — a 1100 km de ASU · 1 rutas a 1 destinos");
     // Los destinos están plegados: al abrir MAD se ven sus rutas con vendedoras, operadoras y mercado.
     expect(screen.queryAllByTestId("fila-posible")).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: /→ MAD \(Madrid\) · a 9000 km de ASU · 2 rutas: 1 de un boleto, 1 de dos · 1 en el mercado, 1 a mano · 1 con low cost/ }));
+    fireEvent.click(screen.getByRole("button", { name: /→ MAD \(Madrid\) · a 9000 km de ASU · 2 rutas: 1 con un pasaje, 1 con dos · 1 con precio, 1 sin precio · 1 con low cost/ }));
     const filas = screen.getAllByTestId("fila-posible").map((f) => f.textContent ?? "");
     expect(filas).toHaveLength(2);
     expect(filas[0]).toContain("ASU → MAD");
     expect(filas[0]).toContain("Air Europa");
-    expect(filas[0]).toContain("sí: 11 tarifas");
-    expect(filas[1]).toContain("ASU → GRU → LIS → MAD2 boletos en GRUASU→GRU"); // sin etiqueta low cost en la ruta: va en cada aerolínea
+    expect(filas[0]).toContain("sí: 11 precios");
+    expect(filas[1]).toContain("ASU → GRU → LIS → MAD2 pasajes, con escala en GRUASU→GRU"); // sin etiqueta low cost en la ruta: va en cada aerolínea
     expect(filas[1]).toContain("ASU→GRU: GOLlow cost, LATAM"); // GOL lleva el distintivo low cost (cobertura.aerolineasBajoCosto)
     expect(filas[1]).toContain("GRU→MAD: TAP");
-    expect(filas[1]).toContain("parcial (29 + 0): buscar a mano");
+    expect(filas[1]).toContain("sólo un tramo (29 + 0): falta buscar el otro");
     expect(screen.getAllByTestId("fila-posible").map((f) => `${f.getAttribute("data-mercado")}/${f.getAttribute("data-low-cost")}`)).toEqual(["si/no", "no/si"]);
     // "Sólo para buscar a mano" = Combinaciones menos Rutas: quedan las que el mercado no tiene; "sin low cost" saca las de GOL.
-    fireEvent.click(screen.getByRole("checkbox", { name: /Sólo rutas para buscar a mano \(sin tarifas en el mercado: 2\)/ }));
-    expect(screen.getByTestId("resumen-posibles").textContent).toContain("2 rutas (sólo para buscar a mano)");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sólo las rutas que todavía no tienen precio \(2\)/ }));
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("2 rutas (sólo las que no tienen precio)");
     expect(screen.getAllByTestId("fila-posible")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost \(necesito bodega; con low cost: 2\)/ }));
-    expect(screen.getByTestId("resumen-posibles").textContent).toContain("0 rutas (sólo para buscar a mano) (sin low cost)");
-    fireEvent.click(screen.getByRole("checkbox", { name: /Sólo rutas para buscar a mano/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost, porque viajo con valija \(2 rutas las usan\)/ }));
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("0 rutas (sólo las que no tienen precio) (sin low cost)");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sólo las rutas que todavía no tienen precio/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost/ }));
     // El filtro reduce a lo que contiene el texto (aeropuerto, ciudad o aerolínea).
     fireEvent.change(screen.getByLabelText("Filtrar (aeropuerto, ciudad o aerolínea)"), { target: { value: "Lisboa" } });
@@ -99,8 +99,8 @@ describe("Combinaciones hacia un aeropuerto", () => {
     expect(cabeceras[1]).toContain("→ LIS (Lisboa) · a 513 km de MAD: vuelo aparte con TAP, Iberia · 1 rutas");
     fireEvent.click(screen.getByRole("button", { name: /→ LIS/ }));
     const fila = screen.getByTestId("fila-posible").textContent ?? "";
-    expect(fila).toContain("ASU → GRU → LIS → MAD2 boletos en GRU+ vuelo aparte a MAD");
+    expect(fila).toContain("ASU → GRU → LIS → MAD2 pasajes, con escala en GRU+ vuelo aparte a MAD");
     expect(fila).toContain("LIS→MAD: TAP, Iberia");
-    expect(fila).toContain("sí: 29 + 47 + 5 tarifas");
+    expect(fila).toContain("sí: 29 + 47 + 5 precios");
   });
 });

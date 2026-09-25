@@ -109,28 +109,28 @@ export const leerSenal = (e: EntradaSenal, o: OpcionesAnticipacion): Pick<Antici
       ? { fecha: e.fechaIda, minUsd: e.minDelDia, anticipacionDias, medianaDelTramoUsd: tramoDelDia.medianaUsd, difPct: Math.round(((e.minDelDia - tramoDelDia.medianaUsd) / tramoDelDia.medianaUsd) * 1000) / 10 }
       : null;
 
-  if (cambioPct !== null && primera && ultima) porque.push(`Se bajó este par ${e.historial.length} días distintos (${primera.bajadaEn} a ${ultima.bajadaEn}): el mínimo pasó de USD ${primera.minUsd.toLocaleString("es")} a USD ${ultima.minUsd.toLocaleString("es")} (${cambioPct > 0 ? "+" : ""}${cambioPct} %).`);
-  else porque.push(`Sin historial: este par se bajó ${e.historial.length === 1 ? "una sola vez" : "todavía no"}, así que no hay con qué comparar si el precio se mueve. Se arma bajando el par otro día (\`pnpm precios ${e.origen} ${e.destino}\`) o con "Buscar en vivo" en Rutas.`);
-  if (diaPedido) porque.push(`Para salir el ${diaPedido.fecha} faltan ${diaPedido.anticipacionDias} días. Con esa anticipación, este par estuvo típicamente en USD ${diaPedido.medianaDelTramoUsd.toLocaleString("es")}; hoy lo más barato es USD ${diaPedido.minUsd.toLocaleString("es")} (${diaPedido.difPct > 0 ? "+" : ""}${diaPedido.difPct} %).`);
-  if (tramoMasBarato) porque.push(`En el cache de este par, lo más barato aparece con ${etiquetaTramo(tramoMasBarato)} de anticipación (mediana USD ${tramoMasBarato.medianaUsd.toLocaleString("es")}, sobre ${tramoMasBarato.dias} días de salida). Ojo: una sola foto del cache mezcla anticipación con temporada — un tramo lejano puede ser caro porque cae en vacaciones, no por la anticipación.`);
+  if (cambioPct !== null && primera && ultima) porque.push(`Los precios de esta ruta se actualizaron ${e.historial.length} días distintos (del ${primera.bajadaEn} al ${ultima.bajadaEn}): el más barato pasó de USD ${primera.minUsd.toLocaleString("es")} a USD ${ultima.minUsd.toLocaleString("es")} (${cambioPct > 0 ? "+" : ""}${cambioPct} %).`);
+  else porque.push(`Todavía no hay con qué comparar: los precios de esta ruta se actualizaron ${e.historial.length === 1 ? "una sola vez" : "todavía ninguna"}. Seguí la ruta y se actualiza sola cada noche, o usá "Actualizar esta ruta ahora" en Rutas.`);
+  if (diaPedido) porque.push(`Para salir el ${diaPedido.fecha} faltan ${diaPedido.anticipacionDias} días. Comprando con esa anticipación, esta ruta suele estar en USD ${diaPedido.medianaDelTramoUsd.toLocaleString("es")}; hoy lo más barato es USD ${diaPedido.minUsd.toLocaleString("es")} (${diaPedido.difPct > 0 ? "+" : ""}${diaPedido.difPct} %).`);
+  if (tramoMasBarato) porque.push(`En los precios guardados de esta ruta, lo más barato aparece comprando con ${etiquetaTramo(tramoMasBarato)} de anticipación (típico USD ${tramoMasBarato.medianaUsd.toLocaleString("es")}, sobre ${tramoMasBarato.dias} días de salida). Ojo: esto mezcla la anticipación con la temporada — un tramo puede salir caro porque cae en vacaciones, no por comprar con más o menos tiempo.`);
   if (e.vistoHaceDias !== null)
     porque.push(
       e.desvioDiarioPct === 0
-        ? `La tarifa más barata de ese día se vio hace ${e.vistoHaceDias} ${e.vistoHaceDias === 1 ? "día" : "días"}. El desvío medido entre corridas dio 0 %: la mayoría de las tarifas no cambió de una bajada a la otra. Sigue sin ser una cotización viva.`
-        : `La tarifa más barata de ese día se vio hace ${e.vistoHaceDias} ${e.vistoHaceDias === 1 ? "día" : "días"}: puede haberse movido ±${Math.round(e.vistoHaceDias * e.desvioDiarioPct * 10) / 10} % (${e.desvioDiarioPct} %/día). No es una cotización viva.`,
+        ? `El precio más barato de ese día lo vio otro viajero hace ${e.vistoHaceDias} ${e.vistoHaceDias === 1 ? "día" : "días"}. Entre una actualización y otra, la mayoría de los precios no cambió (0 %). Igual no es una cotización en vivo: confirmá al abrir el enlace.`
+        : `El precio más barato de ese día lo vio otro viajero hace ${e.vistoHaceDias} ${e.vistoHaceDias === 1 ? "día" : "días"}: puede haber cambiado ±${Math.round(e.vistoHaceDias * e.desvioDiarioPct * 10) / 10} % (${e.desvioDiarioPct} % por día). No es una cotización en vivo.`,
     );
 
-  if (e.tramos.length === 0 && cambioPct === null) return { senal: "no-alcanza", titular: "Todavía no alcanza para decir si conviene comprar o esperar: falta bajar este par más veces.", porque, diaPedido, cambioPct, tramoMasBarato };
-  if (cambioPct !== null && cambioPct <= -o.cambioSignificativoPct) return { senal: "mirar", titular: `Bajó ${Math.abs(cambioPct)} % desde que lo miramos: volvé a mirar antes de comprar.`, porque, diaPedido, cambioPct, tramoMasBarato };
-  if (cambioPct !== null && cambioPct >= o.cambioSignificativoPct) return { senal: "comprar", titular: `Subió ${cambioPct} % desde que lo miramos: lo que ves hoy puede no estar mañana.`, porque, diaPedido, cambioPct, tramoMasBarato };
-  if (diaPedido && diaPedido.difPct <= -o.cambioSignificativoPct) return { senal: "comprar", titular: `Está ${Math.abs(diaPedido.difPct)} % por debajo de lo típico para esta anticipación: si el plan te sirve, es de lo mejor que tiene el cache.`, porque, diaPedido, cambioPct, tramoMasBarato };
+  if (e.tramos.length === 0 && cambioPct === null) return { senal: "no-alcanza", titular: "Todavía no alcanza para decir si conviene comprar o esperar: hay que actualizar los precios de esta ruta más veces.", porque, diaPedido, cambioPct, tramoMasBarato };
+  if (cambioPct !== null && cambioPct <= -o.cambioSignificativoPct) return { senal: "mirar", titular: `Bajó ${Math.abs(cambioPct)} % desde que la seguimos: volvé a mirar antes de comprar.`, porque, diaPedido, cambioPct, tramoMasBarato };
+  if (cambioPct !== null && cambioPct >= o.cambioSignificativoPct) return { senal: "comprar", titular: `Subió ${cambioPct} % desde que la seguimos: lo que ves hoy puede no estar mañana.`, porque, diaPedido, cambioPct, tramoMasBarato };
+  if (diaPedido && diaPedido.difPct <= -o.cambioSignificativoPct) return { senal: "comprar", titular: `Está ${Math.abs(diaPedido.difPct)} % por debajo de lo normal para esta anticipación: si el plan te sirve, es de lo mejor que hay guardado.`, porque, diaPedido, cambioPct, tramoMasBarato };
   if (diaPedido && diaPedido.difPct >= o.cambioSignificativoPct && tramoMasBarato && diaPedido.anticipacionDias > (tramoMasBarato.hastaDias ?? Infinity))
-    return { senal: "esperar", titular: `Está ${diaPedido.difPct} % por encima de lo típico y todavía falta para la anticipación con la que este par estuvo más barato (${etiquetaTramo(tramoMasBarato)}).`, porque, diaPedido, cambioPct, tramoMasBarato };
-  if (diaPedido && diaPedido.difPct >= o.cambioSignificativoPct) return { senal: "mirar", titular: `Está ${diaPedido.difPct} % por encima de lo típico para esta anticipación: mirá otros días antes de comprar.`, porque, diaPedido, cambioPct, tramoMasBarato };
-  if (diaPedido) return { senal: "mirar", titular: "Está en lo típico para esta anticipación: no hay señal de apuro ni de esperar.", porque, diaPedido, cambioPct, tramoMasBarato };
+    return { senal: "esperar", titular: `Está ${diaPedido.difPct} % por encima de lo normal y todavía falta para la anticipación con la que esta ruta suele estar más barata (${etiquetaTramo(tramoMasBarato)}).`, porque, diaPedido, cambioPct, tramoMasBarato };
+  if (diaPedido && diaPedido.difPct >= o.cambioSignificativoPct) return { senal: "mirar", titular: `Está ${diaPedido.difPct} % por encima de lo normal para esta anticipación: mirá otros días antes de comprar.`, porque, diaPedido, cambioPct, tramoMasBarato };
+  if (diaPedido) return { senal: "mirar", titular: "Está en lo normal para esta anticipación: no hay apuro ni motivo para esperar.", porque, diaPedido, cambioPct, tramoMasBarato };
   return {
     senal: "referencia",
-    titular: tramoMasBarato ? `Lo más barato de este par aparece con ${etiquetaTramo(tramoMasBarato)} de anticipación (típico USD ${tramoMasBarato.medianaUsd.toLocaleString("es")}).` : "Elegí un día para saber si está barato o caro para este par.",
+    titular: tramoMasBarato ? `Lo más barato de esta ruta aparece comprando con ${etiquetaTramo(tramoMasBarato)} de anticipación (normalmente USD ${tramoMasBarato.medianaUsd.toLocaleString("es")}).` : "Elegí un día para saber si está barato o caro para esta ruta.",
     porque,
     diaPedido,
     cambioPct,
@@ -141,7 +141,7 @@ export const leerSenal = (e: EntradaSenal, o: OpcionesAnticipacion): Pick<Antici
 export const TEXTO_SENAL: Record<Senal, { titulo: string; clase: string }> = {
   comprar: { titulo: "Si te sirve, comprá", clase: "border-emerald-300 bg-emerald-50 text-emerald-900" },
   esperar: { titulo: "Podés esperar", clase: "border-sky-300 bg-sky-50 text-sky-900" },
-  mirar: { titulo: "Volvé a mirar", clase: "border-amber-300 bg-amber-50 text-amber-900" },
-  "no-alcanza": { titulo: "No alcanzan los datos", clase: "border-slate-300 bg-slate-50 text-slate-800" },
+  mirar: { titulo: "Volvé a mirar antes de comprar", clase: "border-amber-300 bg-amber-50 text-amber-900" },
+  "no-alcanza": { titulo: "Faltan datos para recomendarte algo", clase: "border-slate-300 bg-slate-50 text-slate-800" },
   referencia: { titulo: "Para orientarte", clase: "border-slate-300 bg-slate-50 text-slate-800" },
 };

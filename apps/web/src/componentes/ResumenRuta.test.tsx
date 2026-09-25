@@ -56,14 +56,14 @@ describe("Resumen de ruta (Fase 22)", () => {
     expect(opciones.some((o) => o.includes("sale de IGU, a 300 km de ASU"))).toBe(true);
     // Conclusiones: cada una con su cuenta.
     const conclusiones = screen.getByTestId("resumen-conclusiones").textContent ?? "";
-    expect(conclusiones).toContain("Salir de IGU en vez de ASU ahorra USD 330 (52 %), pero son 300 km de traslado que no están en el precio.");
+    expect(conclusiones).toContain("Salir de IGU en vez de ASU ahorra USD 330 (52 %), pero está a 300 km y llegar hasta ahí lo pagás aparte.");
     expect(conclusiones).toContain("Hay vuelo directo y es lo más barato: USD 300.");
-    expect(conclusiones).toContain("el día más barato es 20/01/2027 (USD 300) y el más caro 19/01/2027 (USD 630)");
-    expect(conclusiones).toContain("Ninguna tarifa de esta ventana informa equipaje de bodega");
+    expect(conclusiones).toContain("el más barato es 20/01/2027 (USD 300) y el más caro 19/01/2027 (USD 630)");
+    expect(conclusiones).toContain("Ninguna opción de estos días incluye valija despachada");
     // Confianza: qué tan fresco es lo que se ve.
     const frescura = screen.getByTestId("resumen-frescura").textContent ?? "";
-    expect(frescura).toContain("67 %al día");
-    expect(frescura).toContain("±1 %/díacuánto se movieron");
+    expect(frescura).toContain("67 %precios al día");
+    expect(frescura).toContain("±1 %/díacuánto cambiaron");
     // La señal de comprar o esperar, pedida para el par y el día de la búsqueda.
     await waitFor(() => expect(screen.getByTestId("anticipacion-titular").textContent).toContain("Bajó 17.6 %"));
     expect(fetch).toHaveBeenCalledWith("/api/mercado/anticipacion?origen=ASU&destino=MAD&fechaIda=2027-01-19", undefined);
@@ -72,7 +72,7 @@ describe("Resumen de ruta (Fase 22)", () => {
     expect(screen.getByTestId("anticipacion-curva").textContent).toContain("90 a 119 días ←");
     // El detalle sigue disponible, plegado.
     expect(screen.getByTestId("resumen-escalas").textContent).toContain("USD 330 más que la más barata");
-    expect(screen.getByTestId("resumen-donde").textContent).toContain("ASU2 (67 % de las combinaciones)desde USD 630");
+    expect(screen.getByTestId("resumen-donde").textContent).toContain("ASU2 (67 % de las opciones)desde USD 630");
     expect(screen.getByTestId("resumen-dias").textContent).toContain("19/01/20272USD 630");
   });
 });

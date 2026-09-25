@@ -6,20 +6,20 @@ import { obtenerEstadoSeguidos } from "../lib/api";
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const Cambio = ({ d }: { d: DireccionSeguida }) => {
-  if (d.cambioPct === null) return <span className="text-slate-500">{d.bajadas <= 1 ? "primera bajada: mañana ya se puede comparar" : "sin cambio medible"}</span>;
+  if (d.cambioPct === null) return <span className="text-slate-500">{d.bajadas <= 1 ? "primera actualización: mañana ya se puede comparar" : "sin cambios por ahora"}</span>;
   const baja = d.cambioPct < 0;
   return (
     <span className={`font-semibold ${baja ? "text-emerald-700" : d.cambioPct > 0 ? "text-rose-700" : "text-slate-600"}`}>
       {baja ? "▼" : d.cambioPct > 0 ? "▲" : "="} {Math.abs(d.cambioPct)} %
       <span className="ml-1 font-normal text-slate-500">
-        desde la primera bajada ({d.bajadas} {d.bajadas === 1 ? "día" : "días"})
+        desde la primera actualización ({d.bajadas} {d.bajadas === 1 ? "día" : "días"})
       </span>
     </span>
   );
 };
 
 interface Props {
-  version: number; // sube cuando se sigue o se deja de seguir un par
+  version: number; // sube cuando se empieza o se deja de seguir una ruta
   onVer: (origen: string, destino: string, fecha: string) => void;
 }
 
@@ -42,14 +42,14 @@ export const PanelSeguidos = ({ version, onVer }: Props) => {
   if (!estado || estado.pares.length === 0) return null;
   return (
     <div className="grid gap-2 rounded-lg border border-slate-200 bg-white p-3" data-testid="panel-seguidos">
-      <p className="text-sm font-semibold text-slate-900">Tus pares seguidos</p>
+      <p className="text-sm font-semibold text-slate-900">Rutas que estás siguiendo</p>
       {estado.pares.map((p) => (
         <div key={`${p.origen}|${p.destino}`} className="grid gap-1 border-t border-slate-100 pt-2 text-xs first:border-0 first:pt-0" data-testid="par-seguido">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <button type="button" onClick={() => p.ida.mejorDia && onVer(p.origen, p.destino, p.ida.mejorDia)} className="text-sm font-semibold text-sky-700 underline">
               {p.origen} → {p.destino}
             </button>
-            {p.ida.minUsd === null ? <span className="text-slate-500">sin tarifas todavía</span> : <span className="tabular-nums text-slate-800">desde <span className="font-semibold">USD {p.ida.minUsd.toLocaleString("es")}</span>{p.ida.mejorDia ? ` el ${fechaCorta(p.ida.mejorDia)}` : ""}</span>}
+            {p.ida.minUsd === null ? <span className="text-slate-500">sin precios todavía</span> : <span className="tabular-nums text-slate-800">desde <span className="font-semibold">USD {p.ida.minUsd.toLocaleString("es")}</span>{p.ida.mejorDia ? ` el ${fechaCorta(p.ida.mejorDia)}` : ""}</span>}
             <Cambio d={p.ida} />
           </div>
           {p.vuelta && (
@@ -57,21 +57,21 @@ export const PanelSeguidos = ({ version, onVer }: Props) => {
               <span className="text-slate-600">
                 vuelta {p.vuelta.origen} → {p.vuelta.destino}
               </span>
-              {p.vuelta.minUsd === null ? <span className="text-slate-500">sin tarifas todavía</span> : <span className="tabular-nums text-slate-800">desde USD {p.vuelta.minUsd.toLocaleString("es")}</span>}
+              {p.vuelta.minUsd === null ? <span className="text-slate-500">sin precios todavía</span> : <span className="tabular-nums text-slate-800">desde USD {p.vuelta.minUsd.toLocaleString("es")}</span>}
               <Cambio d={p.vuelta} />
               {p.totalIdaVueltaUsd !== null && (
                 <span className="tabular-nums text-slate-800">
-                  · ida y vuelta desde <span className="font-semibold">USD {p.totalIdaVueltaUsd.toLocaleString("es")}</span> <span className="text-slate-500">(dos boletos sueltos, en sus mejores días de cada sentido)</span>
+                  · ida y vuelta desde <span className="font-semibold">USD {p.totalIdaVueltaUsd.toLocaleString("es")}</span> <span className="text-slate-500">(dos pasajes por separado, en el mejor día de cada tramo)</span>
                 </span>
               )}
             </div>
           )}
           <p className="text-slate-500">
-            {p.ida.titular} {p.ida.ultimaBajada ? `· última bajada ${fechaCorta(p.ida.ultimaBajada)}` : ""} · seguido desde {fechaCorta(p.desde)}
+            {p.ida.titular} {p.ida.ultimaBajada ? `· últimos precios del ${fechaCorta(p.ida.ultimaBajada)}` : ""} · la seguís desde el {fechaCorta(p.desde)}
           </p>
         </div>
       ))}
-      <p className="text-[11px] text-slate-400">La corrida de las 03:00 los baja todas las noches: cada bajada agrega un punto al historial y afina el "¿comprar o esperar?".</p>
+      <p className="text-[11px] text-slate-400">Los precios se actualizan solos todas las noches a las 03:00: cada actualización suma un punto al historial y afina el "¿comprar o esperar?".</p>
     </div>
   );
 };

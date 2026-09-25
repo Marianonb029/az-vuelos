@@ -168,7 +168,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
     } catch (err: unknown) {
       setResultado(null);
       onResultado(null);
-      setError(`No se pudo leer el mercado: ${describirError(err)}`);
+      setError(`No se pudieron leer los precios: ${describirError(err)}`);
     } finally {
       setCargando(false);
     }
@@ -194,7 +194,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
       <form onSubmit={(e) => void buscar(e)} noValidate className="grid gap-5">
         <div className="grid gap-1">
           <p className="text-sm font-semibold text-slate-800">1 · ¿De dónde a dónde?</p>
-          <p className="text-xs text-slate-500">Con el campo vacío se sugieren los aeropuertos que ya tienen tarifas bajadas. El destino puede ser un continente entero.</p>
+          <p className="text-xs text-slate-500">Con el campo vacío se sugieren los aeropuertos que ya tienen precios guardados. El destino puede ser un continente entero.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <Campo id="m-origen" etiqueta="Origen" error={errores.origen}>
@@ -206,22 +206,22 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
         </div>
         <div className="grid gap-1">
           <p className="text-sm font-semibold text-slate-800">2 · ¿Qué día salís?</p>
-          <p className="text-xs text-slate-500">En verde, los días que ya tienen tarifas, con el mínimo visto. Cualquier otro día futuro se puede elegir igual: para ésos, "Buscar en vivo" trae las tarifas al sistema.</p>
+          <p className="text-xs text-slate-500">En verde, los días que ya tienen precio, con el más barato de cada uno. Cualquier otro día futuro se puede elegir igual: para ésos, "Buscar en Aviasales" trae los precios.</p>
         </div>
         <div className="flex flex-wrap items-end gap-6">
-          <Campo id="m-ida" etiqueta="Fecha de ida (en verde, los días con tarifas)" error={errores.ida}>
+          <Campo id="m-ida" etiqueta="Fecha de ida (en verde, los días que ya tienen precio)" error={errores.ida}>
             <CalendarioFechas fechas={fechas?.fechas ?? null} valor={fechaIda} onCambio={setFechaIda} hoy={hoy} cargando={cargandoFechas} />
           </Campo>
-          <Campo id="m-flex" etiqueta="Salida (ventana para la tabla y para los enlaces en vivo)">
+          <Campo id="m-flex" etiqueta="Días alrededor de esa fecha (también los que se buscan en Aviasales)">
             <Toggle id="m-flex" valor={flex} opciones={FLEX} onCambio={cambiarFlex} />
           </Campo>
           <button type="submit" disabled={cargando} className="rounded-md bg-sky-600 px-5 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50">
-            {cargando ? "Buscando…" : "Buscar en el mercado"}
+            {cargando ? "Buscando…" : "Ver los vuelos de ese día"}
           </button>
         </div>
         {diasEnVivo !== undefined && diasEnVivo.length > 0 && (
           <p className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900" data-testid="dias-sin-precio">
-            Venís de Explorar precios: estos <strong>{diasEnVivo.length} días no tienen precio en el cache</strong> (nadie los buscó todavía). "Buscar en vivo" los recorre uno por uno en Aviasales y los trae al sistema; no hace falta que estén en la ventana de arriba.
+            Venís de Explorar precios: estos <strong>{diasEnVivo.length} días todavía no tienen precio</strong> (nadie los buscó). El botón de abajo los busca uno por uno en Aviasales y los trae; no hace falta que estén entre los días de arriba.
           </p>
         )}
         {origen && destino && !esContinente(destino) && (
@@ -229,7 +229,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
         )}
       </form>
       <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle" open={paresMultiples !== null && paresMultiples.length > 0}>
-        <summary className="cursor-pointer text-sm font-medium text-slate-800">Búsqueda múltiple: varias rutas, una fecha y una ventana; la app busca en vivo cada una y trae todo al sistema</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">Buscar varias rutas de una vez: una lista de rutas, una fecha y los días alrededor; la app las busca en Aviasales y trae todos los precios</summary>
         <div className="mt-3">
           <BusquedaMultiple
             aeropuertos={aeropuertos}
@@ -245,18 +245,18 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
         </div>
       </details>
       <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="cobertura-detalle">
-        <summary className="cursor-pointer text-sm font-medium text-slate-800">Qué tiene el sistema bajado hasta ahora (cobertura del cache)</summary>
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">Qué precios tiene guardados el sistema hasta ahora</summary>
         <div className="mt-2">
           <p className="text-xs text-slate-600" data-testid="cobertura">
           {cobertura === null
-            ? "Leyendo qué pares tienen tarifas bajadas…"
+            ? "Viendo qué rutas tienen precios guardados…"
             : cobertura.actualizadoEn === null
-              ? "No hay tarifas bajadas todavía: corré pnpm precios ORIGEN DESTINO (token de Travelpayouts) y volvé."
-              : `Tarifas bajadas el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} pares, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
+              ? "Todavía no hay precios guardados: corré pnpm precios ORIGEN DESTINO (token de Travelpayouts) y volvé."
+              : `Precios actualizados el ${cobertura.actualizadoEn.slice(0, 10)}: ${cobertura.pares.length} rutas, salidas desde ${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoOrigen > 0).length > 8 ? "…" : ""}; llegadas a ${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).slice(0, 8).map((a) => a.iata).join(", ")}${cobertura.aeropuertos.filter((a) => a.comoDestino > 0).length > 8 ? "…" : ""}. Para otro par: pnpm precios ORIGEN DESTINO.`}
           {cobertura && cobertura.grupos.length > 0 && (
             <span className="block" data-testid="cobertura-grupos">
               La app sirve cualquier par del mundo: el que no esté cacheado se trae en el momento. El cache se precarga en este orden y después sigue por el resto del mundo:{" "}
-              {cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} pares, ${g.tarifas.toLocaleString("es")} tarifas, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
+              {cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}: ${g.pares} rutas, ${g.tarifas.toLocaleString("es")} precios, ${g.origenesDescubiertos} de ${g.origenesDescubiertos + g.origenesPendientes} aeropuertos de salida recorridos`).join(" · ")}
             </span>
           )}
           </p>
@@ -271,14 +271,14 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
         <Bloque
           orden={1}
           titulo={`Mercado: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}, salida entre ${fechaCorta(resultado.desde)} y ${fechaCorta(resultado.hasta)}`}
-          objetivo="Todo lo que la API de Travelpayouts tiene para llegar: un boleto, o dos encadenados donde termina el primero. Orden: aeropuerto de salida (el pedido primero, después por cercanía), precio, sin bodega antes que con bodega, horas totales, escalas, aerolíneas distintas. Precios vistos por otros usuarios de Aviasales, no cotización viva: cada fila dice hace cuánto y cuánto puede haberse movido."
+          objetivo="Todo lo que hay para llegar: un pasaje, o dos comprados por separado que se encadenan donde termina el primero. Orden: aeropuerto de salida (el que pediste primero, después los cercanos), precio, sin valija antes que con valija, horas totales, escalas, aerolíneas distintas. Son precios que vieron otros viajeros en Aviasales, no cotizaciones en vivo: cada fila dice hace cuánto se vio y cuánto puede haber cambiado."
         >
           {resultado.dataset && (
             <p className={`text-xs ${resultado.dataset.vencido ? "text-red-700" : "text-slate-600"}`} data-testid="nota-dataset">
-              Dataset del {resultado.dataset.actualizadoEn.slice(0, 10)} ({resultado.dataset.corridas.length} corridas, {resultado.dataset.tarifasVigentes.toLocaleString("es")} tarifas vigentes, {resultado.dataset.tarifasParaEstePar.toLocaleString("es")} para estos aeropuertos).{" "}
+              Precios actualizados el {resultado.dataset.actualizadoEn.slice(0, 10)} ({resultado.dataset.corridas.length} actualizaciones guardadas, {resultado.dataset.tarifasVigentes.toLocaleString("es")} precios vigentes, {resultado.dataset.tarifasParaEstePar.toLocaleString("es")} para estos aeropuertos).{" "}
               {resultado.dataset.desvio
-                ? `Desvío medido entre corridas: la mitad de las tarifas cambió menos de ${resultado.dataset.desvio.medianaPct} % y 9 de 10 menos de ${resultado.dataset.desvio.p90Pct} %.`
-                : `Sin dos corridas en días distintos todavía: se estima ${resultado.dataset.tasaDesvioDiariaPct} % por día desde que se vio cada tarifa (supuesto de config).`}
+                ? `De una actualización a la otra, la mitad de los precios cambió menos de ${resultado.dataset.desvio.medianaPct} % y 9 de cada 10 menos de ${resultado.dataset.desvio.p90Pct} %.`
+                : `Todavía no hay dos actualizaciones en días distintos: se supone un ${resultado.dataset.tasaDesvioDiariaPct} % de cambio por día desde que se vio cada precio.`}
             </p>
           )}
           {filas.length > 0 && (
@@ -300,17 +300,17 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
           {filas.length === 0 && origen && destino && !esContinente(destino) && (
             <div className="grid gap-2 rounded-md border border-sky-200 bg-sky-50 p-3" data-testid="par-sin-cache">
               <p className="text-sm font-medium text-sky-900">
-                Todavía no hay nada cacheado para {origen.iata} → {destino.iata} en estos días. No hace falta esperar a la corrida nocturna: cualquier par del mundo se puede traer ahora.
+                Todavía no hay precios guardados de {origen.iata} → {destino.iata} para estos días. No hace falta esperar: cualquier ruta del mundo se puede traer ahora.
               </p>
               <ol className="grid gap-1 text-xs text-sky-900">
                 <li>
-                  <strong>1.</strong> "Actualizar este par ahora" (abajo) lo baja de la API en 1–2 min: trae lo que otros viajeros ya buscaron.
+                  <strong>1.</strong> "Actualizar esta ruta ahora" (abajo) trae en 1–2 min lo que otros viajeros ya buscaron.
                 </li>
                 <li>
-                  <strong>2.</strong> Si sigue vacío es que nadie lo buscó en Aviasales: "Buscar en vivo" lo busca por vos y lo trae al sistema.
+                  <strong>2.</strong> Si sigue vacío es que nadie la buscó en Aviasales: el botón "Buscar en Aviasales" la busca por vos y trae los precios.
                 </li>
                 <li>
-                  <strong>3.</strong> Seguilo y la corrida de las 03:00 lo baja todas las noches.
+                  <strong>3.</strong> Seguila y sus precios se actualizan solos todas las noches.
                 </li>
               </ol>
               <Seguir origen={origen.iata} destino={destino.iata} {...(fechaIda === "" ? {} : { fechaIda })} />
@@ -329,14 +329,14 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
               <thead>
                 <tr className="border-b border-slate-200 text-left text-xs uppercase tracking-wide text-slate-500">
                   <th className="py-1 pr-2">#</th>
-                  <th className="py-1 pr-3">Boletos (itinerario, aerolínea, horario, equipaje, agencia)</th>
+                  <th className="py-1 pr-3">Pasajes (recorrido, aerolínea, horario, equipaje, quién lo vende)</th>
                   <th className="py-1 pr-3">2. Precio</th>
                   <th className="py-1 pr-3">3. Equipaje</th>
                   <th className="py-1 pr-3">4. Horas totales</th>
                   <th className="py-1 pr-3">5. Escalas</th>
                   <th className="py-1 pr-3">6. Aerolíneas</th>
                   <th className="py-1 pr-3">Sale</th>
-                  <th className="py-1 pr-3">Antigüedad y desvío</th>
+                  <th className="py-1 pr-3">Hace cuánto se vio este precio</th>
                 </tr>
               </thead>
               <tbody>
@@ -346,7 +346,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
                       <tr className="bg-slate-100">
                         <td colSpan={9} className="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
                           1. Desde {c.origen} {aeropuerto(c.origen)?.ciudad ? `(${aeropuerto(c.origen)?.ciudad})` : ""}
-                          {c.trasladoOrigenKm === 0 ? " — el aeropuerto pedido" : ` — a ${c.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}; el traslado va aparte`} · {filas.filter((f) => f.origen === c.origen).length} combinaciones desde USD {Math.min(...filas.filter((f) => f.origen === c.origen).map((f) => f.totalUsd)).toLocaleString("es")}
+                          {c.trasladoOrigenKm === 0 ? " — el aeropuerto que pediste" : ` — a ${c.trasladoOrigenKm.toLocaleString("es")} km de ${resultado.origen}; llegar hasta ahí lo pagás aparte`} · {filas.filter((f) => f.origen === c.origen).length} opciones desde USD {Math.min(...filas.filter((f) => f.origen === c.origen).map((f) => f.totalUsd)).toLocaleString("es")}
                         </td>
                       </tr>
                     )}

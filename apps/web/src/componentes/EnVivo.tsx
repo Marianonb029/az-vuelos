@@ -228,14 +228,14 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
   return (
     <div className="grid gap-1" data-testid="en-vivo">
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => void buscarEnVivo()} disabled={ocupado || fechas.length === 0} title={fechas.length === 0 ? "Elegí una fecha en el calendario (cualquier día futuro)" : `Abre una ventana de Aviasales con ${origen} → ${destino} y la lleva por ${fechas.length} día${fechas.length === 1 ? "" : "s"}`} className="rounded-md border border-sky-600 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
-          Buscar en vivo en Aviasales{fechas.length === 1 ? ` (${fechaCorta(fechas[0] ?? fechaIda)})` : fechas.length > 1 ? ` los ${fechas.length} días que hacen falta (${fechaCorta(fechas[0] ?? fechaIda)} a ${fechaCorta(fechas[fechas.length - 1] ?? fechaIda)}, ~${minutos} min)` : ""} y traer al sistema
+        <button type="button" onClick={() => void buscarEnVivo()} disabled={ocupado || fechas.length === 0} title={fechas.length === 0 ? "Elegí una fecha en el calendario (cualquier día futuro)" : `Abre Aviasales con ${origen} → ${destino} y recorre ${fechas.length} día${fechas.length === 1 ? "" : "s"}`} className="rounded-md border border-sky-600 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
+          Buscar en Aviasales{fechas.length === 1 ? ` (${fechaCorta(fechas[0] ?? fechaIda)})` : fechas.length > 1 ? ` los ${fechas.length} días que hacen falta (${fechaCorta(fechas[0] ?? fechaIda)} a ${fechaCorta(fechas[fechas.length - 1] ?? fechaIda)}, ~${minutos} min)` : ""} y traer los precios
         </button>
-        <button type="button" onClick={() => void medirPublicacion()} disabled={ocupado || !disponible || fechas.length === 0} title="Hace una sola búsqueda y sondea el cache cada pocos segundos para medir cuánto tarda Aviasales en publicarla: así el tiempo de espera deja de ser un supuesto" className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
-          Medir cuánto tarda en publicarse
+        <button type="button" onClick={() => void medirPublicacion()} disabled={ocupado || !disponible || fechas.length === 0} title="Hace una sola búsqueda y revisa cada pocos segundos para medir cuánto tarda Aviasales en dejarla disponible: así el tiempo de espera deja de ser un supuesto" className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+          Medir cuánto tarda en aparecer
         </button>
-        <button type="button" onClick={() => void actualizarModelo()} disabled={ocupado || !disponible} title={disponible ? "Baja ahora los ~90 pares del modelo para este par desde la Data API (1–2 min)" : "El servidor no tiene TRAVELPAYOUTS_TOKEN"} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
-          Actualizar este par ahora
+        <button type="button" onClick={() => void actualizarModelo()} disabled={ocupado || !disponible} title={disponible ? "Trae ahora los precios de esta ruta y de las conexiones que podrían servir (1–2 min)" : "El servidor no tiene TRAVELPAYOUTS_TOKEN"} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
+          Actualizar esta ruta ahora
         </button>
         {(fase === "buscando" || fase === "vigilando" || fase === "midiendo") && (
           <button type="button" onClick={() => (detener.current = true)} className="rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50">
@@ -269,15 +269,15 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
       )}
       {frescos.length > 0 && (
         <p className="text-xs text-emerald-800" data-testid="dias-frescos">
-          Se saltean {frescos.length} de los {ventana.length} días de la ventana: ya tienen precio y es más nuevo que la cadencia con que conviene rebajarlos (diaria a menos de dos semanas del viaje, cada 3 días hasta 60, semanal más lejos). Buscarlos de nuevo no cambiaría nada y son {Math.ceil((frescos.length * segundosPorBusqueda) / 60)} min de ventana abierta.
+          Se saltean {frescos.length} de los {ventana.length} días: ya tienen precio y es lo bastante reciente (se vuelve a mirar todos los días si el viaje es en menos de dos semanas, cada 3 días hasta los 60, y una vez por semana más adelante). Buscarlos de nuevo no cambiaría nada y te ahorra {Math.ceil((frescos.length * segundosPorBusqueda) / 60)} min.
         </p>
       )}
       {fechas.length === 0 && ventana.length > 0 && (
         <p className="text-xs text-emerald-800" data-testid="nada-que-buscar">
-          Todos los días de esta ventana tienen precio fresco: no hace falta buscar nada en vivo.
+          Todos estos días ya tienen precio reciente: no hace falta buscar nada.
         </p>
       )}
-      <p className="text-xs text-slate-400">La búsqueda en vivo la hace Aviasales en tu navegador, día por día en una sola ventana; la app no la lee. Lo que se busca entra al cache de la Data API en minutos y de ahí a esta tabla, con este orden.</p>
+      <p className="text-xs text-slate-400">La búsqueda la hace Aviasales en tu navegador, día por día en una sola ventana; la app no la lee. Lo que buscás queda disponible en minutos y aparece acá con este mismo orden.</p>
     </div>
   );
 };

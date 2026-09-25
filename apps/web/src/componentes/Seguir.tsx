@@ -43,22 +43,22 @@ export const Seguir = ({ origen, destino, fechaIda, onCambio }: Props) => {
     <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="seguir" data-siguiendo={actual ? "si" : "no"}>
       {actual ? (
         <>
-          <span className="rounded bg-emerald-100 px-2 py-1 font-medium text-emerald-800">✓ Siguiendo {origen} → {destino}</span>
+          <span className="rounded bg-emerald-100 px-2 py-1 font-medium text-emerald-800">✓ Siguiendo la ruta {origen} → {destino}</span>
           <label className="flex items-center gap-1 text-slate-600">
             <input type="checkbox" checked={actual.vuelta} disabled={trabajando} onChange={(e) => seguir(e.target.checked)} />
-            también la vuelta ({destino} → {origen})
+            seguir también la vuelta ({destino} → {origen})
           </label>
           <button type="button" disabled={trabajando} onClick={() => void aplicar(() => dejarPar(origen, destino))} className="rounded border border-slate-300 px-2 py-1 text-slate-600 hover:bg-slate-100 disabled:opacity-50">
-            Dejar de seguir
+            Dejar de seguirla
           </button>
-          <span className="text-slate-500">Se baja una vez por día en la corrida de las 03:00; el historial crece desde {actual.desde}.</span>
+          <span className="text-slate-500">Sus precios se actualizan solos una vez por día, a las 03:00. Se sigue desde el {actual.desde}.</span>
         </>
       ) : (
         <>
           <button type="button" disabled={trabajando} onClick={() => seguir(false)} className="rounded-md border border-sky-600 px-3 py-1 font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
-            Seguir este par
+            Seguir esta ruta
           </button>
-          <span className="text-slate-500">La bajada nocturna lo vuelve a bajar cada día: con dos bajadas ya se puede decir si el precio sube o baja.</span>
+          <span className="text-slate-500">Sus precios se actualizan solos cada noche: con dos actualizaciones ya se puede ver si sube o baja.</span>
         </>
       )}
       {error && <span className="text-red-700">No se pudo guardar: {error}</span>}

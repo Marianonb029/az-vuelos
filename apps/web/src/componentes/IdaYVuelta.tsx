@@ -34,10 +34,10 @@ const SenalTotal = ({ ida, vuelta, mejor }: { ida: Panorama; vuelta: Panorama; m
   return (
     <p className="mt-1 text-xs" data-testid="ida-y-vuelta-senal">
       {cambioTotal === null ? (
-        <>El total todavía no tiene historial en las dos direcciones: seguí el par con su vuelta y en un día ya se puede decir si sube o baja.</>
+        <>Todavía no se puede decir si el viaje entero sube o baja: seguí la ruta marcando también la vuelta y mañana ya hay con qué comparar.</>
       ) : (
         <>
-          <strong>El viaje entero {cambioTotal < 0 ? "bajó" : cambioTotal > 0 ? "subió" : "no se movió"}{cambioTotal === 0 ? "" : ` ${Math.abs(cambioTotal)} %`}</strong> desde que se empezó a seguir (ida {a.ida.cambioPct} %, vuelta {a.vuelta.cambioPct} %). Es lo que se compra: dos boletos, cada uno con su propio movimiento.
+          <strong>El viaje entero {cambioTotal < 0 ? "bajó" : cambioTotal > 0 ? "subió" : "no se movió"}{cambioTotal === 0 ? "" : ` ${Math.abs(cambioTotal)} %`}</strong> desde que empezaste a seguirla (ida {a.ida.cambioPct} %, vuelta {a.vuelta.cambioPct} %). Es lo que realmente comprás: dos pasajes, cada uno con su propio movimiento.
         </>
       )}{" "}
       <span className="text-emerald-800/70">
@@ -78,18 +78,18 @@ export const IdaYVuelta = ({ ida, onElegirDia }: Props) => {
     };
   }, [ida.origen, ida.destino]);
 
-  if (cargando) return <p className="text-xs text-slate-500">Mirando las tarifas de vuelta…</p>;
-  if (error) return <p className="text-xs text-amber-700">No se pudo leer la vuelta: {error}</p>;
+  if (cargando) return <p className="text-xs text-slate-500">Buscando los precios de la vuelta…</p>;
+  if (error) return <p className="text-xs text-amber-700">No se pudieron leer los precios de la vuelta: {error}</p>;
   if (!vuelta || vuelta.porDia.length === 0)
     return (
       <div className="grid gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900" data-testid="ida-y-vuelta-sin-datos">
         <p>
           <strong>
-            El cache no tiene ninguna tarifa de {ida.destino} → {ida.origen}
+            Todavía no hay precios de {ida.destino} → {ida.origen}
           </strong>
-          , así que no se puede calcular el total de ida y vuelta. La bajada por continentes todavía no llegó a ese sentido (va por grupos, y el de vuelta a América es el tercero).
+          , así que no se puede calcular el total del viaje entero. La actualización automática todavía no llegó a ese sentido.
         </p>
-        <p>Seguí el par pidiendo también la vuelta: la corrida nocturna la baja todas las noches y en un día ya tenés el total.</p>
+        <p>Seguí la ruta marcando también la vuelta: sus precios se actualizan cada noche y mañana ya tenés el total.</p>
         <Seguir origen={ida.origen} destino={ida.destino} />
       </div>
     );
@@ -117,7 +117,7 @@ export const IdaYVuelta = ({ ida, onElegirDia }: Props) => {
       </div>
       {salidas.length === 0 ? (
         <p className="text-xs text-amber-700">
-          Hay tarifas de ida y de vuelta, pero ningún día de ida tiene su vuelta {estadia} días después en el cache. Probá otra estadía o buscá esos días en vivo.
+          Hay precios de ida y de vuelta, pero ningún día de ida tiene su vuelta {estadia} días después. Probá quedarte otra cantidad de días, o buscá esos días en Rutas.
         </p>
       ) : (
         <>
@@ -166,7 +166,7 @@ export const IdaYVuelta = ({ ida, onElegirDia }: Props) => {
         </>
       )}
       <p className="text-[11px] text-slate-500">
-        Son <strong>dos boletos de ida comprados por separado</strong> ({ida.origen} → {ida.destino} y {ida.destino} → {ida.origen}), cada uno con su propio precio cacheado: se pueden comprar en momentos distintos y de aerolíneas distintas. Un boleto de ida y vuelta de una misma aerolínea suele costar menos que esta suma, así que tomala como techo. Cada tramo tiene su antigüedad: miralos en Rutas antes de comprar.
+        Son <strong>dos pasajes de ida comprados por separado</strong> ({ida.origen} → {ida.destino} y {ida.destino} → {ida.origen}), cada uno con su precio: se pueden comprar en momentos distintos y de aerolíneas distintas. Un pasaje de ida y vuelta de la misma aerolínea suele salir menos que esta suma, así que tomalo como máximo. Cada tramo tiene su fecha: miralos en Rutas antes de comprar.
       </p>
     </div>
   );

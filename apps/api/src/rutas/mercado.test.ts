@@ -83,7 +83,7 @@ describe("GET /mercado", () => {
     const r = ResultadoMercado.parse(res.json());
     expect(r.flexDias).toBe(3);
     expect(r.combinaciones).toEqual([]);
-    expect(r.avisos[0]).toContain("ninguna sale entre 2027-02-26 y 2027-03-04");
+    expect(r.avisos[0]).toContain("ninguno sale entre el 2027-02-26 y el 2027-03-04");
   });
 
   it("acepta un continente como destino: todos sus aeropuertos con tarifas, agrupados por origen", async () => {
@@ -154,7 +154,7 @@ describe("GET /mercado", () => {
     expect(r.pares).toHaveLength(1);
     // El mínimo del horizonte sale de IGU, un origen alternativo; el fixture tiene dos días de bajada.
     expect(r.pares[0]?.ida).toMatchObject({ minUsd: 300, bajadas: 2 });
-    expect(r.pares[0]?.ida.titular).toContain("Bajó 66.7 % desde que lo miramos"); // la conclusión de la Fase 22, lista para el panel
+    expect(r.pares[0]?.ida.titular).toContain("Bajó 66.7 % desde que la seguimos"); // la conclusión de la Fase 22, lista para el panel
     // La vuelta (MAD→ASU) no está en el cache: sin mínimo y sin total.
     expect(r.pares[0]?.vuelta?.minUsd).toBeNull();
     expect(r.pares[0]?.totalIdaVueltaUsd).toBeNull();

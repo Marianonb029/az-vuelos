@@ -783,6 +783,33 @@ El dueño preguntó en qué se basaba. La respuesta honesta: **en nada verificad
 
 **Queda abierto para el dueño**, ahora que el alcance es mundial: si el orden de los cinco corredores sigue siendo el que quiere (era su prioridad de la Fase 16) y si mantiene a Rusia excluida (`bajada.paisesExcluidos`, decidido cuando el alcance era América–Europa). Las dos son decisiones suyas y no se tocan sin que las escriba.
 
+## Fase 27 (25/09/2026) — las palabras de la pantalla son las de todos los días
+
+Pedido del dueño: la app hablaba en su jerga interna ("bajada", "pares seguidos", "cache", "corrida", "sonda", "dataset") y eso la vuelve ilegible para alguien que sólo sabe de vuelos. **Esta es la traducción que se usa en todo lo que ve el usuario**; los nombres internos (variables, endpoints, claves de config, archivos) **no cambian**, porque renombrarlos no le sirve a nadie y rompe cosas.
+
+| Jerga interna | En pantalla |
+|---|---|
+| bajada, bajar, bajado | **actualizar precios**, traer precios |
+| corrida | **actualización** (la de las 03:00) |
+| par (de aeropuertos) | **ruta** (Asunción → Lisboa) |
+| pares seguidos | **rutas que estás siguiendo** |
+| cache, cacheado | **precios guardados** |
+| dataset | **base de precios** |
+| pedido (a la API) / sonda | **consulta** / revisar |
+| horizonte | **los próximos meses**, el año que viene |
+| combinación | **opción de viaje** |
+| boleto | **pasaje** |
+| itinerario | **recorrido** |
+| traslado | **viaje hasta ese aeropuerto** |
+| cadencia | **cada cuánto conviene volver a mirarlo** |
+| desvío estimado | **cuánto puede haber cambiado** |
+| antigüedad | **hace cuánto se vio ese precio** |
+| grafo de aerolíneas | **mapa de rutas de las aerolíneas** |
+| descubrimiento | **ver a qué destinos hay precios** |
+| índice / modelo | (no se nombra: "el sistema") |
+
+La pestaña **Combinaciones** pasa a llamarse **Rutas sin precio**: dice lo que es y se distingue de Rutas sin que haya que explicarlo. Las otras cuatro quedan como estaban.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.
