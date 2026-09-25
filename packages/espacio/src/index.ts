@@ -23,3 +23,5 @@ export type { EntradaFase6 } from "./fase6-combinaciones";
 export { generarSplitTickets } from "./fase2-split";
 export { armarRutasPosibles } from "./fase17-rutas-posibles";
 export type { EntradaRutasPosibles } from "./fase17-rutas-posibles";
+export { ordenarPorPrioridad, puntajeBajada } from "./fase24-prioridad-bajada";
+export type { EntradaPrioridad, PesosPrioridadBajada } from "./fase24-prioridad-bajada";

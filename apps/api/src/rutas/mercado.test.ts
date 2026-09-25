@@ -102,7 +102,15 @@ describe("GET /mercado", () => {
   it("lista los días con combinaciones y el mínimo de cada uno, para el calendario", async () => {
     const res = await app.inject({ method: "GET", url: "/mercado/fechas?origen=ASU&destino=MAD" });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ origen: "ASU", destino: "MAD", fechas: [{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480 }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300 }] });
+    // Por día, el mínimo y qué tan vieja es esa tarifa: la búsqueda en vivo saltea los días que siguen frescos (Fase 24).
+    expect(res.json()).toEqual({
+      origen: "ASU",
+      destino: "MAD",
+      fechas: [
+        { fecha: "2027-01-19", combinaciones: 3, minUsd: 480, vistoHaceDias: 7, refrescar: false },
+        { fecha: "2027-01-20", combinaciones: 1, minUsd: 300, vistoHaceDias: 7, refrescar: false },
+      ],
+    });
     expect((await app.inject({ method: "GET", url: "/mercado/fechas?origen=ASU&destino=EU" })).json()).toMatchObject({ fechas: [{ fecha: "2027-01-19" }, { fecha: "2027-01-20" }] });
   });
 

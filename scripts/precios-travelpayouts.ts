@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { claveGrupo, paresASeguir } from "@az/core";
-import { AeropuertoGeo, ConfigEspacio, RutaCompacta } from "@az/espacio";
+import { AeropuertoGeo, ConfigEspacio, Grafo, RutaCompacta, ordenarPorPrioridad } from "@az/espacio";
 import { crearBajada, crearClienteDataApi, paresDelModelo, soltarCandado, tomarCandado } from "../apps/api/src/servicios/bajada";
 import { crearServicioEspacio } from "../apps/api/src/servicios/espacio";
 import { crearServicioSeguidos } from "../apps/api/src/servicios/seguidos";
@@ -58,8 +58,11 @@ try {
       if (pendientes.length > 0) b.guardar();
     }
     const catalogo = new Map(AeropuertoGeo.array().parse(JSON.parse(readFileSync(resolve(DATOS, "aeropuertos-geo.json"), "utf8"))).map((a) => [a.iata, a]));
+    const rutas = RutaCompacta.array().parse(JSON.parse(readFileSync(resolve(DATOS, "rutas.json"), "utf8")));
     const salidas = new Map<string, number>();
-    for (const r of RutaCompacta.array().parse(JSON.parse(readFileSync(resolve(DATOS, "rutas.json"), "utf8")))) salidas.set(r[1], (salidas.get(r[1]) ?? 0) + 1);
+    for (const r of rutas) salidas.set(r[1], (salidas.get(r[1]) ?? 0) + 1);
+    // El grafo del modelo: con él se ordenan los destinos de cada origen (Fase 24).
+    const grafo = new Grafo(rutas, [...catalogo.values()], config.grafo.aerolineasExcluidas, config.grafo.equivalencias);
     console.log(`bajada por continentes: ${config.bajada.grupos.map((g) => g.nota).join(" · ")} · hasta ${presupuesto} pedidos (~${Math.ceil(presupuesto / 60)} min)`);
     const excluido = (pais: string) => config.bajada.paisesExcluidos.includes(pais);
     let ultimoGuardado = 0;
@@ -74,10 +77,13 @@ try {
           desc = await b.descubrir(a.iata);
           descubiertos++;
         }
-        const objetivos = desc.destinos.filter((d) => {
+        const candidatos = desc.destinos.filter((d) => {
           const c = catalogo.get(d);
           return c !== undefined && d !== a.iata && !excluido(c.pais) && (grupo.destino.includes(c.continente) || (config.bajada.hubsDelOrigen && grupo.origen.includes(c.continente) && c.tipo === "grande"));
         });
+        // Fase 24: el modelo ordena los destinos (competencia, frecuencia, low cost, tamaño del destino). Nada se
+        // descarta: si sobra presupuesto se bajan todos igual, pero los que más prometen van primero.
+        const objetivos = ordenarPorPrioridad(candidatos, { origen: a.iata, grafo, aeropuertos: catalogo, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto, pesos: config.bajada.prioridad }).map((x) => x.destino);
         for (const d of objetivos) {
           if (estado.pedidos >= presupuesto) break;
           if (b.vigente(a.iata, d)) continue;
@@ -90,7 +96,7 @@ try {
           console.log(`  ${grupo.nota}: ${estado.pedidos} pedidos, ${estado.nuevos} tarifas, guardado`);
         }
       }
-      console.log(`${grupo.nota}: ${descubiertos} orígenes descubiertos, ${paresGrupo} pares bajados${estado.pedidos >= presupuesto ? " (presupuesto agotado: la próxima corrida sigue acá)" : ""}`);
+      console.log(`${grupo.nota}: ${descubiertos} orígenes descubiertos, ${paresGrupo} pares bajados, ${estado.pedidos > 0 ? Math.round(estado.nuevos / estado.pedidos) : 0} tarifas por pedido${estado.pedidos >= presupuesto ? " (presupuesto agotado: la próxima corrida sigue acá)" : ""}`);
       if (estado.pedidos >= presupuesto) break;
     }
   }

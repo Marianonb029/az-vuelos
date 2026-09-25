@@ -95,6 +95,15 @@ export const ConfigBajada = z.object({
   // Fase 23: parte del presupuesto de cada corrida se reserva para volver a bajar los pares seguidos. Sin volver
   // sobre el mismo par no hay historial, y sin historial no se puede decir si el precio sube o baja.
   presupuestoSeguidosPct: z.number().min(0).max(100),
+  // Fase 24: el modelo ordena los destinos de cada origen, para que el presupuesto se gaste primero donde hay más
+  // chance de tarifas buenas. Sólo ordena: nada se descarta.
+  prioridad: z.object({
+    aerolineas: z.number().min(0),
+    vuelosSemanales: z.number().min(0),
+    topeVuelosSemanales: z.number().int().positive(),
+    bajoCosto: z.number().min(0),
+    destinoGrande: z.number().min(0),
+  }),
   nota: z.string(),
 });
 

@@ -85,10 +85,12 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
     if (!c.ok) return c;
     const hoy = ahora().toISOString().slice(0, 10);
     const lista = armarCombinaciones({ origenes: c.origenes, destinos: c.destinos, desde: hoy, hasta: sumarDias(hoy, config.mercado.diasHorizonte), hoy, precios: vigentes }, opcionesDe(config.precios.desvioDiarioSupuestoPct));
-    const porFecha = new Map<string, { combinaciones: number; minUsd: number }>();
+    // Por día: el mínimo y la antigüedad de esa combinación más barata (es la que se compraría).
+    const porFecha = new Map<string, { combinaciones: number; minUsd: number; vistoHaceDias: number; refrescar: boolean }>();
     for (const x of lista) {
-      const f = porFecha.get(x.fechaIda) ?? { combinaciones: 0, minUsd: x.totalUsd };
-      porFecha.set(x.fechaIda, { combinaciones: f.combinaciones + 1, minUsd: Math.min(f.minUsd, x.totalUsd) });
+      const f = porFecha.get(x.fechaIda);
+      if (!f) porFecha.set(x.fechaIda, { combinaciones: 1, minUsd: x.totalUsd, vistoHaceDias: x.vistoHaceDias, refrescar: x.refrescar });
+      else porFecha.set(x.fechaIda, x.totalUsd < f.minUsd ? { combinaciones: f.combinaciones + 1, minUsd: x.totalUsd, vistoHaceDias: x.vistoHaceDias, refrescar: x.refrescar } : { ...f, combinaciones: f.combinaciones + 1 });
     }
     return { ok: true, resultado: { origen, destino, fechas: [...porFecha].sort((a, b) => a[0].localeCompare(b[0])).map(([fecha, f]) => ({ fecha, ...f })) } };
   };

@@ -5,6 +5,22 @@ import { EnVivo } from "./EnVivo";
 describe("Búsqueda en vivo de un par (Fase 18)", () => {
   afterEach(() => vi.useRealTimers());
 
+  it("no vuelve a buscar los días cuyo precio sigue fresco, y lo dice (Fase 24)", () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve({ enCurso: false }) } as unknown as Response));
+    const fechas = {
+      origen: "ASU",
+      destino: "FRA",
+      fechas: [
+        { fecha: "2026-09-19", combinaciones: 2, minUsd: 500, vistoHaceDias: 0, refrescar: false }, // fresco: se saltea
+        { fecha: "2026-09-20", combinaciones: 1, minUsd: 600, vistoHaceDias: 9, refrescar: true }, // viejo: se busca
+      ],
+    };
+    render(<EnVivo origen="ASU" destino="FRA" fechaIda="2026-09-20" flexDias={1} marker={null} disponible segundosPorBusqueda={45} hoy="2026-09-19" fechasConTarifas={fechas} onActualizado={vi.fn()} />);
+    // Ventana de tres días: uno fresco se saltea, quedan el viejo y el que no tiene precio.
+    expect(screen.getByTestId("dias-frescos").textContent).toContain("Se saltean 1 de los 3 días de la ventana");
+    expect(screen.getByRole("button", { name: /Buscar en vivo en Aviasales los 2 días que hacen falta/ })).toBeTruthy();
+  });
+
   it("si el API no responde durante la vigilancia, avisa y reintenta al minuto en vez de abortar", async () => {
     vi.useFakeTimers();
     const ventana = { closed: false, location: { href: "" } };
@@ -27,7 +43,7 @@ describe("Búsqueda en vivo de un par (Fase 18)", () => {
       }),
     );
     const onActualizado = vi.fn();
-    render(<EnVivo origen="ASU" destino="FRA" fechaIda="2027-01-19" flexDias={0} marker={null} disponible segundosPorBusqueda={45} hoy="2026-09-19" onActualizado={onActualizado} />);
+    render(<EnVivo origen="ASU" destino="FRA" fechaIda="2027-01-19" flexDias={0} marker={null} disponible segundosPorBusqueda={45} hoy="2026-09-19" fechasConTarifas={null} onActualizado={onActualizado} />);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Buscar en vivo en Aviasales/ }));
     });

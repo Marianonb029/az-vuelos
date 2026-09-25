@@ -37,7 +37,7 @@ const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
 
 describe("Mercado", () => {
   it("pide el mercado con la ventana elegida, agrupa por aeropuerto de salida y muestra las seis variables y la antigüedad", async () => {
-    const fechas = { origen: "ASU", destino: "MAD", fechas: [{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480 }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300 }] };
+    const fechas = { origen: "ASU", destino: "MAD", fechas: [{ fecha: "2027-01-19", combinaciones: 3, minUsd: 480, vistoHaceDias: 5, refrescar: false }, { fecha: "2027-01-20", combinaciones: 1, minUsd: 300, vistoHaceDias: 9, refrescar: true }] };
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : url.includes("/fechas") ? fechas : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
     const onResultado = vi.fn();
@@ -86,8 +86,9 @@ describe("Mercado", () => {
     expect(screen.getByTestId("nota-dataset").textContent).toMatch(/1 corridas, 1\.?590 tarifas vigentes, 900 para estos aeropuertos/);
     // Enlaces en vivo con el marker de afiliado y el botón de búsqueda en vivo para el par y la fecha.
     expect((screen.getAllByRole("link", { name: "abrir en Aviasales" })[0] as HTMLAnchorElement).href).toBe("https://www.aviasales.com/search/ASU1901MAD1?t=x&marker=123456");
-    // Con ±7 días el botón busca los 15 días él solo (a 45 s cada uno).
-    expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales los 15 días (12/01/2027 a 26/01/2027, ~12 min) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
+    // Con ±7 días son 15 días, pero el 19/01 ya tiene precio fresco: se saltea y el botón busca los 14 que faltan (Fase 24).
+    expect(screen.getByTestId("dias-frescos").textContent).toContain("Se saltean 1 de los 15 días de la ventana");
+    expect((screen.getByRole("button", { name: "Buscar en vivo en Aviasales los 14 días que hacen falta (12/01/2027 a 26/01/2027, ~11 min) y traer al sistema" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Actualizar este par ahora" }) as HTMLButtonElement).disabled).toBe(false);
   }, 20_000);
 });

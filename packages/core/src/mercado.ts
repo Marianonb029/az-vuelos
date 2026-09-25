@@ -69,7 +69,9 @@ export type ResultadoMercado = z.infer<typeof ResultadoMercado>;
 export const FechasMercado = z.object({
   origen: IataAeropuerto,
   destino: z.union([IataAeropuerto, Continente]),
-  fechas: z.array(z.object({ fecha: FechaIso, combinaciones: z.number().int().min(1), minUsd: z.number().min(0) })), // ordenadas
+  // Por día: cuántas combinaciones hay, el mínimo, y qué tan vieja es esa tarifa más barata. `refrescar` = más
+  // vieja que la cadencia que le toca por anticipación: es el día que conviene volver a buscar (Fase 24).
+  fechas: z.array(z.object({ fecha: FechaIso, combinaciones: z.number().int().min(1), minUsd: z.number().min(0), vistoHaceDias: z.number().int().min(0), refrescar: z.boolean() })), // ordenadas
 });
 export type FechasMercado = z.infer<typeof FechasMercado>;
 

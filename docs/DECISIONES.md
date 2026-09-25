@@ -725,6 +725,30 @@ Ahora hay **una tarea por servidor** (`AZ Vuelos - api` y `AZ Vuelos - web`). Ca
 - **Aerolínea**: la API da una sola por boleto, la que lo **vende**. Un ASU→GRU→GIG→LIS→FRA vendido por Gol con el último tramo de TAP aparecía como "1 aerolínea" sin más. Ahora cada boleto con escalas dice "(vende el boleto)" y la columna 6 aclara debajo que cuenta vendedoras, no operadoras. El criterio de orden no cambia: cambia lo que la fila promete.
 - **Equipaje**: se deduce de la clave de tarifa del enlace (H = mano, L = bodega), que la API no documenta. Ahora va subrayado, con "(probable)" y el detalle al pasar el cursor: "confirmalo en la aerolínea antes de comprar". Los dos entran al glosario de Datos con su ficha.
 
+## Fase 24 (25/09/2026) — no repetir lo que ya está fresco, y que el modelo decida dónde gastar los pedidos
+
+### 24.1 — la búsqueda en vivo saltea los días que siguen frescos
+
+**El problema.** Una ventana de ±15 días son 31 búsquedas de 45 s: **24 minutos** con la ventana de Aviasales abierta. Y recorría **todos** los días, incluidos los que ya tenían precio de ayer: trabajo tirado.
+
+**La solución.** Antes de armar la lista, se descartan los días cuyo precio **todavía no venció**. "Fresco" no es un número nuevo: es la misma cadencia con la que la app ya dice cuándo rebajar (`precios.cadencia`: diaria a menos de 14 días del viaje, cada 3 días hasta 60, semanal más lejos), que ya viajaba por fila como `refrescar`. `GET /mercado/fechas` ahora devuelve por día `vistoHaceDias` y `refrescar`, y `EnVivo` busca sólo los días **sin precio** o **vencidos**, diciendo cuántos saltea y cuántos minutos ahorra. Si están todos frescos, lo dice y no hay nada que buscar.
+
+### 24.2 — el modelo ordena la bajada nocturna (opción A de la revisión)
+
+**El problema.** El modelo (Fases 1–14) había quedado casi decorativo: elegía los pares de "Actualizar este par", daba los aeropuertos alternativos y armaba Combinaciones, pero su índice no se mostraba y sus factores no decidían nada. Mientras tanto, la bajada nocturna recorría los destinos descubiertos de cada origen **en el orden en que venían de la API** (alfabético en la práctica), así que el presupuesto se gastaba igual en un par con cinco aerolíneas compitiendo que en uno sin ruta conocida.
+
+**La solución** (`packages/espacio/src/fase24-prioridad-bajada.ts`): el modelo **ordena** los destinos de cada origen con lo que ya sabe del grafo — aerolíneas operadoras distintas (competencia), frecuencia proxy con tope, si lo vuela una low cost (perfil de ofertas de fase6) y si el destino es un aeropuerto grande. Pesos en `bajada.prioridad`, supuestos declarados. **Nada se descarta**: un par que VRS no conoce puntúa bajo y va al final, pero se baja igual si sobra presupuesto, porque el cache puede tenerlo.
+
+**Medido sobre el dataset real** (tarifas ya bajadas que caen dentro de los primeros N pedidos, orden nuevo contra el anterior):
+
+| Origen | Primeros 3 pedidos | Primeros 5 |
+|---|---|---|
+| GRU | **722** vs 141 | **880** vs 157 |
+| EZE | **695** vs 322 | 798 vs 798 |
+| SCL | **80** vs 16 | **90** vs 51 |
+
+Con el presupuesto cortado —que es siempre— el orden del modelo trae ~5× más tarifas en los primeros pedidos. Cada corrida informa ahora **tarifas por pedido** para poder ajustar los pesos con datos y no a ojo.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

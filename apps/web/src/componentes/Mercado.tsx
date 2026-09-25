@@ -224,7 +224,7 @@ export const Mercado = ({ aeropuertos, hoy, onResultado, pedido, onPedidoAplicad
           </p>
         )}
         {origen && destino && !esContinente(destino) && (
-          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} dias={diasEnVivo} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} segundosPorBusqueda={cobertura?.segundosPorBusquedaEnVivo ?? 45} hoy={hoy} onActualizado={actualizado} />
+          <EnVivo origen={origen.iata} destino={destino.iata} fechaIda={fechaIda} flexDias={Number(flex)} dias={diasEnVivo} fechasConTarifas={fechas} marker={cobertura?.marker ?? null} disponible={cobertura?.actualizacionDisponible ?? false} segundosPorBusqueda={cobertura?.segundosPorBusquedaEnVivo ?? 45} hoy={hoy} onActualizado={actualizado} />
         )}
       </form>
       <details className="rounded-lg border border-slate-200 bg-white p-4" data-testid="bm-detalle" open={paresMultiples !== null && paresMultiples.length > 0}>
