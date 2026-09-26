@@ -11,6 +11,7 @@ import type { ServicioEspacio } from "./servicios/espacio";
 import type { ServicioFeriados } from "./servicios/feriados";
 import type { ServicioActualizacion } from "./servicios/actualizacion";
 import type { ServicioMercado } from "./servicios/mercado";
+import type { ServicioMediciones } from "./servicios/mediciones";
 import type { ServicioSeguidos } from "./servicios/seguidos";
 
 export interface OpcionesApp {
@@ -18,6 +19,7 @@ export interface OpcionesApp {
   mercado: () => ServicioMercado;
   actualizacion: () => ServicioActualizacion;
   seguidos: () => ServicioSeguidos; // Fase 23: los pares que la persona sigue
+  mediciones: () => ServicioMediciones; // Fase 28: cuánto tarda Aviasales en publicar una búsqueda
   feriados: ServicioFeriados;
   rutaTendencias: string;
 }
@@ -28,7 +30,7 @@ export const crearApp = (op: OpcionesApp) => {
   const app = Fastify({ logger: false });
   const tendencias = listaJson(op.rutaTendencias, Tendencia);
   app.get("/salud", async () => ({ ok: true }));
-  rutasMercado(app, op.mercado, op.actualizacion);
+  rutasMercado(app, op.mercado, op.actualizacion, op.mediciones);
   rutasSeguidos(app, op.seguidos, op.mercado);
   rutasPosibles(app, op.espacio);
   rutasPriorizadas(app, {

@@ -810,6 +810,26 @@ Pedido del dueño: la app hablaba en su jerga interna ("bajada", "pares seguidos
 
 La pestaña **Combinaciones** pasa a llamarse **Rutas sin precio**: dice lo que es y se distingue de Rutas sin que haya que explicarlo. Las otras cuatro quedan como estaban.
 
+## Fase 28 (26/09/2026) — que la app haga sola lo que antes había que pedirle
+
+Tres correcciones del dueño, todas sobre lo mismo: **si el sistema ya sabe hacer algo, que lo haga**, en vez de poner un botón.
+
+### 28.1 — la búsqueda se mide sola (fuera el botón "Medir")
+
+El botón de la Fase 25 estaba mal pensado: medir es algo que la app puede hacer **en la primera búsqueda de cada tanda**, sin pedir nada. Ahora la primera búsqueda no espera un tiempo fijo: **revisa cada 10 s hasta que Aviasales la deja disponible**, y ese tiempo real pasa a ser la espera de las siguientes. Se guarda (`data/local/mediciones-publicacion.json`, `POST /medicion-publicacion`) y desde la segunda tanda la app usa la **mediana de lo medido**, acotada entre `mercado.segundosMedidosMin` (15 s) y `segundosMedidosMax` (120 s) para que un caso raro no rompa la espera. Los 45 s de config quedan sólo como punto de partida hasta la primera medición, y la cobertura informa cuántas mediciones hay.
+
+### 28.2 — los precios de las conexiones se traen solos
+
+"Actualizar esta ruta ahora" (los ~90 tramos que el sistema considera útiles para ese viaje) era un botón aparte que había que acordarse de apretar **después** de buscar en vivo. Ahora se encadena solo: al terminar la búsqueda y traer los días, la app sigue con las conexiones y avisa cuántos precios nuevos entraron. El botón queda para usarlo suelto.
+
+### 28.3 — las rutas que existen van dentro de Resumen de ruta
+
+**El problema.** "Rutas sin precio" era una pestaña con su **propio formulario**: había que volver a escribir origen y destino para ver qué caminos existían, y la información quedaba desconectada de la búsqueda que uno acababa de hacer.
+
+**La solución.** Pasa a ser un bloque de **Resumen de ruta**, armado con el par que ya se buscó. Arriba, cuatro cifras que contestan "¿qué me estoy perdiendo?": cuántas rutas existen, cuántas **ya tienen precio** (las que viste en Rutas), cuántas **todavía no** y cuántas usan una low cost. Debajo, los tramos que conviene buscar (ordenados por lo que aportarían, con el botón que los carga en Rutas) y, plegada, la lista completa con los mismos filtros y el mismo orden que antes. Verificado con ASU → LIS: **7 302 rutas existen, 1 418 ya tienen precio, 5 884 no, 3 245 usan low cost**.
+
+La app queda en **cuatro pestañas**: Explorar precios, Rutas, Resumen de ruta y Datos.
+
 ## Conversión a USD
 
 Proveedor: ExchangeRate-API, endpoint abierto `https://open.er-api.com/v6/latest/USD` (sin clave, ~160 monedas, actualización diaria, trae `time_last_update_utc`). `fuente = "ExchangeRate-API"`. Requiere link de atribución en el detalle.

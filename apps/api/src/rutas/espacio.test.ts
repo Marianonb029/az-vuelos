@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import ExcelJS from "exceljs";
 import { CorridaEspacio, ResultadoCalendario, ResultadoCombinaciones, ResultadoEspacio, ResultadoRutas, ResultadoRutasPosibles } from "@az/espacio";
 import { crearApp } from "../app";
+import { crearServicioMediciones } from "../servicios/mediciones";
 import { crearServicioSeguidos } from "../servicios/seguidos";
 import { config } from "../config";
 import { crearServicioEspacio } from "../servicios/espacio";
@@ -21,7 +22,7 @@ const feriados = {
 const mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio);
 const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: null });
 const carpetaTemporal = mkdtempSync(join(tmpdir(), "az-tend-"));
-const app = crearApp({ seguidos: () => crearServicioSeguidos(carpetaTemporal), espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpetaTemporal, "tendencias.json") });
+const app = crearApp({ mediciones: () => crearServicioMediciones(carpetaTemporal), seguidos: () => crearServicioSeguidos(carpetaTemporal), espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpetaTemporal, "tendencias.json") });
 
 describe("GET /espacio/calendario", () => {
   it("pide feriados de ambos países y devuelve el calendario con ventanas verdes y avisos", async () => {

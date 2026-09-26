@@ -2,7 +2,40 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EnVivo } from "./EnVivo";
 
-describe("Búsqueda en vivo de un par (Fase 18)", () => {
+const props = {
+  origen: "ASU",
+  destino: "FRA",
+  fechaIda: "2027-01-19",
+  flexDias: 0,
+  marker: null,
+  disponible: true,
+  segundosPorBusqueda: 45,
+  segundosEntreSondasMedicion: 10,
+  maxMinutosMedicion: 5,
+  hoy: "2026-09-19",
+  fechasConTarifas: null,
+};
+
+// Una sonda que empieza vacía y "publica" después de N consultas.
+const armarFetch = (publicarDespuesDe: number, cuerpos: unknown[]) => {
+  let sondas = 0;
+  const estado = { enCurso: false, origen: "ASU", destino: "FRA", pedidos: 1, total: 1, tarifasNuevas: 7, iniciadoEn: null, terminadoEn: "2026-09-19T00:05:00.000Z", error: null };
+  return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    if (url.startsWith("/api/mercado/sonda?")) {
+      sondas++;
+      const hay = sondas > publicarDespuesDe;
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ origen: "ASU", destino: "FRA", fechaIda: "2027-01-19", desde: "2027-01-19", hasta: "2027-01-19", tarifas: hay ? 1 : 0, dias: hay ? 1 : 0, ultimoVisto: hay ? "2026-09-19" : null, minUsd: hay ? 653 : null }) } as unknown as Response);
+    }
+    if (url.startsWith("/api/medicion-publicacion")) {
+      cuerpos.push({ medicion: JSON.parse(String(init?.body)) });
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ casos: 1, ultimas: [20] }) } as unknown as Response);
+    }
+    if (url.startsWith("/api/mercado/actualizar?")) cuerpos.push({ actualizar: url, cuerpo: init?.body === undefined ? null : JSON.parse(String(init.body)) });
+    return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(estado) } as unknown as Response);
+  });
+};
+
+describe("Búsqueda en vivo (Fases 18 y 28)", () => {
   afterEach(() => vi.useRealTimers());
 
   it("no vuelve a buscar los días cuyo precio sigue fresco, y lo dice (Fase 24)", () => {
@@ -15,52 +48,38 @@ describe("Búsqueda en vivo de un par (Fase 18)", () => {
         { fecha: "2026-09-20", combinaciones: 1, minUsd: 600, vistoHaceDias: 9, refrescar: true }, // viejo: se busca
       ],
     };
-    render(<EnVivo origen="ASU" destino="FRA" fechaIda="2026-09-20" flexDias={1} marker={null} disponible segundosPorBusqueda={45} segundosEntreSondasMedicion={10} maxMinutosMedicion={5} hoy="2026-09-19" fechasConTarifas={fechas} onActualizado={vi.fn()} />);
-    // Ventana de tres días: uno fresco se saltea, quedan el viejo y el que no tiene precio.
+    render(<EnVivo {...props} fechaIda="2026-09-20" flexDias={1} fechasConTarifas={fechas} onActualizado={vi.fn()} />);
     expect(screen.getByTestId("dias-frescos").textContent).toContain("Se saltean 1 de los 3 días");
     expect(screen.getByRole("button", { name: /Buscar en Aviasales los 2 días que hacen falta/ })).toBeTruthy();
   });
 
-  it("si el API no responde durante la vigilancia, avisa y reintenta al minuto en vez de abortar", async () => {
+  it("mide sola cuánto tarda Aviasales y después trae también las conexiones, sin apretar nada (Fase 28)", async () => {
     vi.useFakeTimers();
-    const ventana = { closed: false, location: { href: "" } };
-    vi.stubGlobal("open", vi.fn().mockReturnValue(ventana));
-    // Sonda: 1) base vacía; 2) el API está caído; 3) vuelve con el día publicado.
-    let llamadas = 0;
+    vi.stubGlobal("open", vi.fn().mockReturnValue({ closed: false, location: { href: "" } }));
     const cuerpos: unknown[] = [];
-    const estado = { enCurso: false, origen: "ASU", destino: "FRA", pedidos: 1, total: 1, tarifasNuevas: 1, iniciadoEn: null, terminadoEn: "2026-09-19T00:05:00.000Z", error: null };
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockImplementation((url: string, init?: RequestInit) => {
-        if (url.startsWith("/api/mercado/sonda?")) {
-          llamadas++;
-          if (llamadas === 2) return Promise.reject(new TypeError("Failed to fetch"));
-          const hay = llamadas >= 3;
-          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ origen: "ASU", destino: "FRA", fechaIda: "2027-01-19", desde: "2027-01-19", hasta: "2027-01-19", tarifas: hay ? 1 : 0, dias: hay ? 1 : 0, ultimoVisto: hay ? "2026-09-19" : null, minUsd: hay ? 653 : null }) } as unknown as Response);
-        }
-        if (url.startsWith("/api/mercado/actualizar?")) cuerpos.push(JSON.parse(String(init?.body)));
-        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(estado) } as unknown as Response);
-      }),
-    );
+    vi.stubGlobal("fetch", armarFetch(2, cuerpos)); // consulta 1 = la de partida, 2 = todavía nada, 3 = ya está
     const onActualizado = vi.fn();
-    render(<EnVivo origen="ASU" destino="FRA" fechaIda="2027-01-19" flexDias={0} marker={null} disponible segundosPorBusqueda={45} segundosEntreSondasMedicion={10} maxMinutosMedicion={5} hoy="2026-09-19" fechasConTarifas={null} onActualizado={onActualizado} />);
+    render(<EnVivo {...props} onActualizado={onActualizado} />);
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Buscar en Aviasales/ }));
     });
-    // Termina la única búsqueda (45 s) y empieza la vigilancia: la pasada 1 falla por red.
+    // A los 10 s todavía no apareció: sigue midiendo en vez de esperar un tiempo fijo.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(45_000);
+      await vi.advanceTimersByTimeAsync(10_000);
     });
-    const barra = () => screen.getByTestId("progreso").textContent ?? "";
-    expect(barra()).toContain("El API no respondió en la pasada 1 de 15 (Failed to fetch)");
-    expect(barra()).toContain("vigilando el cache y trayendo");
-    expect(cuerpos).toEqual([]);
-    // Un minuto después el API vuelve: se trae el par y queda listo.
+    expect(screen.getByTestId("progreso").textContent).toContain("Midiendo cuánto tarda Aviasales en dejarla disponible (van 10 s)");
+    // A los 20 s aparece: se anota la medición, y ése pasa a ser el tiempo de espera de las próximas búsquedas.
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(60_000);
+      await vi.advanceTimersByTimeAsync(10_000);
     });
-    expect(cuerpos).toEqual([{ pares: [{ origen: "ASU", destino: "FRA" }] }]);
-    expect(barra()).toContain("✓ Días con tarifas en el sistema: 1 de 1 completas");
-    expect(onActualizado).toHaveBeenCalledTimes(1);
+    expect(cuerpos[0]).toEqual({ medicion: { segundos: 20 } });
+    // Con el único día ya disponible, la búsqueda termina y encadena sola los precios de las conexiones.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    const actualizaciones = cuerpos.filter((c): c is { actualizar: string; cuerpo: unknown } => typeof c === "object" && c !== null && "actualizar" in c);
+    expect(actualizaciones.at(-1)?.cuerpo).toBeNull(); // sin lista de rutas: son las conexiones que podrían servir
+    expect(screen.getByTestId("progreso").textContent).toContain("También se trajeron los precios de las conexiones: 7 precios nuevos");
+    expect(onActualizado).toHaveBeenCalled();
   });
 });

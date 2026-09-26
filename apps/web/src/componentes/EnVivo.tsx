@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { fechaCorta, sumarDias } from "@az/core";
 import type { FechasMercado } from "@az/core";
-import { estadoActualizacion, iniciarActualizacion, sonda } from "../lib/api";
+import { anotarMedicion, estadoActualizacion, iniciarActualizacion, sonda } from "../lib/api";
 import { Progreso } from "./Progreso";
 
 interface Props {
@@ -29,7 +29,7 @@ const ICONO: Record<EstadoDia, string> = { pendiente: "○", buscando: "◔", he
 // URL de la búsqueda en vivo de Aviasales (sólo ida, un pasajero): ORIGEN + DDMM + DESTINO + 1, con el marker.
 export const urlAviasales = (origen: string, destino: string, fechaIda: string, marker: string | null) => `https://www.aviasales.com/search/${origen}${fechaIda.slice(8, 10)}${fechaIda.slice(5, 7)}${destino}1${marker ? `?marker=${encodeURIComponent(marker)}` : ""}`;
 
-type Fase = "quieto" | "buscando" | "vigilando" | "actualizando" | "midiendo";
+type Fase = "quieto" | "buscando" | "vigilando" | "actualizando";
 
 // Fase 18/19: búsqueda en vivo de un par para todos los días de la ventana. La app abre UNA ventana de Aviasales y
 // la lleva día por día a ritmo humano (la búsqueda la hace Aviasales en el navegador de la persona; la app no la
@@ -94,6 +94,21 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
     }
   };
 
+  // Fase 28: al terminar la búsqueda se traen solos los precios de las conexiones que podrían servir (lo que antes
+  // había que pedir a mano con "Actualizar esta ruta ahora"). Son 1–2 min y no requiere nada de la persona.
+  const traerConexiones = async () => {
+    if (!disponible || detener.current) return;
+    try {
+      setFase("actualizando");
+      const n = await esperarActualizacion(await iniciarActualizacion(origen, destino));
+      if (!vivo.current) return;
+      setMensaje(`✓ Listo. También se trajeron los precios de las conexiones: ${n} precios nuevos. La tabla y el calendario ya están al día.`);
+      onActualizado();
+    } catch (err: unknown) {
+      if (vivo.current) setMensaje(`Los días buscados ya están. Las conexiones no se pudieron traer (${err instanceof Error ? err.message : String(err)}): probá con "Actualizar esta ruta ahora".`);
+    }
+  };
+
   // Vigila el cache para el par y la ventana; ante cada cambio trae sólo el par (un pedido) y rehace la tabla.
   const vigilar = async (base: Awaited<ReturnType<typeof sonda>> | null) => {
     setFase("vigilando");
@@ -115,7 +130,8 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
         previo = ahora;
         setEnCache(ahora.dias);
         if (ahora.dias >= fechas.length) {
-          setMensaje(`✓ Los ${fechas.length} días buscados están en el sistema (${tarifas} tarifas nuevas, traído ${traidas} ${traidas === 1 ? "vez" : "veces"}).`);
+          setMensaje(`✓ Los ${fechas.length} días buscados ya están (${tarifas} precios nuevos). Ahora se traen los de las conexiones que podrían servir…`);
+          await traerConexiones();
           setTerminado(true);
           return;
         }
@@ -127,47 +143,9 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
       await esperar(SONDA_CADA_MS);
     }
     if (vivo.current) {
-      setMensaje(`Vigilancia terminada: ${previo?.dias ?? 0} de ${fechas.length} días con tarifas (algunos días pueden no tener vuelos); ${tarifas} tarifas nuevas traídas. 'Actualizar este par ahora' baja además los pares del modelo.`);
+      setMensaje(`Listo: ${previo?.dias ?? 0} de ${fechas.length} días con precio (algunos días pueden no tener vuelos); ${tarifas} precios nuevos. Ahora se traen los de las conexiones que podrían servir…`);
+      await traerConexiones();
       setTerminado(true);
-    }
-  };
-
-  // Fase 25: medir de verdad cuánto tarda Aviasales en publicar una búsqueda en su cache. Una sola búsqueda y
-  // sondas cada pocos segundos: el resultado es el número que debería tener `segundosPorBusquedaEnVivo`, que hasta
-  // ahora era un supuesto. No cambia la config sola: lo dice y la decisión se escribe.
-  const medirPublicacion = async () => {
-    const dia = fechas[0] ?? fechaIda;
-    if (dia === "" || !disponible) return;
-    detener.current = false;
-    setDias([]);
-    setTerminado(false);
-    setFase("midiendo");
-    try {
-      const base = await sonda(origen, destino, dia, 0);
-      const ventana = window.open(urlAviasales(origen, destino, dia, marker), "az-vivo");
-      if (!ventana) {
-        setMensaje("El navegador bloqueó la ventana de Aviasales: permití ventanas emergentes y volvé a intentar.");
-        setFase("quieto");
-        return;
-      }
-      const arranque = Date.now();
-      const pasadas = Math.ceil((maxMinutosMedicion * 60) / segundosEntreSondasMedicion);
-      for (let i = 1; i <= pasadas && vivo.current && !detener.current; i++) {
-        await esperar(segundosEntreSondasMedicion * 1000);
-        const segundos = Math.round((Date.now() - arranque) / 1000);
-        const ahora = await sonda(origen, destino, dia, 0);
-        if (ahora.tarifas !== base.tarifas || ahora.minUsd !== base.minUsd || (ahora.ultimoVisto ?? "") > (base.ultimoVisto ?? "")) {
-          setMensaje(`Medido: Aviasales publicó la búsqueda de ${fechaCorta(dia)} en el cache a los ${segundos} s (se sondeó cada ${segundosEntreSondasMedicion} s). Hoy la app espera ${segundosPorBusqueda} s por búsqueda: si esto se repite en dos o tres mediciones, ese número se puede bajar en config/espacio.json (mercado.segundosPorBusquedaEnVivo) con la decisión escrita.`);
-          setTerminado(true);
-          return;
-        }
-        setMensaje(`Midiendo: van ${segundos} s y todavía no apareció en el cache (sonda cada ${segundosEntreSondasMedicion} s, hasta ${maxMinutosMedicion} min). Dejá la ventana de Aviasales abierta.`);
-      }
-      if (vivo.current) setMensaje(`No apareció en ${maxMinutosMedicion} min: puede que esa búsqueda no haya terminado o que el cache tarde más. Los ${segundosPorBusqueda} s de config quedan como están; probá con otro día o par.`);
-    } catch (err: unknown) {
-      setMensaje(`No se pudo medir: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
-      if (vivo.current) setFase("quieto");
     }
   };
 
@@ -195,6 +173,9 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
         base = null;
       }
     }
+    // La espera entre búsquedas: la de config (ya medida en visitas anteriores) hasta que esta corrida la mida.
+    let espera = segundosPorBusqueda;
+    let medido: number | null = null;
     try {
       for (let i = 0; i < lista.length && vivo.current; i++) {
         const d = lista[i];
@@ -206,9 +187,35 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
         }
         if (i > 0) ventana.location.href = urlAviasales(origen, destino, d.fecha, marker);
         setDias((l) => l.map((x, j) => (j === i ? { ...x, estado: "buscando" } : x)));
-        setMensaje(`Búsqueda ${i + 1} de ${lista.length}: ${origen} → ${destino} el ${fechaCorta(d.fecha)} (${segundosPorBusqueda} s cada una; faltan ~${Math.ceil(((lista.length - i) * segundosPorBusqueda) / 60)} min). Dejá la ventana de Aviasales abierta.`);
-        await esperar(segundosPorBusqueda * 1000);
+        // Fase 28: la primera búsqueda no espera un tiempo fijo: se revisa hasta que Aviasales la deja disponible y
+        // ese tiempo real pasa a ser la espera de las siguientes (y se guarda para las próximas veces).
+        if (i === 0 && disponible && base !== null) {
+          const arranque = Date.now();
+          const pasadas = Math.ceil((maxMinutosMedicion * 60) / segundosEntreSondasMedicion);
+          for (let k = 1; k <= pasadas && vivo.current && !detener.current; k++) {
+            await esperar(segundosEntreSondasMedicion * 1000);
+            const transcurrido = Math.round((Date.now() - arranque) / 1000);
+            setMensaje(`Búsqueda 1 de ${lista.length}: ${origen} → ${destino} el ${fechaCorta(d.fecha)}. Midiendo cuánto tarda Aviasales en dejarla disponible (van ${transcurrido} s); con eso se calcula la espera de las demás. Dejá la ventana abierta.`);
+            let apareció = false;
+            try {
+              const ahora = await sonda(origen, destino, d.fecha, 0);
+              apareció = ahora.tarifas !== base.tarifas || ahora.minUsd !== base.minUsd || (ahora.ultimoVisto ?? "") > (base.ultimoVisto ?? "");
+            } catch {
+              apareció = false; // el API no respondió: se sigue midiendo
+            }
+            if (apareció) {
+              espera = transcurrido;
+              medido = transcurrido;
+              await anotarMedicion(transcurrido).catch(() => undefined);
+              break;
+            }
+          }
+          if (medido === null) setMensaje(`No se pudo medir en ${maxMinutosMedicion} min (puede que ese día no tenga vuelos): se siguen usando ${espera} s por búsqueda.`);
+        } else {
+          await esperar(espera * 1000);
+        }
         setDias((l) => l.map((x, j) => (j === i ? { ...x, estado: "hecha" } : x)));
+        if (i === 0 && medido !== null) setMensaje(`Medido: Aviasales dejó disponible la búsqueda en ${medido} s. Las siguientes esperan eso (antes se esperaban ${segundosPorBusqueda} s).`);
       }
       if (!vivo.current) return;
       if (!disponible) {
@@ -231,13 +238,10 @@ export const EnVivo = ({ origen, destino, fechaIda, flexDias, marker, disponible
         <button type="button" onClick={() => void buscarEnVivo()} disabled={ocupado || fechas.length === 0} title={fechas.length === 0 ? "Elegí una fecha en el calendario (cualquier día futuro)" : `Abre Aviasales con ${origen} → ${destino} y recorre ${fechas.length} día${fechas.length === 1 ? "" : "s"}`} className="rounded-md border border-sky-600 px-4 py-2 text-sm font-medium text-sky-700 hover:bg-sky-50 disabled:opacity-50">
           Buscar en Aviasales{fechas.length === 1 ? ` (${fechaCorta(fechas[0] ?? fechaIda)})` : fechas.length > 1 ? ` los ${fechas.length} días que hacen falta (${fechaCorta(fechas[0] ?? fechaIda)} a ${fechaCorta(fechas[fechas.length - 1] ?? fechaIda)}, ~${minutos} min)` : ""} y traer los precios
         </button>
-        <button type="button" onClick={() => void medirPublicacion()} disabled={ocupado || !disponible || fechas.length === 0} title="Hace una sola búsqueda y revisa cada pocos segundos para medir cuánto tarda Aviasales en dejarla disponible: así el tiempo de espera deja de ser un supuesto" className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
-          Medir cuánto tarda en aparecer
-        </button>
         <button type="button" onClick={() => void actualizarModelo()} disabled={ocupado || !disponible} title={disponible ? "Trae ahora los precios de esta ruta y de las conexiones que podrían servir (1–2 min)" : "El servidor no tiene TRAVELPAYOUTS_TOKEN"} className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 disabled:opacity-50">
           Actualizar esta ruta ahora
         </button>
-        {(fase === "buscando" || fase === "vigilando" || fase === "midiendo") && (
+        {(fase === "buscando" || fase === "vigilando") && (
           <button type="button" onClick={() => (detener.current = true)} className="rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50">
             Detener
           </button>

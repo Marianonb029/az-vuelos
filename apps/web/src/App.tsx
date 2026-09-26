@@ -1,6 +1,6 @@
-import { useState } from "react";
-import type { ResultadoMercado } from "@az/core";
-import { Combinaciones } from "./componentes/Combinaciones";
+import { useEffect, useState } from "react";
+import type { CoberturaMercado, ResultadoMercado } from "@az/core";
+import { obtenerCobertura } from "./lib/api";
 import { Mercado } from "./componentes/Mercado";
 import type { PedidoInicial } from "./componentes/Mercado";
 import { Panorama } from "./componentes/Panorama";
@@ -20,6 +20,16 @@ export const App = () => {
   const [pedido, setPedido] = useState<PedidoInicial | null>(null);
   // Los boletos sin precio que Combinaciones manda a buscar en vivo.
   const [paresMultiples, setParesMultiples] = useState<{ origen: string; destino: string }[] | null>(null);
+  const [cobertura, setCobertura] = useState<CoberturaMercado | null>(null);
+  useEffect(() => {
+    obtenerCobertura()
+      .then(setCobertura)
+      .catch(() => setCobertura(null));
+  }, []);
+  const buscarPares = (pares: { origen: string; destino: string }[]) => {
+    setParesMultiples(pares);
+    setPestana("rutas");
+  };
   const verEnRutas = (origen: string, destino: string, fechaIda: string, dias?: readonly string[]) => {
     setPedido({ origen, destino, fechaIda, flex: "0", ...(dias ? { dias } : {}) });
     setPestana("rutas");
@@ -59,16 +69,7 @@ export const App = () => {
         <Mercado aeropuertos={aeropuertos} hoy={hoyIso()} onResultado={setMercado} pedido={pedido} onPedidoAplicado={() => setPedido(null)} onVerResumen={() => setPestana("resumen")} paresMultiples={paresMultiples} />
       </section>
       <section aria-label="Resumen de ruta" hidden={pestana !== "resumen"}>
-        <ResumenRuta mercado={mercado} irA={setPestana} />
-      </section>
-      <section aria-label="Combinaciones" hidden={pestana !== "combinaciones"}>
-        <Combinaciones
-          aeropuertos={aeropuertos}
-          onBuscarPares={(pares) => {
-            setParesMultiples(pares);
-            setPestana("rutas");
-          }}
-        />
+        <ResumenRuta mercado={mercado} irA={setPestana} cobertura={cobertura} onBuscarPares={buscarPares} />
       </section>
       <section aria-label="Datos" hidden={pestana !== "datos"}>
         <TableroDatos visible={pestana === "datos"} />

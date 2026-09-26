@@ -8,7 +8,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
   { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
 ];
-const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, aerolineasBajoCosto: ["G3"], grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
+const cobertura = { actualizadoEn: "2026-09-17T12:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, medicionesPublicacion: 0, segundosMedidos: null, aerolineasBajoCosto: ["G3"], grupos: [{ prioridad: 1, grupo: "NA+SA→EU", origen: ["NA", "SA"], destino: ["EU"], pares: 120, tarifas: 3000, origenesDescubiertos: 45, origenesPendientes: 1070 }], aeropuertos: [{ iata: "ASU", comoOrigen: 40, comoDestino: 0 }, { iata: "MAD", comoOrigen: 0, comoDestino: 300 }], pares: [{ origen: "ASU", destino: "MAD", tarifas: 40 }] };
 const HORA = 3600;
 const boleto = (origen: string, destino: string, aerolinea: string, precioUsd: number, saleH: number, duraH: number, extra: Partial<BoletoMercado> = {}): BoletoMercado => ({
   origen, destino, aerolinea, numeroVuelo: "1848", fechaIda: "2027-01-19", transbordos: 0, duracionMin: duraH * 60, itinerario: [origen, destino], salidaEpoch: saleH * HORA, llegadaEpoch: (saleH + duraH) * HORA,
@@ -60,7 +60,8 @@ describe("Mercado", () => {
     expect(sinTarifas.disabled).toBe(false);
     expect(sinTarifas.dataset["conTarifas"]).toBe("no");
     expect(screen.getByRole("button", { name: "19/01/2027" }).textContent).toBe("19480");
-    expect((screen.getByRole("button", { name: /Buscar en Aviasales y traer los precios/ }) as HTMLButtonElement).disabled).toBe(true); // sin fecha elegida
+    // Sin fecha elegida, el de la búsqueda de un día está deshabilitado (el otro botón con nombre parecido es el de varias rutas).
+    expect((screen.getAllByRole("button", { name: /^Buscar en Aviasales y traer los precios$/ })[0] as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(screen.getByRole("button", { name: "19/01/2027" }));
     fireEvent.click(screen.getByRole("radio", { name: "± 7 días" }));
     fireEvent.click(screen.getByRole("button", { name: "Ver los vuelos de ese día" }));

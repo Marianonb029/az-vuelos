@@ -5,6 +5,7 @@ import { crearServicioFeriados } from "./servicios/feriados";
 import { crearServicioActualizacion } from "./servicios/actualizacion";
 import { crearClienteDataApi } from "./servicios/bajada";
 import { crearServicioMercado } from "./servicios/mercado";
+import { crearServicioMediciones } from "./servicios/mediciones";
 import { crearServicioSeguidos } from "./servicios/seguidos";
 import { iniciarRefresco } from "./servicios/refresco";
 
@@ -17,7 +18,8 @@ let espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEspa
 let mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio, undefined, undefined, enVivo);
 const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: token ? crearClienteDataApi(token) : null });
 const seguidos = crearServicioSeguidos(config.directorioDatos);
-const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, seguidos: () => seguidos, feriados: crearServicioFeriados(), rutaTendencias: config.rutaTendencias });
+const mediciones = crearServicioMediciones(config.directorioDatos);
+const app = crearApp({ espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, seguidos: () => seguidos, mediciones: () => mediciones, feriados: crearServicioFeriados(), rutaTendencias: config.rutaTendencias });
 
 iniciarRefresco({
   fuentesVencidas: () => espacio.fuentes().filter((f) => f.vencida),

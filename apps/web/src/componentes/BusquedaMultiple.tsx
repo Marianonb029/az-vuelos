@@ -227,7 +227,7 @@ export const BusquedaMultiple = ({ aeropuertos, cobertura, hoy, onTraido, onEleg
           <Toggle id="bm-flex" valor={flex} opciones={FLEX} onCambio={setFlex} />
         </Campo>
         <button type="button" onClick={() => void correr()} disabled={total === 0 || total > tope || fase === "buscando" || fase === "vigilando"} className="rounded-md bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50">
-          Buscar en vivo {total > 0 ? `${total} búsquedas (${pares.length} rutas × ${dias.length} días, ~${Math.ceil((total * segundos) / 60)} min)` : ""} y traer al sistema
+          Buscar en Aviasales {total > 0 ? `${total} búsquedas (${pares.length} rutas × ${dias.length} días, ~${Math.ceil((total * segundos) / 60)} min)` : ""} y traer los precios
         </button>
         {(fase === "buscando" || fase === "vigilando") && (
           <button type="button" onClick={() => (detener.current = true)} className="rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50">

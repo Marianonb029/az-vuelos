@@ -38,7 +38,7 @@ const anticipacion: Anticipacion = {
 describe("Resumen de ruta (Fase 22)", () => {
   it("sin búsqueda invita a hacerla en Rutas", () => {
     const irA = vi.fn();
-    render(<ResumenRuta mercado={null} irA={irA} />);
+    render(<ResumenRuta mercado={null} irA={irA} cobertura={null} onBuscarPares={vi.fn()} />);
     expect(screen.getByText(/Todavía no hay una búsqueda para resumir/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Ir a Rutas" }));
     expect(irA).toHaveBeenCalledWith("rutas");
@@ -46,7 +46,7 @@ describe("Resumen de ruta (Fase 22)", () => {
 
   it("recomienda una opción por criterio, saca conclusiones con las cuentas a la vista y pregunta si conviene comprar", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: () => Promise.resolve(anticipacion) } as unknown as Response));
-    render(<ResumenRuta mercado={resultado} irA={vi.fn()} />);
+    render(<ResumenRuta mercado={resultado} irA={vi.fn()} cobertura={null} onBuscarPares={vi.fn()} />);
     // Cuatro opciones: la más barata, la más rápida, la de menos escalas y la más equilibrada, con lo que se resigna.
     const opciones = screen.getAllByTestId("opcion").map((o) => o.textContent ?? "");
     expect(opciones[0]).toContain("La más barataUSD 300IGU → MAD");

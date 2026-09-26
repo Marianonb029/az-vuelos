@@ -1,13 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { Aeropuerto } from "@az/core";
 import type { ResultadoRutasPosibles, RutaPosible } from "@az/espacio";
-import { Combinaciones } from "./Combinaciones";
+import { RutasPosibles } from "./RutasPosibles";
 
-const aeropuertos: Aeropuerto[] = [
-  { iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción", pais: "Paraguay" },
-  { iata: "MAD", nombre: "Adolfo Suárez Madrid-Barajas", ciudad: "Madrid", pais: "España" },
-];
 const ruta = (extra: Partial<RutaPosible> & Pick<RutaPosible, "origen" | "destino" | "itinerario" | "aerolineas">): RutaPosible => ({
   trasladoOrigenKm: 0, trasladoDestinoKm: 0, distanciaKm: 9000, boletos: 1, escalas: extra.itinerario.length - 2, hub: null, tramoFinal: null, aerolineasPrevio: [], km: 9500, nivel: 2, etiquetaNivel: "Alta", vuelosSemanales: 7, conservada: true, tarifasMercado: [0],
   tramos: extra.itinerario.slice(1).map((d, i) => ({ origen: extra.itinerario[i] ?? "", destino: d, km: 4000, aerolineas: extra.aerolineas })),
@@ -27,26 +22,22 @@ const resultado: ResultadoRutasPosibles = {
   aeropuertos: [{ iata: "ASU", nombre: "Silvio Pettirossi", ciudad: "Asunción" }, { iata: "GRU", nombre: "Guarulhos", ciudad: "São Paulo" }, { iata: "LIS", nombre: "Humberto Delgado", ciudad: "Lisboa" }, { iata: "MAD", nombre: "Barajas", ciudad: "Madrid" }],
   avisos: [],
 };
-const cobertura = { actualizadoEn: null, marker: null, actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [], pares: [] };
+const cobertura = { actualizadoEn: null, marker: null, actualizacionDisponible: false, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, medicionesPublicacion: 0, segundosMedidos: null, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [], pares: [] };
 
-const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
-  fireEvent.change(screen.getByRole("combobox", { name: etiqueta }), { target: { value: texto } });
-  fireEvent.click(screen.getByRole("option", { name: opcion }));
-};
-
-describe("Combinaciones (Fase 17)", () => {
+describe("Rutas que existen, dentro de Resumen de ruta (Fases 17 y 28)", () => {
   it("pide las rutas posibles hacia un continente, agrupa por origen y destino plegado, filtra y muestra cada ruta", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : resultado) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
-    render(<Combinaciones aeropuertos={aeropuertos} onBuscarPares={() => undefined} />);
-    elegir("Origen", "ASU", /ASU/);
-    elegir("Destino (aeropuerto o continente)", "Europa", /Europa/);
-    fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));
-    await waitFor(() => expect(screen.getByTestId("resumen-posibles")).toBeTruthy());
-    expect(fetchMock).toHaveBeenCalledWith("/api/rutas-posibles?origen=ASU&destino=EU", undefined);
-    expect(screen.getByTestId("resumen-posibles").textContent).toContain("4 rutas · 2 aeropuertos de salida · 466 destinos mirados · 2 con un pasaje y 2 con dos · 2 ya tienen precio y 2 hay que buscarlas · 2 con low cost");
+    render(<RutasPosibles origen="ASU" destino="EU" cobertura={cobertura} onBuscarPares={() => undefined} />);
+    await waitFor(() => expect(screen.getByTestId("rutas-posibles-cifras")).toBeTruthy());
+    // El resumen en cifras: cuántas rutas existen, cuántas ya tienen precio y cuántas no.
+    expect(screen.getByTestId("rutas-posibles-cifras").textContent).toContain("4rutas existen");
+    expect(screen.getByTestId("rutas-posibles-cifras").textContent).toContain("2ya tienen precio");
+    expect(screen.getByTestId("rutas-posibles-cifras").textContent).toContain("2todavía no tienen precio");
+    fireEvent.click(screen.getByText(/Ver las 4 rutas, agrupadas por aeropuerto de salida/));
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("4 rutas · 2 aeropuertos de salida · 2 con un pasaje y 2 con dos");
     const origenes = screen.getAllByTestId("origen-posible").map((e) => e.textContent ?? "");
-    expect(origenes[0]).toContain("Desde ASU (Asunción) — el aeropuerto pedido · 3 rutas a 2 destinos");
+    expect(origenes[0]).toContain("Desde ASU (Asunción) — el aeropuerto que pediste · 3 rutas a 2 destinos");
     expect(origenes[1]).toContain("Desde GRU (São Paulo) — a 1100 km de ASU · 1 rutas a 1 destinos");
     // Los destinos están plegados: al abrir MAD se ven sus rutas con vendedoras, operadoras y mercado.
     expect(screen.queryAllByTestId("fila-posible")).toHaveLength(0);
@@ -65,17 +56,17 @@ describe("Combinaciones (Fase 17)", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: /Sólo las rutas que todavía no tienen precio \(2\)/ }));
     expect(screen.getByTestId("resumen-posibles").textContent).toContain("2 rutas (sólo las que no tienen precio)");
     expect(screen.getAllByTestId("fila-posible")).toHaveLength(1);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost, porque viajo con valija \(2 rutas las usan\)/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sin low cost, porque viajo con valija \(2\)/ }));
     expect(screen.getByTestId("resumen-posibles").textContent).toContain("0 rutas (sólo las que no tienen precio) (sin low cost)");
     fireEvent.click(screen.getByRole("checkbox", { name: /Sólo las rutas que todavía no tienen precio/ }));
-    fireEvent.click(screen.getByRole("checkbox", { name: /Sin aerolíneas low cost/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Sin low cost/ }));
     // El filtro reduce a lo que contiene el texto (aeropuerto, ciudad o aerolínea).
     fireEvent.change(screen.getByLabelText("Filtrar (aeropuerto, ciudad o aerolínea)"), { target: { value: "Lisboa" } });
     expect(screen.getByTestId("resumen-posibles").textContent).toContain('1 rutas (filtro "Lisboa")');
   });
 });
 
-describe("Combinaciones hacia un aeropuerto", () => {
+describe("Rutas que existen hacia un aeropuerto", () => {
   it("muestra los alternativos por cercanía al pedido, con el tramo final (vuelo aparte o tierra) en cabecera y fila", async () => {
     const aAeropuerto: ResultadoRutasPosibles = {
       ...resultado,
@@ -88,14 +79,12 @@ describe("Combinaciones hacia un aeropuerto", () => {
     };
     const fetchMock = vi.fn().mockImplementation((url: string) => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(url.endsWith("/cobertura") ? cobertura : aAeropuerto) } as unknown as Response));
     vi.stubGlobal("fetch", fetchMock);
-    render(<Combinaciones aeropuertos={aeropuertos} onBuscarPares={() => undefined} />);
-    elegir("Origen", "ASU", /ASU/);
-    elegir("Destino (aeropuerto o continente)", "MAD", /MAD/);
-    fireEvent.click(screen.getByRole("button", { name: "Ver combinaciones" }));
-    await waitFor(() => expect(screen.getByTestId("resumen-posibles")).toBeTruthy());
-    expect(screen.getByTestId("resumen-posibles").textContent).toContain("1 llegan por un alternativo con tramo final a MAD");
+    render(<RutasPosibles origen="ASU" destino="MAD" cobertura={cobertura} onBuscarPares={() => undefined} />);
+    await waitFor(() => expect(screen.getByTestId("rutas-posibles-cifras")).toBeTruthy());
+    fireEvent.click(screen.getByText(/Ver las 2 rutas, agrupadas por aeropuerto de salida/));
+    expect(screen.getByTestId("resumen-posibles").textContent).toContain("1 llegan por un aeropuerto cercano con un último tramo hasta MAD");
     const cabeceras = screen.getAllByRole("button", { name: /^[▸▾] → / }).map((b) => b.textContent ?? "");
-    expect(cabeceras[0]).toContain("→ MAD (Madrid) · el destino pedido");
+    expect(cabeceras[0]).toContain("→ MAD (Madrid) · el destino que pediste");
     expect(cabeceras[1]).toContain("→ LIS (Lisboa) · a 513 km de MAD: vuelo aparte con TAP, Iberia · 1 rutas");
     fireEvent.click(screen.getByRole("button", { name: /→ LIS/ }));
     const fila = screen.getByTestId("fila-posible").textContent ?? "";

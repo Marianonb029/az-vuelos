@@ -4,6 +4,8 @@ import { z } from "zod";
 import { Continente, armarCombinaciones, armarPanorama, claveGrupo, curvaAnticipacion, diasEntre, leerSenal, ordenarCombinaciones, sumarDias, tasaDesvioDiaria, ultimos } from "@az/core";
 import type { Anticipacion, AeropuertoCandidato, CoberturaMercado, DatasetPrecios, FechasMercado, Panorama, PrecioCacheado, ResultadoMercado } from "@az/core";
 import { AeropuertoGeo, ConfigEspacio, NombreAerolinea } from "@az/espacio";
+import { crearServicioMediciones } from "./mediciones";
+import type { ServicioMediciones } from "./mediciones";
 import type { ServicioEspacio } from "./espacio";
 import { lectorPrecios } from "./precios-cache";
 
@@ -36,7 +38,7 @@ const leerJson = (ruta: string): unknown => JSON.parse(readFileSync(ruta, "utf8"
 // Fase 15/16: el mercado. Lo que la API de Travelpayouts tiene (data/local/precios.json, `pnpm precios`) para
 // llegar del origen a un destino —un aeropuerto o un continente entero—, saliendo del aeropuerto pedido o de un
 // alternativo del modelo, en uno o dos boletos, con el orden del dueño. El dataset se relee cuando el archivo cambia.
-export const crearServicioMercado = (directorioDatos: string, rutaConfig: string, espacio: () => ServicioEspacio, ahora = () => new Date(), rutaPrecios = resolve(directorioDatos, "local", "precios.json"), enVivo: { marker: string | null; actualizacionDisponible: boolean } = { marker: null, actualizacionDisponible: false }): ServicioMercado => {
+export const crearServicioMercado = (directorioDatos: string, rutaConfig: string, espacio: () => ServicioEspacio, ahora = () => new Date(), rutaPrecios = resolve(directorioDatos, "local", "precios.json"), enVivo: { marker: string | null; actualizacionDisponible: boolean } = { marker: null, actualizacionDisponible: false }, mediciones: ServicioMediciones = crearServicioMediciones(directorioDatos)): ServicioMercado => {
   const config = ConfigEspacio.parse(leerJson(rutaConfig));
   const aeropuertos = new Map(z.array(AeropuertoGeo).parse(leerJson(resolve(directorioDatos, "aeropuertos-geo.json"))).map((a) => [a.iata, a]));
   const nombres = new Map(z.array(NombreAerolinea).parse(leerJson(resolve(directorioDatos, "aerolineas-rutas.json"))).map((a) => [a.iata, a.nombre]));
@@ -219,7 +221,18 @@ export const crearServicioMercado = (directorioDatos: string, rutaConfig: string
 
   const cobertura = (): CoberturaMercado => {
     const { dataset, vigentes } = leerDataset();
-    const configVivo = { segundosPorBusquedaEnVivo: config.mercado.segundosPorBusquedaEnVivo, maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo, segundosEntreSondasMedicion: config.mercado.segundosEntreSondasMedicion, maxMinutosMedicion: config.mercado.maxMinutosMedicion, aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto };
+    // Fase 28: el tiempo de espera entre búsquedas ya no es el supuesto de config si hay mediciones: es la mediana
+    // de lo que tardó Aviasales de verdad, que la propia búsqueda en vivo mide sola.
+    const m = mediciones.medido(config.mercado.segundosMedidosMin, config.mercado.segundosMedidosMax);
+    const configVivo = {
+      segundosPorBusquedaEnVivo: m.segundos ?? config.mercado.segundosPorBusquedaEnVivo,
+      maxBusquedasEnVivo: config.mercado.maxBusquedasEnVivo,
+      segundosEntreSondasMedicion: config.mercado.segundosEntreSondasMedicion,
+      maxMinutosMedicion: config.mercado.maxMinutosMedicion,
+      medicionesPublicacion: m.casos,
+      segundosMedidos: m.segundos,
+      aerolineasBajoCosto: config.fase6.aerolineasPerfilBajoCosto,
+    };
     if (!dataset) return { actualizadoEn: null, ...enVivo, ...configVivo, grupos: [], aeropuertos: [], pares: [] };
     const conteo = new Map<string, { comoOrigen: number; comoDestino: number }>();
     const sumar = (iata: string, rol: "comoOrigen" | "comoDestino") => {

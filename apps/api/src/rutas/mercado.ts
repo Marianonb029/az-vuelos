@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Continente, FechaIso, IataAeropuerto } from "@az/core";
 import type { Anticipacion, CoberturaMercado, FechasMercado, Panorama, ResultadoMercado } from "@az/core";
 import type { ServicioActualizacion } from "../servicios/actualizacion";
+import type { ServicioMediciones } from "../servicios/mediciones";
 import type { ServicioMercado } from "../servicios/mercado";
 
 const ConsultaPar = z.object({ origen: IataAeropuerto, destino: z.union([IataAeropuerto, Continente]) }).refine((c) => c.origen !== c.destino, { message: "Origen y destino deben ser distintos" });
@@ -15,7 +16,7 @@ const Consulta = z
 
 // Fase 15: el mercado. Combinaciones de uno o dos boletos cacheados de Travelpayouts para llegar al destino,
 // saliendo de la fecha pedida ± flexDias, con el orden del dueño. Nada se lee de terceros acá: es el dataset.
-export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercado, actualizacion: () => ServicioActualizacion) => {
+export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercado, actualizacion: () => ServicioActualizacion, mediciones: () => ServicioMediciones) => {
   // Fase 18: actualización a pedido (los pares del modelo para el par, desde la Data API con el token del servidor)
   // y sonda de un pedido para saber si Aviasales ya publicó la búsqueda en vivo de la persona.
   app.post("/mercado/actualizar", async (req, reply) => {
@@ -32,6 +33,14 @@ export const rutasMercado = (app: FastifyInstance, mercado: () => ServicioMercad
     if (!consulta.success) return reply.code(400).send({ error: consulta.error.issues.map((i) => i.message).join("; ") });
     if (!actualizacion().disponible) return reply.code(503).send({ error: "El servidor no tiene TRAVELPAYOUTS_TOKEN" });
     return actualizacion().sonda(consulta.data.origen, consulta.data.destino, consulta.data.fechaIda, consulta.data.flexDias);
+  });
+  // Fase 28: la app avisa cuánto tardó Aviasales en dejar disponible una búsqueda. Con eso, la espera entre
+  // búsquedas deja de ser un supuesto y pasa a ser la mediana de lo medido.
+  app.post("/medicion-publicacion", async (req, reply) => {
+    const cuerpo = z.object({ segundos: z.number().int().min(1).max(3600) }).safeParse(req.body ?? {});
+    if (!cuerpo.success) return reply.code(400).send({ error: cuerpo.error.issues.map((i) => i.message).join("; ") });
+    const m = mediciones().anotar(cuerpo.data.segundos);
+    return { casos: m.segundos.length, ultimas: m.segundos.slice(-5) };
   });
   // Qué aeropuertos y pares tienen tarifas bajadas: el formulario sugiere esos, no el catálogo entero.
   app.get("/mercado/cobertura", async (): Promise<CoberturaMercado> => mercado().cobertura());

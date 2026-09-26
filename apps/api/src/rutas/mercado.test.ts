@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Panorama, ResultadoMercado } from "@az/core";
 import type { PrecioCacheado } from "@az/core";
 import { crearApp } from "../app";
+import { crearServicioMediciones } from "../servicios/mediciones";
 import { crearServicioSeguidos } from "../servicios/seguidos";
 import { config } from "../config";
 import { crearServicioEspacio } from "../servicios/espacio";
@@ -58,7 +59,7 @@ const espacio = crearServicioEspacio(config.directorioDatos, config.rutaConfigEs
 const mercado = crearServicioMercado(config.directorioDatos, config.rutaConfigEspacio, () => espacio, () => new Date("2026-09-17T12:00:00Z"), rutaPrecios);
 const feriados = { obtener: vi.fn().mockResolvedValue({ feriados: [], avisos: [] }) };
 const actualizacion = crearServicioActualizacion({ directorioDatos: config.directorioDatos, rutaConfig: config.rutaConfigEspacio, espacio: () => espacio, cliente: null });
-const app = crearApp({ seguidos: () => crearServicioSeguidos(carpeta), espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpeta, "tendencias.json") });
+const app = crearApp({ mediciones: () => crearServicioMediciones(carpeta), seguidos: () => crearServicioSeguidos(carpeta), espacio: () => espacio, mercado: () => mercado, actualizacion: () => actualizacion, feriados, rutaTendencias: join(carpeta, "tendencias.json") });
 
 describe("GET /mercado", () => {
   it("arma las combinaciones del dataset con el orden del dueño y la ficha del dataset", async () => {

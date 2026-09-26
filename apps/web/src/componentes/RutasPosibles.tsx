@@ -1,25 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
-import type { FormEvent } from "react";
-import { NOMBRE_CONTINENTE, buscarAeropuertos, etiquetaAeropuerto } from "@az/core";
-import type { Aeropuerto, CoberturaMercado, Continente } from "@az/core";
+import { useEffect, useState } from "react";
+import { NOMBRE_CONTINENTE } from "@az/core";
+import type { CoberturaMercado, Continente } from "@az/core";
 import type { ResultadoRutasPosibles, RutaPosible } from "@az/espacio";
-import { obtenerCobertura, obtenerRutasPosibles } from "../lib/api";
+import { obtenerRutasPosibles } from "../lib/api";
 import { Aerolineas, tieneLowCost } from "./Aerolinea";
 import { CombinacionesPrioritarias } from "./CombinacionesPrioritarias";
-import { Bloque } from "./Bloque";
-import { Campo } from "./Campo";
-import { Combobox } from "./Combobox";
-import type { Opcion } from "./Combobox";
-
-interface Props {
-  aeropuertos: readonly Aeropuerto[];
-  onBuscarPares: (pares: { origen: string; destino: string }[]) => void; // llevar los boletos sin precio a la búsqueda múltiple
-}
 
 const describirError = (e: unknown) => (e instanceof Error ? e.message : String(e));
-const CONTINENTES: Aeropuerto[] = (Object.keys(NOMBRE_CONTINENTE) as Continente[]).filter((c) => c !== "AN").map((c) => ({ iata: c, nombre: `${NOMBRE_CONTINENTE[c]} — todos los aeropuertos`, ciudad: "", pais: "" }));
-const esContinente = (a: Aeropuerto | null) => a !== null && a.iata.length === 2;
-const etiqueta = (a: Aeropuerto) => (esContinente(a) ? a.nombre : etiquetaAeropuerto(a));
 
 // Aerolíneas que venden los boletos principales de la ruta (para el distintivo y el filtro "sin low cost"). Las
 // operadoras de cada tramo y las del vuelo aparte del tramo final son opciones, no lo que se compra: se marcan
@@ -77,58 +64,39 @@ const Fila = ({ r, nombre, bajoCosto }: { r: RutaPosible; nombre: (iata: string)
   );
 };
 
-// Pestaña Combinaciones (Fase 17): todo lo que el grafo permite desde el origen y sus alternativos hacia un
-// aeropuerto o un continente, sin fecha ni precio. Agrupado por aeropuerto de salida y destino, plegado.
-export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
-  const [origen, setOrigen] = useState<Aeropuerto | null>(null);
-  const [destino, setDestino] = useState<Aeropuerto | null>(null);
-  const [intentado, setIntentado] = useState(false);
-  const [cargando, setCargando] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface Props {
+  origen: string;
+  destino: string; // aeropuerto o continente: el mismo de la búsqueda de Rutas
+  cobertura: CoberturaMercado | null;
+  onBuscarPares: (pares: { origen: string; destino: string }[]) => void;
+}
+
+// Fase 28: todas las rutas que existen para el par que se acaba de buscar, dentro de Resumen de ruta. Antes era
+// una pestaña aparte con su propio formulario: había que volver a escribir origen y destino para ver qué caminos
+// existían. Ahora sale solo del par buscado y contesta lo que falta después de ver los precios: qué otras formas
+// de llegar hay, cuáles ya tienen precio y cuáles habría que buscar.
+export const RutasPosibles = ({ origen, destino, cobertura, onBuscarPares }: Props) => {
   const [resultado, setResultado] = useState<ResultadoRutasPosibles | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(false);
   const [filtro, setFiltro] = useState("");
-  const [soloAMano, setSoloAMano] = useState(false); // Combinaciones − Rutas: lo que el grafo permite y el mercado no tiene
-  const [sinLowCost, setSinLowCost] = useState(false); // para quien necesita bodega: la low cost barata pierde la ventaja
+  const [soloAMano, setSoloAMano] = useState(false);
+  const [sinLowCost, setSinLowCost] = useState(false);
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
-  const [cobertura, setCobertura] = useState<CoberturaMercado | null>(null);
   useEffect(() => {
     let activo = true;
-    obtenerCobertura()
-      .then((c) => activo && setCobertura(c))
-      .catch(() => activo && setCobertura(null));
+    setCargando(true);
+    setError(null);
+    setResultado(null);
+    setAbiertos(new Set());
+    obtenerRutasPosibles(origen, destino)
+      .then((r) => activo && setResultado(r))
+      .catch((e: unknown) => activo && setError(describirError(e)))
+      .finally(() => activo && setCargando(false));
     return () => {
       activo = false;
     };
-  }, []);
-
-  const opciones = useCallback((texto: string): Opcion<Aeropuerto>[] => buscarAeropuertos(aeropuertos, texto).map((a) => ({ clave: a.iata, valor: a, etiqueta: etiquetaAeropuerto(a) })), [aeropuertos]);
-  const opcionesDestino = useCallback(
-    (texto: string): Opcion<Aeropuerto>[] => {
-      const t = texto.trim().toLowerCase();
-      return [...CONTINENTES.filter((c) => t === "" || c.nombre.toLowerCase().includes(t)).map((c) => ({ clave: c.iata, valor: c, etiqueta: c.nombre, marca: "continente" })), ...opciones(texto)];
-    },
-    [opciones],
-  );
-  const errores = {
-    origen: intentado && origen === null ? "Elegí un aeropuerto de origen" : undefined,
-    destino: intentado && destino === null ? "Elegí un aeropuerto o continente de destino" : intentado && destino?.iata === origen?.iata ? "Debe ser distinto del origen" : undefined,
-  };
-  const buscar = async (e: FormEvent) => {
-    e.preventDefault();
-    setIntentado(true);
-    if (!origen || !destino || Object.values(errores).some((x) => x !== undefined)) return;
-    setCargando(true);
-    setError(null);
-    setAbiertos(new Set());
-    try {
-      setResultado(await obtenerRutasPosibles(origen.iata, destino.iata));
-    } catch (err: unknown) {
-      setResultado(null);
-      setError(`No se pudieron armar las rutas: ${describirError(err)}`);
-    } finally {
-      setCargando(false);
-    }
-  };
+  }, [origen, destino]);
 
   const nombres = new Map(resultado?.nombres.map((n) => [n.iata, n.nombre]) ?? []);
   const nombre = (iata: string) => nombres.get(iata) ?? iata;
@@ -145,67 +113,70 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
   const clave = (o: string, d: string) => `${o}|${d}`;
   const alternar = (k: string) => setAbiertos((s) => (s.has(k) ? new Set([...s].filter((x) => x !== k)) : new Set([...s, k])));
 
+  if (cargando) return <p className="text-xs text-slate-500">Buscando todas las rutas que existen para este viaje…</p>;
+  if (error) return <p className="text-xs text-amber-700">No se pudieron armar las rutas: {error}</p>;
+  if (!resultado) return null;
+  const aDonde = resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino;
+
   return (
-    <div className="grid gap-6">
-      <form onSubmit={(e) => void buscar(e)} noValidate className="grid gap-5">
-        <p className="text-xs text-slate-600">
-          Todas las rutas que las aerolíneas vuelan hoy desde tu aeropuerto y los cercanos, en un pasaje o en dos con escala en una ciudad. Sin fecha ni precio: sirve para encontrar caminos a mano cuando todavía no hay precios guardados. La columna "¿tiene precio?" dice si esa ruta ya los tiene; las que no, son las que falta buscar. Las aerolíneas low cost llevan distintivo: su precio barato suele ser sólo con equipaje de mano.
-          {cobertura?.grupos.length ? ` La app sirve cualquier ruta del mundo; los precios se van trayendo en este orden y después sigue por el resto: ${cobertura.grupos.map((g) => `${g.prioridad}. ${g.origen.map((c) => NOMBRE_CONTINENTE[c]).join("+")} → ${g.destino.map((c) => NOMBRE_CONTINENTE[c]).join("+")}`).join(" · ")}.` : ""}
-        </p>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Campo id="c-origen" etiqueta="Origen" error={errores.origen}>
-            <Combobox id="c-origen" placeholder="Código, aeropuerto o ciudad" valor={origen} etiquetaValor={etiquetaAeropuerto} buscar={opciones} onCambio={setOrigen} invalido={errores.origen !== undefined} />
-          </Campo>
-          <Campo id="c-destino" etiqueta="Destino (aeropuerto o continente)" error={errores.destino}>
-            <Combobox id="c-destino" placeholder="Continente, código, aeropuerto o ciudad" valor={destino} etiquetaValor={etiqueta} buscar={opcionesDestino} onCambio={setDestino} invalido={errores.destino !== undefined} />
-          </Campo>
+    <div className="grid gap-4" data-testid="rutas-posibles">
+      <div className="grid gap-2 sm:grid-cols-4" data-testid="rutas-posibles-cifras">
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-2xl font-semibold tabular-nums text-slate-900">{todas.length.toLocaleString("es")}</p>
+          <p className="text-xs font-medium text-slate-700">rutas existen</p>
+          <p className="text-xs text-slate-500">desde {resultado.origenes.length} aeropuerto{resultado.origenes.length === 1 ? "" : "s"} de salida hacia {resultado.destinos} destino{resultado.destinos === 1 ? "" : "s"}</p>
         </div>
-        <div className="flex flex-wrap items-end gap-6">
-          <button type="submit" disabled={cargando} className="rounded-md bg-sky-600 px-5 py-2 text-sm font-medium text-white hover:bg-sky-700 disabled:opacity-50">
-            {cargando ? "Armando…" : "Ver combinaciones"}
-          </button>
-          {resultado && (
-            <Campo id="c-filtro" etiqueta="Filtrar (aeropuerto, ciudad o aerolínea)">
-              <input id="c-filtro" type="text" value={filtro} onChange={(e) => setFiltro(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" placeholder="LIS, Lisboa, TAP…" />
-            </Campo>
-          )}
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2">
+          <p className="text-2xl font-semibold tabular-nums text-emerald-800">{(todas.length - aMano).toLocaleString("es")}</p>
+          <p className="text-xs font-medium text-slate-700">ya tienen precio</p>
+          <p className="text-xs text-slate-500">son las que pudiste ver en Rutas</p>
         </div>
-        {resultado && (
-          <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-700" data-testid="c-filtros">
+        <div className="rounded-md border border-sky-200 bg-sky-50 px-3 py-2">
+          <p className="text-2xl font-semibold tabular-nums text-sky-800">{aMano.toLocaleString("es")}</p>
+          <p className="text-xs font-medium text-slate-700">todavía no tienen precio</p>
+          <p className="text-xs text-slate-500">caminos que existen y no viste: se pueden buscar</p>
+        </div>
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-2xl font-semibold tabular-nums text-slate-900">{conLowCost.toLocaleString("es")}</p>
+          <p className="text-xs font-medium text-slate-700">usan una low cost</p>
+          <p className="text-xs text-slate-500">baratas con equipaje de mano; con valija, la ventaja se pierde</p>
+        </div>
+      </div>
+      {aMano > 0 && (
+        <div className="grid gap-1">
+          <p className="text-sm font-semibold text-slate-800">Qué conviene buscar para completar el panorama</p>
+          <p className="text-xs text-slate-500">Los tramos que no tienen ningún precio, ordenados por lo que aportarían: primero los que tienen vuelo directo y más vuelos por semana. El botón los carga en Rutas listos para buscar.</p>
+          <CombinacionesPrioritarias rutas={rutas} nombre={nombre} bajoCosto={bajoCosto} max={20} onBuscar={onBuscarPares} />
+        </div>
+      )}
+      <details data-testid="rutas-posibles-detalle">
+        <summary className="cursor-pointer text-sm font-medium text-slate-800">
+          Ver las {todas.length.toLocaleString("es")} rutas, agrupadas por aeropuerto de salida y destino ({origen} → {aDonde})
+        </summary>
+        <div className="mt-2 grid gap-3">
+          <p className="text-xs text-slate-500">Ordenado por aeropuerto de salida (el que pediste primero, después los cercanos) y, dentro de cada uno, por destino. En cada destino: primero con un solo pasaje, después menos escalas, más aerolíneas que lo venden y más vuelos por semana. Las que tienen pocos vuelos por semana van en gris.</p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-700" data-testid="c-filtros">
+            <label className="flex items-center gap-1">
+              <span className="text-xs text-slate-600">Filtrar:</span>
+              <input type="text" value={filtro} onChange={(e) => setFiltro(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1 text-sm" placeholder="LIS, Lisboa, TAP…" aria-label="Filtrar (aeropuerto, ciudad o aerolínea)" />
+            </label>
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={soloAMano} onChange={(e) => setSoloAMano(e.target.checked)} />
               Sólo las rutas que todavía no tienen precio ({aMano.toLocaleString("es")})
             </label>
             <label className="flex items-center gap-2" title="Si viajás con valija despachada, el precio bajo de las low cost deja de serlo">
               <input type="checkbox" checked={sinLowCost} onChange={(e) => setSinLowCost(e.target.checked)} />
-              Sin aerolíneas low cost, porque viajo con valija ({conLowCost.toLocaleString("es")} rutas las usan)
+              Sin low cost, porque viajo con valija ({conLowCost.toLocaleString("es")})
             </label>
           </div>
-        )}
-      </form>
-      {error && (
-        <p role="alert" className="text-sm text-red-700">
-          {error}
-        </p>
-      )}
-      {resultado && aMano > 0 && (
-        <Bloque orden={1} titulo="Qué conviene buscar (lo que todavía no tiene precio)" objetivo="De todas las rutas de abajo, los tramos que no tienen ningún precio guardado, ordenados por lo que aportarían: primero los que tienen vuelo directo y más vuelos por semana, porque son los que más chance tienen de traer un buen precio. El botón los carga en la búsqueda de varias rutas de Rutas.">
-          <CombinacionesPrioritarias rutas={rutas} nombre={nombre} bajoCosto={bajoCosto} max={cobertura?.maxBusquedasEnVivo ? 20 : 20} onBuscar={onBuscarPares} />
-        </Bloque>
-      )}
-      {resultado && (
-        <Bloque
-          orden={aMano > 0 ? 2 : 1}
-          titulo={`Combinaciones: ${resultado.origen} → ${resultado.destinoEsContinente ? NOMBRE_CONTINENTE[resultado.destino as Continente] : resultado.destino}`}
-          objetivo="Ordenado por aeropuerto de salida (el que pediste primero, después los cercanos) y, dentro de cada uno, por destino: si pediste un aeropuerto, primero ése y después los cercanos, siempre con el último tramo hasta el que pediste (en vuelo aparte o por tierra si está a menos de 400 km); si pediste un continente, por distancia. En cada destino: primero con un solo pasaje, después menos escalas, más aerolíneas que lo venden y más vuelos por semana. Abrí un destino para ver sus rutas. Las que tienen pocos vuelos por semana van en gris."
-        >
           {resultado.avisos.map((a) => (
             <p key={a} role="status" className="text-xs text-amber-700">
               {a}
             </p>
           ))}
           <p className="text-sm text-slate-600" data-testid="resumen-posibles">
-            {rutas.length.toLocaleString("es")} rutas{f ? ` (filtro "${filtro}")` : ""}{soloAMano ? " (sólo las que no tienen precio)" : ""}{sinLowCost ? " (sin low cost)" : ""} · {porOrigen.length} aeropuertos de salida · {resultado.destinos} destinos mirados · {rutas.filter((r) => r.hub === null).length.toLocaleString("es")} con un pasaje y {rutas.filter((r) => r.hub !== null).length.toLocaleString("es")} con dos{resultado.destinoEsContinente ? "" : ` · ${rutas.filter((r) => r.tramoFinal !== null).length.toLocaleString("es")} llegan por un alternativo con tramo final a ${resultado.destino}`} · {rutas.filter(enMercado).length.toLocaleString("es")} ya tienen precio y {rutas.filter((r) => !enMercado(r)).length.toLocaleString("es")} hay que buscarlas · {rutas.filter((r) => tieneLowCost(aerolineasDe(r), bajoCosto)).length.toLocaleString("es")} con low cost
+            {rutas.length.toLocaleString("es")} rutas{f ? ` (filtro "${filtro}")` : ""}{soloAMano ? " (sólo las que no tienen precio)" : ""}{sinLowCost ? " (sin low cost)" : ""} · {porOrigen.length} aeropuertos de salida · {rutas.filter((r) => r.hub === null).length.toLocaleString("es")} con un pasaje y {rutas.filter((r) => r.hub !== null).length.toLocaleString("es")} con dos
+            {resultado.destinoEsContinente ? "" : ` · ${rutas.filter((r) => r.tramoFinal !== null).length.toLocaleString("es")} llegan por un aeropuerto cercano con un último tramo hasta ${resultado.destino}`}
           </p>
           {porOrigen.map(({ o, rutas: deOrigen }) => {
             const info = resultado.origenes.find((x) => x.iata === o);
@@ -213,13 +184,13 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
             return (
               <div key={o} className="grid gap-1" data-testid="origen-posible">
                 <p className="rounded bg-slate-100 px-2 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                  Desde {o} {info?.ciudad ? `(${info.ciudad})` : ""} {info && info.trasladoKm > 0 ? `— a ${info.trasladoKm.toLocaleString("es")} km de ${resultado.origen}` : "— el aeropuerto pedido"} · {deOrigen.length.toLocaleString("es")} rutas a {destinos.length} destinos
+                  Desde {o} {info?.ciudad ? `(${info.ciudad})` : ""} {info && info.trasladoKm > 0 ? `— a ${info.trasladoKm.toLocaleString("es")} km de ${resultado.origen}` : "— el aeropuerto que pediste"} · {deOrigen.length.toLocaleString("es")} rutas a {destinos.length} destinos
                 </p>
                 {destinos.map((d) => {
                   const deDestino = deOrigen.filter((r) => r.destino === d);
                   const k = clave(o, d);
                   const primera = deDestino[0];
-                  const llegada = !primera ? "" : resultado.destinoEsContinente ? ` · a ${primera.distanciaKm.toLocaleString("es")} km de ${o}` : primera.tramoFinal === null ? " · el destino pedido" : ` · a ${primera.trasladoDestinoKm.toLocaleString("es")} km de ${resultado.destino}: ${primera.tramoFinal.porTierra ? "por tierra (tren o bus)" : `vuelo aparte con ${primera.tramoFinal.aerolineas.map(nombre).join(", ")}`}`;
+                  const llegada = !primera ? "" : resultado.destinoEsContinente ? ` · a ${primera.distanciaKm.toLocaleString("es")} km de ${o}` : primera.tramoFinal === null ? " · el destino que pediste" : ` · a ${primera.trasladoDestinoKm.toLocaleString("es")} km de ${resultado.destino}: ${primera.tramoFinal.porTierra ? "por tierra (tren o bus)" : `vuelo aparte con ${primera.tramoFinal.aerolineas.map(nombre).join(", ")}`}`;
                   return (
                     <div key={k}>
                       <button type="button" onClick={() => alternar(k)} aria-expanded={abiertos.has(k)} className="w-full rounded px-4 py-1 text-left text-xs text-slate-800 hover:bg-slate-50">
@@ -252,8 +223,9 @@ export const Combinaciones = ({ aeropuertos, onBuscarPares }: Props) => {
               </div>
             );
           })}
-        </Bloque>
-      )}
+        </div>
+      </details>
+      <p className="text-[11px] text-slate-400">Sale del mapa de rutas de las aerolíneas (qué vuela cada una hoy), no de los precios: dice que la ruta existe, no cuánto cuesta ni si hay lugar. Es lo que sirve para buscar a mano lo que todavía no tiene precio.</p>
     </div>
   );
 };

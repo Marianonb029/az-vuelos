@@ -1,21 +1,24 @@
 import { NOMBRE_CONTINENTE, fechaCorta } from "@az/core";
-import type { Combinacion, Continente, ResultadoMercado } from "@az/core";
+import type { CoberturaMercado, Combinacion, Continente, ResultadoMercado } from "@az/core";
 import type { Pestana } from "../lib/pestanas";
 import { Anticipacion } from "./Anticipacion";
 import { Bloque } from "./Bloque";
 import { horas } from "./FilaMercado";
 import { Opcion, conclusiones, equilibrada, menor, ruta } from "./ResumenPiezas";
+import { RutasPosibles } from "./RutasPosibles";
 import { Seguir } from "./Seguir";
 import { Ranking, pct, top } from "./TableroPiezas";
 
 interface Props {
   mercado: ResultadoMercado | null;
   irA: (p: Pestana) => void;
+  cobertura: CoberturaMercado | null;
+  onBuscarPares: (pares: { origen: string; destino: string }[]) => void; // llevar tramos sin precio a Rutas
 }
 
 // Pestaña Resumen de ruta: las conclusiones de la última búsqueda de Rutas. Primero qué conviene y por qué,
 // después si conviene comprar ahora, y al final el detalle para quien quiera revisarlo. No guarda nada.
-export const ResumenRuta = ({ mercado, irA }: Props) => {
+export const ResumenRuta = ({ mercado, irA, cobertura, onBuscarPares }: Props) => {
   if (!mercado)
     return (
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
@@ -95,7 +98,11 @@ export const ResumenRuta = ({ mercado, irA }: Props) => {
         <Anticipacion origen={origen} destino={destino} fechaIda={mercado.fechaIda} seguir={mercado.destinoEsContinente ? undefined : <Seguir origen={origen} destino={destino} fechaIda={mercado.fechaIda} />} />
       </Bloque>
 
-      <Bloque orden={3} titulo="Qué tan confiable es lo que estás viendo" objetivo="Los precios son los que otros viajeros vieron en Aviasales: cuanto más viejos, más pueden haber cambiado.">
+      <Bloque orden={3} titulo="Qué otras formas de llegar existen" objetivo="Todas las rutas que las aerolíneas vuelan hoy para este viaje, tengan precio o no. Sirve para ver qué te estás perdiendo: los caminos que existen y todavía no tienen precio se pueden traer con un clic.">
+        <RutasPosibles origen={origen} destino={destino} cobertura={cobertura} onBuscarPares={onBuscarPares} />
+      </Bloque>
+
+      <Bloque orden={4} titulo="Qué tan confiable es lo que estás viendo" objetivo="Los precios son los que otros viajeros vieron en Aviasales: cuanto más viejos, más pueden haber cambiado.">
         <div className="grid gap-2 sm:grid-cols-4" data-testid="resumen-frescura">
           <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
             <p className="text-2xl font-semibold tabular-nums text-slate-900">{pct(lista.length - aRefrescar, lista.length)}</p>

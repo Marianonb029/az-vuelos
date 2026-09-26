@@ -1,4 +1,4 @@
-export type Pestana = "explorar" | "rutas" | "resumen" | "combinaciones" | "datos";
+export type Pestana = "explorar" | "rutas" | "resumen" | "datos";
 
 export interface FichaPestana {
   id: Pestana;
@@ -10,8 +10,8 @@ export interface FichaPestana {
 }
 
 // El orden es el del recorrido: primero se explora sin fecha, después se mira un día concreto, después el resumen
-// de esa búsqueda, y al final las dos referencias (rutas sin precio y la ficha de cada dato). Datos lo muestra tal
-// cual. Fase 27: acá y en toda la pantalla se habla en palabras de todos los días, no en la jerga interna.
+// de esa búsqueda, y al final la ficha de cada dato. Las rutas que existen sin precio están dentro de Resumen de ruta, que es
+// donde hacen falta. Datos lo muestra tal cual. Fase 27: acá y en toda la pantalla se habla en palabras de todos los días, no en la jerga interna.
 export const PESTANAS: FichaPestana[] = [
   {
     id: "explorar",
@@ -33,17 +33,9 @@ export const PESTANAS: FichaPestana[] = [
     id: "resumen",
     titulo: "Resumen de ruta",
     pregunta: "¿Qué me conviene de lo que encontré?",
-    para: "Las conclusiones de la última búsqueda de Rutas: la mejor opción según lo que priorices, qué cuesta ahorrar horas o escalas, dónde está lo barato y qué tan confiable es lo que estás viendo.",
-    objetivo: "Decidir entre las opciones de una misma búsqueda sin leer la tabla entera, viendo qué se resigna en cada caso y si conviene comprar ahora o esperar.",
+    para: "Las conclusiones de la última búsqueda de Rutas: la mejor opción según lo que priorices, qué cuesta ahorrar horas o escalas, si conviene comprar ahora, qué otras formas de llegar existen (tengan precio o no) y qué tan confiable es lo que estás viendo.",
+    objetivo: "Decidir entre las opciones de una misma búsqueda sin leer la tabla entera, viendo qué se resigna en cada caso, si conviene comprar ahora y qué caminos existen que todavía no tienen precio.",
     noHace: "No busca nada por su cuenta: resume la última búsqueda hecha en Rutas.",
-  },
-  {
-    id: "combinaciones",
-    titulo: "Rutas sin precio",
-    pregunta: "¿Qué rutas existen, aunque todavía no tengan precio?",
-    para: "Todas las rutas que las aerolíneas vuelan hoy desde tu aeropuerto y los cercanos, sin fecha ni precio: para buscar a mano lo que el sistema todavía no tiene guardado.",
-    objetivo: "Encontrar caminos que los precios guardados no cubren: qué aerolínea vuela cada tramo, por qué ciudad se puede hacer escala y qué rutas conviene buscar a mano.",
-    noHace: "No tiene precios ni fechas: dice que la ruta existe, no cuánto cuesta ni si hay lugar.",
   },
   {
     id: "datos",

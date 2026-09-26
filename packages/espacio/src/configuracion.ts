@@ -120,6 +120,8 @@ export const ConfigMercado = z.object({
   maxBusquedasEnVivo: z.number().int().min(1), // tope de búsquedas por lista (pares × días)
   // Fase 25: medir cuánto tarda Aviasales en publicar una búsqueda en su cache. `segundosPorBusquedaEnVivo` es un
   // supuesto; esto lo mide de verdad con una sola búsqueda, sondeando seguido.
+  segundosMedidosMin: z.number().int().min(5), // piso y techo de lo medido: un caso raro no rompe la espera
+  segundosMedidosMax: z.number().int().positive(),
   segundosEntreSondasMedicion: z.number().int().min(5),
   maxMinutosMedicion: z.number().int().positive(),
   diasHorizonte: z.number().int().positive(), // hasta cuántos días adelante se mira el cache (calendario y panorama)

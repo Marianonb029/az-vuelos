@@ -33,6 +33,9 @@ export const iniciarActualizacion = (origen: string, destino: string, pares?: { 
   pedir(EstadoActualizacion, `/mercado/actualizar?origen=${origen}&destino=${destino}`, pares ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ pares }) } : { method: "POST" });
 export const estadoActualizacion = () => pedir(EstadoActualizacion, "/mercado/actualizar/estado");
 export const sonda = (origen: string, destino: string, fechaIda: string, flexDias: number) => pedir(Sonda, `/mercado/sonda?origen=${origen}&destino=${destino}&fechaIda=${fechaIda}&flexDias=${flexDias}`);
+// Fase 28: cuánto tardó Aviasales en dejar disponible una búsqueda. La app lo mide sola en cada búsqueda en vivo;
+// con eso la espera entre búsquedas deja de ser un supuesto.
+export const anotarMedicion = (segundos: number) => pedir(z.object({ casos: z.number(), ultimas: z.array(z.number()) }), "/medicion-publicacion", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ segundos }) });
 
 // Fase 23: pares seguidos. Lo único que la app guarda por decisión de la persona: la bajada nocturna les reserva
 // pedidos para que se arme el historial (sin dos bajadas del mismo par no hay con qué comparar).

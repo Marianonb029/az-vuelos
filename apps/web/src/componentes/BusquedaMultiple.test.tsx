@@ -8,7 +8,7 @@ const aeropuertos: Aeropuerto[] = [
   { iata: "IGU", nombre: "Cataratas", ciudad: "Foz do Iguaçu", pais: "Brasil" },
   { iata: "LIS", nombre: "Humberto Delgado", ciudad: "Lisboa", pais: "Portugal" },
 ];
-const cobertura: CoberturaMercado = { actualizadoEn: "2026-09-18T00:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [], pares: [] };
+const cobertura: CoberturaMercado = { actualizadoEn: "2026-09-18T00:00:00.000Z", marker: "123456", actualizacionDisponible: true, segundosPorBusquedaEnVivo: 45, maxBusquedasEnVivo: 200, segundosEntreSondasMedicion: 10, maxMinutosMedicion: 5, medicionesPublicacion: 0, segundosMedidos: null, aerolineasBajoCosto: ["G3"], grupos: [], aeropuertos: [], pares: [] };
 
 const elegir = (etiqueta: string, texto: string, opcion: RegExp) => {
   fireEvent.change(screen.getByRole("combobox", { name: etiqueta }), { target: { value: texto } });
@@ -51,7 +51,7 @@ describe("Búsqueda múltiple (Fase 19)", () => {
     expect(screen.getByTestId("bm-pares").textContent).toContain("IGU → LIS");
     fireEvent.change(screen.getByLabelText("Fecha de ida (la misma para todas)"), { target: { value: "2027-01-20" } });
     fireEvent.click(screen.getByRole("radio", { name: "Sólo ese día" }));
-    const boton = screen.getByRole("button", { name: /Buscar en vivo 2 búsquedas \(2 rutas × 1 días, ~2 min\) y traer al sistema/ });
+    const boton = screen.getByRole("button", { name: /Buscar en Aviasales 2 búsquedas \(2 rutas × 1 días, ~2 min\) y traer los precios/ });
     await act(async () => {
       fireEvent.click(boton);
     });
